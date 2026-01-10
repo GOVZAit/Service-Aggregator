@@ -1,0 +1,92 @@
+# Service Aggregator (Мастера)
+
+## Overview
+
+A Russian-language service marketplace application connecting customers with local service providers (masters) for various services like plumbing, electrical work, cleaning, repairs, beauty services, and more. The platform follows a mobile-first design approach inspired by Airbnb, Linear, and Thumbtack, enabling users to browse service providers, view profiles with portfolios, submit service requests, and manage orders.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript
+- **Routing**: Wouter (lightweight React router)
+- **State Management**: TanStack React Query for server state, React useState for local state
+- **Styling**: Tailwind CSS with CSS variables for theming (light/dark mode support)
+- **UI Components**: shadcn/ui component library built on Radix UI primitives
+- **Build Tool**: Vite with React plugin
+
+**Component Structure**:
+- `/client/src/pages/` - Page-level components (home, master-profile, requests, orders, profile)
+- `/client/src/components/` - Reusable components (cards, navigation)
+- `/client/src/components/ui/` - shadcn/ui base components
+- `/client/src/hooks/` - Custom React hooks
+- `/client/src/lib/` - Utilities and data
+
+**Design System**:
+- Mobile-first with bottom tab navigation
+- Card-based layouts with hover/active elevation effects
+- Inter font family for typography
+- Consistent spacing using Tailwind's 2, 4, 6, 8, 12, 16, 20, 24 unit scale
+
+### Backend Architecture
+- **Runtime**: Node.js with Express
+- **Language**: TypeScript (ESM modules)
+- **API Pattern**: RESTful JSON API under `/api/*` prefix
+- **Development**: Vite dev server with HMR proxied through Express
+
+**API Endpoints**:
+- `GET /api/categories` - Service categories list
+- `GET /api/masters` - List masters (with optional categoryId/search filters)
+- `GET /api/masters/:id` - Single master details
+- `GET /api/requests` - Service requests (auction-style)
+- `GET /api/requests/:id` - Single request details
+
+### Data Layer
+- **ORM**: Drizzle ORM configured for PostgreSQL
+- **Schema Location**: `/shared/schema.ts` (shared between client and server)
+- **Current Storage**: In-memory mock data in `/server/storage.ts`
+- **Validation**: Zod schemas with drizzle-zod integration
+
+**Data Models**:
+- Categories (static list with icons and colors)
+- Masters (service providers with profile, portfolio, services, ratings)
+- ServiceRequests (customer requests for bidding)
+- Orders (booked services with status tracking)
+- ChatMessages (in-profile messaging)
+
+### Build System
+- **Development**: `npm run dev` - tsx runs server with Vite middleware
+- **Production Build**: `npm run build` - Vite builds client, esbuild bundles server
+- **Database Migrations**: `npm run db:push` - Drizzle Kit push to PostgreSQL
+
+## External Dependencies
+
+### Database
+- **PostgreSQL**: Primary database (configured via `DATABASE_URL` environment variable)
+- **Drizzle Kit**: Schema migrations and database management
+- **connect-pg-simple**: Session storage for Express sessions
+
+### Frontend Libraries
+- **@tanstack/react-query**: Data fetching and caching
+- **Radix UI**: Accessible UI primitives (dialog, dropdown, tabs, etc.)
+- **class-variance-authority**: Variant-based component styling
+- **embla-carousel-react**: Carousel/slider functionality
+- **date-fns**: Date formatting and manipulation
+- **lucide-react**: Icon library
+- **wouter**: Client-side routing
+- **react-hook-form** with **zod**: Form handling and validation
+
+### Development Tools
+- **Vite**: Frontend build tool with HMR
+- **tsx**: TypeScript execution for Node.js
+- **esbuild**: Server bundling for production
+- **Tailwind CSS**: Utility-first CSS framework
+- **TypeScript**: Type safety across the stack
+
+### Replit-Specific
+- **@replit/vite-plugin-runtime-error-modal**: Error overlay in development
+- **@replit/vite-plugin-cartographer**: Development tooling
+- **@replit/vite-plugin-dev-banner**: Development environment indicator

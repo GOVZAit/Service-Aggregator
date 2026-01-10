@@ -1,6 +1,6 @@
-import type { Master, ServiceRequest, Order, ChatMessage } from "@shared/schema";
+import type { Master, ServiceRequest, Order } from "@shared/schema";
 
-const mastersData: Master[] = [
+export const mastersData: Master[] = [
   {
     id: 1,
     name: 'Алексей Петров',
@@ -159,7 +159,7 @@ const mastersData: Master[] = [
   },
 ];
 
-const requestsData: ServiceRequest[] = [
+export const requestsData: ServiceRequest[] = [
   {
     id: 1,
     title: 'Нужен сантехник срочно',
@@ -206,7 +206,7 @@ const requestsData: ServiceRequest[] = [
   },
 ];
 
-const ordersData: Order[] = [
+export const ordersData: Order[] = [
   {
     id: 1,
     title: 'Замена смесителя',
@@ -233,82 +233,12 @@ const ordersData: Order[] = [
   },
 ];
 
-export interface IStorage {
-  getMasters(): Promise<Master[]>;
-  getMasterById(id: number): Promise<Master | undefined>;
-  getMastersByCategory(categoryId: number): Promise<Master[]>;
-  searchMasters(query: string): Promise<Master[]>;
-  
-  getRequests(): Promise<ServiceRequest[]>;
-  getRequestById(id: number): Promise<ServiceRequest | undefined>;
-  
-  getOrders(): Promise<Order[]>;
-  getOrderById(id: number): Promise<Order | undefined>;
-  
-  getMessages(masterId: number): Promise<ChatMessage[]>;
-  addMessage(masterId: number, message: ChatMessage): Promise<ChatMessage>;
-}
-
-export class MemStorage implements IStorage {
-  private masters: Master[];
-  private requests: ServiceRequest[];
-  private orders: Order[];
-  private chatMessages: Map<number, ChatMessage[]>;
-
-  constructor() {
-    this.masters = [...mastersData];
-    this.requests = [...requestsData];
-    this.orders = [...ordersData];
-    this.chatMessages = new Map();
-  }
-
-  async getMasters(): Promise<Master[]> {
-    return this.masters;
-  }
-
-  async getMasterById(id: number): Promise<Master | undefined> {
-    return this.masters.find(m => m.id === id);
-  }
-
-  async getMastersByCategory(categoryId: number): Promise<Master[]> {
-    return this.masters.filter(m => m.categoryId === categoryId);
-  }
-
-  async searchMasters(query: string): Promise<Master[]> {
-    const q = query.toLowerCase();
-    return this.masters.filter(m => 
-      m.name.toLowerCase().includes(q) ||
-      m.category.toLowerCase().includes(q) ||
-      m.description.toLowerCase().includes(q)
-    );
-  }
-
-  async getRequests(): Promise<ServiceRequest[]> {
-    return this.requests;
-  }
-
-  async getRequestById(id: number): Promise<ServiceRequest | undefined> {
-    return this.requests.find(r => r.id === id);
-  }
-
-  async getOrders(): Promise<Order[]> {
-    return this.orders;
-  }
-
-  async getOrderById(id: number): Promise<Order | undefined> {
-    return this.orders.find(o => o.id === id);
-  }
-
-  async getMessages(masterId: number): Promise<ChatMessage[]> {
-    return this.chatMessages.get(masterId) || [];
-  }
-
-  async addMessage(masterId: number, message: ChatMessage): Promise<ChatMessage> {
-    const messages = this.chatMessages.get(masterId) || [];
-    messages.push(message);
-    this.chatMessages.set(masterId, messages);
-    return message;
-  }
-}
-
-export const storage = new MemStorage();
+export const currentUser = {
+  id: '1',
+  name: 'Иван Козлов',
+  initials: 'ИК',
+  email: 'ivan@example.com',
+  ordersCount: 12,
+  rating: 4.9,
+  favoritesCount: 3,
+};

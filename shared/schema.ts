@@ -1,18 +1,99 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+export const categories = [
+  { id: 1, name: 'Сантехника', iconName: 'Wrench', color: '#007AFF' },
+  { id: 2, name: 'Электрика', iconName: 'Zap', color: '#FF9500' },
+  { id: 3, name: 'Уборка', iconName: 'Sparkles', color: '#34C759' },
+  { id: 4, name: 'Ремонт', iconName: 'Hammer', color: '#FF3B30' },
+  { id: 5, name: 'Красота', iconName: 'Palette', color: '#FF2D55' },
+  { id: 6, name: 'Авто', iconName: 'Car', color: '#5856D6' },
+  { id: 7, name: 'Доставка', iconName: 'Package', color: '#AF52DE' },
+  { id: 8, name: 'Репетиторы', iconName: 'BookOpen', color: '#00C7BE' },
+] as const;
+
+export type Category = typeof categories[number];
+
+export interface Service {
+  name: string;
+  price: string;
+}
+
+export interface Master {
+  id: number;
+  name: string;
+  category: string;
+  categoryId: number;
+  rating: number;
+  reviews: number;
+  price: string;
+  avatar: string;
+  verified: boolean;
+  distance: string;
+  responseTime: string;
+  completedOrders: number;
+  description: string;
+  portfolio: string[];
+  services: Service[];
+}
+
+export interface RequestUser {
+  name: string;
+  avatar: string;
+}
+
+export interface ServiceRequest {
+  id: number;
+  title: string;
+  category: string;
+  description: string;
+  budget: string;
+  location: string;
+  postedAt: string;
+  responses: number;
+  user: RequestUser;
+}
+
+export type OrderStatus = 'completed' | 'in_progress' | 'pending';
+
+export interface Order {
+  id: number;
+  title: string;
+  masterId: number;
+  status: OrderStatus;
+  date: string;
+  price: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  text: string;
+  sender: 'user' | 'master';
+  time: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  initials: string;
+  email: string;
+  ordersCount: number;
+  rating: number;
+  favoritesCount: number;
+}
+
+export const insertMessageSchema = z.object({
+  text: z.string().min(1),
+  sender: z.enum(['user', 'master']),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export const insertRequestSchema = z.object({
+  title: z.string().min(1),
+  category: z.string().min(1),
+  description: z.string().min(1),
+  budget: z.string().min(1),
+  location: z.string().min(1),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type InsertRequest = z.infer<typeof insertRequestSchema>;
