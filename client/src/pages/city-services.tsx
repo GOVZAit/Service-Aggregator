@@ -359,10 +359,13 @@ function OrgCard({
   onClick: () => void;
 }) {
   return (
-    <button
+    <div
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onClick()}
       data-testid={`card-org-${org.id}`}
-      className="w-full flex flex-col gap-2.5 rounded-2xl border border-border bg-card p-4 text-left transition-all active:scale-[0.98] hover:shadow-md hover:border-primary/20"
+      className="w-full flex flex-col gap-2.5 rounded-2xl border border-border bg-card p-4 text-left transition-all active:scale-[0.98] hover:shadow-md hover:border-primary/20 cursor-pointer"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -434,7 +437,7 @@ function OrgCard({
         </div>
         <ChevronRight className="w-4 h-4 text-muted-foreground" />
       </div>
-    </button>
+    </div>
   );
 }
 

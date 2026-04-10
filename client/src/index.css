@@ -224,6 +224,14 @@
 
   .no-default-active-elevate {}
 
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
 
   /**
    * Toggleable backgrounds go behind the content. Hoverable/active goes on top.

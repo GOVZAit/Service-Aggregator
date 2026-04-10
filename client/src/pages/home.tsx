@@ -1,14 +1,16 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, SlidersHorizontal, MapPin, X } from "lucide-react";
+import { Search, SlidersHorizontal, MapPin, X, Wrench, Zap, Sparkles, Hammer, Palette, Car, Package, BookOpen, type LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CategoryCard } from "@/components/category-card";
 import { MasterCard } from "@/components/master-card";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { cn } from "@/lib/utils";
 import type { Category, Master } from "@shared/schema";
+
+const iconMap: Record<string, LucideIcon> = { Wrench, Zap, Sparkles, Hammer, Palette, Car, Package, BookOpen };
 
 const currentUser = {
   initials: 'ИК',
@@ -63,9 +65,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 pt-4 pb-4 safe-area-pt">
-        <div className="max-w-lg mx-auto">
-          <div className="flex items-center justify-between mb-4">
+      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border safe-area-pt">
+        <div className="max-w-lg mx-auto px-4 pt-4 pb-3">
+          <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-xs text-muted-foreground">Ваше местоположение</p>
               <div className="flex items-center gap-1 font-semibold">
@@ -97,33 +99,47 @@ export default function HomePage() {
             </Button>
           </div>
         </div>
-      </header>
 
-      <main className="px-4 py-6 max-w-lg mx-auto">
-        <section className="mb-8">
-          <h2 className="text-lg font-bold mb-4">Категории</h2>
+        {/* Sticky categories strip — lives inside the same sticky header */}
+        <div className="max-w-lg mx-auto px-4 pb-2 pt-1">
           {categoriesLoading ? (
-            <div className="grid grid-cols-4 gap-3">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-24 rounded-xl" />
+            <div className="flex gap-2 overflow-hidden">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-7 w-20 rounded-full shrink-0" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-3">
-              {categories.map((cat) => (
-                <CategoryCard
-                  key={cat.id}
-                  category={cat}
-                  isSelected={selectedCategory === cat.id}
-                  onSelect={() =>
-                    setSelectedCategory((prev) => (prev === cat.id ? null : cat.id))
-                  }
-                />
-              ))}
+            <div className="flex gap-2 overflow-x-auto scrollbar-none">
+              {categories.map((cat) => {
+                const Icon = iconMap[cat.iconName] || Wrench;
+                const isSelected = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory((prev) => (prev === cat.id ? null : cat.id))}
+                    data-testid={`category-chip-${cat.id}`}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all active:scale-95",
+                      isSelected
+                        ? "text-white shadow-sm"
+                        : "bg-muted/60 text-foreground hover:bg-muted"
+                    )}
+                    style={isSelected ? { backgroundColor: cat.color } : undefined}
+                  >
+                    <Icon
+                      className="w-3.5 h-3.5 shrink-0"
+                      style={isSelected ? { color: 'white' } : { color: cat.color }}
+                    />
+                    {cat.name}
+                  </button>
+                );
+              })}
             </div>
           )}
-        </section>
+        </div>
+      </header>
 
+      <main className="px-4 py-5 max-w-lg mx-auto">
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold">
