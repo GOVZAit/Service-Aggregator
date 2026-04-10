@@ -19,11 +19,11 @@ Preferred communication style: Simple, everyday language.
 - **Build Tool**: Vite with React plugin
 
 **Component Structure**:
-- `/client/src/pages/` - Page-level components (home, master-profile, requests, orders, profile)
+- `/client/src/pages/` - Page-level components (home, master-profile, requests, orders, profile, city-services)
 - `/client/src/components/` - Reusable components (cards, navigation)
 - `/client/src/components/ui/` - shadcn/ui base components
 - `/client/src/hooks/` - Custom React hooks
-- `/client/src/lib/` - Utilities and data
+- `/client/src/lib/` - Utilities and data (including `city-services-data.ts`)
 
 **Design System**:
 - Mobile-first with bottom tab navigation

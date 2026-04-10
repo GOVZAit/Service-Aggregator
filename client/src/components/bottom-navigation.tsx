@@ -1,9 +1,10 @@
-import { Home, Search, FileText, User } from "lucide-react";
+import { Home, Search, FileText, User, Building2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { id: 'home', path: '/', icon: Home, label: 'Главная' },
+  { id: 'city', path: '/city', icon: Building2, label: 'Город' },
   { id: 'requests', path: '/requests', icon: Search, label: 'Заявки' },
   { id: 'orders', path: '/orders', icon: FileText, label: 'Заказы' },
   { id: 'profile', path: '/profile', icon: User, label: 'Профиль' },
@@ -26,7 +27,7 @@ export function BottomNavigation() {
               <button
                 data-testid={`nav-${tab.id}`}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-4 py-2 transition-colors",
+                  "flex flex-col items-center gap-1 px-3 py-2 transition-colors",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
