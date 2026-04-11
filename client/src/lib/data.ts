@@ -235,9 +235,9 @@ export const ordersData: Order[] = [
 
 export const currentUser = {
   id: '1',
-  name: 'Иван Козлов',
-  initials: 'ИК',
-  email: 'ivan@example.com',
+  name: 'Ахмад Байсаров',
+  initials: 'АБ',
+  email: 'ahmad@example.com',
   ordersCount: 12,
   rating: 4.9,
   favoritesCount: 3,

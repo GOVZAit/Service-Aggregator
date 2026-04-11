@@ -31,10 +31,14 @@ export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardP
               <span className="font-semibold text-foreground truncate">
                 {master.name}
               </span>
-              {master.verified && (
+              {master.verified ? (
                 <span className="inline-flex items-center gap-0.5 bg-primary/10 text-primary rounded-full px-1.5 py-0.5 text-[10px] font-semibold flex-shrink-0">
                   <BadgeCheck className="w-3 h-3" />
                   Верифицирован
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-0.5 bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 text-[10px] font-medium flex-shrink-0">
+                  Не верифицирован
                 </span>
               )}
             </div>

@@ -13,7 +13,7 @@ import type { Category, Master } from "@shared/schema";
 const iconMap: Record<string, LucideIcon> = { Wrench, Zap, Sparkles, Hammer, Palette, Car, Package, BookOpen };
 
 const currentUser = {
-  initials: 'ИК',
+  initials: 'АБ',
 };
 
 export default function HomePage() {
@@ -72,7 +72,7 @@ export default function HomePage() {
               <p className="text-xs text-muted-foreground">Ваше местоположение</p>
               <div className="flex items-center gap-1 font-semibold">
                 <MapPin className="w-4 h-4 text-primary" />
-                <span>Москва, Россия</span>
+                <span>Грозный, Чечня</span>
               </div>
             </div>
             <Avatar className="w-11 h-11 bg-gradient-to-br from-primary to-violet-500">
