@@ -1,11 +1,12 @@
-import { Home, LibraryBig, User } from "lucide-react";
+import { Home, Building2, Phone, User } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { id: 'home', path: '/', icon: Home, label: 'Мастера' },
-  { id: 'city', path: '/city', icon: LibraryBig, label: 'Справочник служб' },
-  { id: 'profile', path: '/profile', icon: User, label: 'Профиль' },
+  { id: 'home',     path: '/',        icon: Home,      label: 'Мастера' },
+  { id: 'city',     path: '/city',    icon: Building2, label: 'Службы' },
+  { id: 'contacts', path: '/contacts',icon: Phone,     label: 'Контакты' },
+  { id: 'profile',  path: '/profile', icon: User,      label: 'Профиль' },
 ] as const;
 
 export function BottomNavigation() {
@@ -15,7 +16,8 @@ export function BottomNavigation() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-xl border-t border-border safe-area-pb">
       <div className="max-w-lg mx-auto flex justify-around items-center py-2">
         {tabs.map((tab) => {
-          const isActive = location === tab.path || 
+          const isActive =
+            location === tab.path ||
             (tab.path === '/' && location === '') ||
             (tab.path !== '/' && location.startsWith(tab.path));
           const Icon = tab.icon;
@@ -25,7 +27,7 @@ export function BottomNavigation() {
               <button
                 data-testid={`nav-${tab.id}`}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-4 py-2 transition-colors",
+                  "flex flex-col items-center gap-1 px-3 py-2 transition-colors",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >

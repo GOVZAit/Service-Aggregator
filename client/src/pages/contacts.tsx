@@ -7,44 +7,56 @@ import {
   Clock,
   Globe,
   MessageCircle,
-  ShieldAlert,
-  Car,
-  Landmark,
-  HeartPulse,
   PhoneCall,
   Navigation,
   Heart,
   X,
-  WifiOff,
-  Building2,
+  BookMarked,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { cn } from "@/lib/utils";
+import { cityOrganizations, type CityOrganization } from "@/lib/city-services-data";
+
+// Only the "contacts" category
+const CONTACTS_CATEGORY_ID = 'contacts';
+
+// Subcategory pill definitions
+const subcategoryMeta: { id: string; label: string; icon: LucideIcon }[] = [
+  { id: 'Отели',       label: 'Отели',       icon: BookMarked },
+  { id: 'Банки',       label: 'Банки',       icon: BookMarked },
+  { id: 'АЗС',        label: 'АЗС',         icon: BookMarked },
+  { id: 'Нотариусы',  label: 'Нотариусы',   icon: BookMarked },
+  { id: 'Эвакуаторы', label: 'Эвакуаторы',  icon: BookMarked },
+  { id: 'Банкоматы',  label: 'Банкоматы',   icon: BookMarked },
+];
+
+// Unique pill icons by type
 import {
-  cityOrganizations,
-  type CityOrganization,
-} from "@/lib/city-services-data";
+  Hotel,
+  Banknote,
+  Fuel,
+  FileText,
+  Truck,
+  CreditCard,
+} from "lucide-react";
 
-// Only the "city services" categories (not contacts)
-const SERVICE_CATEGORY_IDS = ['emergency', 'transport', 'government', 'medicine', 'important'];
-
-const categoryMeta: Record<string, { label: string; icon: LucideIcon; color: string }> = {
-  emergency:   { label: 'Экстренные',  icon: ShieldAlert, color: '#FF3B30' },
-  transport:   { label: 'Транспорт',   icon: Car,         color: '#007AFF' },
-  government:  { label: 'Госуслуги',   icon: Landmark,    color: '#5856D6' },
-  medicine:    { label: 'Медицина',    icon: HeartPulse,  color: '#34C759' },
-  important:   { label: 'Важные №',   icon: Phone,       color: '#AF52DE' },
+const pillIcons: Record<string, LucideIcon> = {
+  'Отели':       Hotel,
+  'Банки':       Banknote,
+  'АЗС':         Fuel,
+  'Нотариусы':   FileText,
+  'Эвакуаторы':  Truck,
+  'Банкоматы':   CreditCard,
 };
 
 type Level = 'list' | 'detail';
 
-export default function CityServicesPage() {
+export default function ContactsPage() {
   const [level, setLevel] = useState<Level>('list');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<CityOrganization | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<number[]>([]);
@@ -66,20 +78,21 @@ export default function CityServicesPage() {
     );
   };
 
-  const allServiceOrgs = useMemo(
-    () => cityOrganizations.filter((o) => SERVICE_CATEGORY_IDS.includes(o.categoryId)),
+  const allContacts = useMemo(
+    () => cityOrganizations.filter((o) => o.categoryId === CONTACTS_CATEGORY_ID),
     []
   );
 
-  const emergencyOrgs = useMemo(
-    () => cityOrganizations.filter((o) => o.isEmergency && o.importantNumber),
-    []
+  // Derive subcategories from data
+  const subcategories = useMemo(
+    () => [...new Set(allContacts.map((o) => o.subcategory))],
+    [allContacts]
   );
 
-  const filteredOrgs = useMemo(() => {
-    let result = selectedCategoryId
-      ? allServiceOrgs.filter((o) => o.categoryId === selectedCategoryId)
-      : allServiceOrgs;
+  const filteredContacts = useMemo(() => {
+    let result = selectedSubcategory
+      ? allContacts.filter((o) => o.subcategory === selectedSubcategory)
+      : allContacts;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -93,9 +106,7 @@ export default function CityServicesPage() {
     }
 
     return result;
-  }, [allServiceOrgs, selectedCategoryId, searchQuery]);
-
-  const verifiedCount = filteredOrgs.filter((o) => o.isEmergency).length;
+  }, [allContacts, selectedSubcategory, searchQuery]);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -108,7 +119,7 @@ export default function CityServicesPage() {
                 size="icon"
                 onClick={goBack}
                 className="shrink-0"
-                data-testid="button-back"
+                data-testid="button-back-contacts"
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
@@ -123,8 +134,8 @@ export default function CityServicesPage() {
                 <div>
                   <p className="text-xs text-muted-foreground">Грозный, Чечня</p>
                   <div className="flex items-center gap-1 font-semibold">
-                    <Building2 className="w-4 h-4 text-primary" />
-                    <span>Городские службы</span>
+                    <Phone className="w-4 h-4 text-primary" />
+                    <span>Полезные контакты</span>
                   </div>
                 </div>
               </div>
@@ -133,11 +144,11 @@ export default function CityServicesPage() {
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Поиск служб и организаций..."
+                  placeholder="Банки, отели, АЗС, нотариусы..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 h-10 bg-muted/50"
-                  data-testid="input-city-search"
+                  data-testid="input-contacts-search"
                 />
                 {searchQuery && (
                   <button
@@ -149,37 +160,36 @@ export default function CityServicesPage() {
                 )}
               </div>
 
-              {/* Category pills */}
+              {/* Subcategory pills */}
               <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4">
                 <button
-                  onClick={() => setSelectedCategoryId(null)}
-                  data-testid="pill-all"
+                  onClick={() => setSelectedSubcategory(null)}
+                  data-testid="pill-contacts-all"
                   className={cn(
                     "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors border",
-                    selectedCategoryId === null
+                    selectedSubcategory === null
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-background text-muted-foreground border-border hover:border-primary/40"
                   )}
                 >
                   Все
                 </button>
-                {SERVICE_CATEGORY_IDS.map((id) => {
-                  const meta = categoryMeta[id];
-                  const Icon = meta.icon;
+                {subcategories.map((sub) => {
+                  const Icon = pillIcons[sub] ?? BookMarked;
                   return (
                     <button
-                      key={id}
-                      onClick={() => setSelectedCategoryId(id === selectedCategoryId ? null : id)}
-                      data-testid={`pill-${id}`}
+                      key={sub}
+                      onClick={() => setSelectedSubcategory(sub === selectedSubcategory ? null : sub)}
+                      data-testid={`pill-contacts-${sub}`}
                       className={cn(
                         "shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors border",
-                        selectedCategoryId === id
+                        selectedSubcategory === sub
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background text-muted-foreground border-border hover:border-primary/40"
                       )}
                     >
                       <Icon className="w-3.5 h-3.5" />
-                      {meta.label}
+                      {sub}
                     </button>
                   );
                 })}
@@ -194,67 +204,34 @@ export default function CityServicesPage() {
         <main className="max-w-lg mx-auto px-4 pt-4 space-y-3">
           {/* Stats bar */}
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
-            <span className="font-semibold text-foreground">{filteredOrgs.length}</span>
-            <span>{filteredOrgs.length === 1 ? 'служба' : filteredOrgs.length < 5 ? 'службы' : 'служб'}</span>
-            {verifiedCount > 0 && (
+            <span className="font-semibold text-foreground">{filteredContacts.length}</span>
+            <span>
+              {filteredContacts.length === 1 ? 'контакт' : filteredContacts.length < 5 ? 'контакта' : 'контактов'}
+            </span>
+            {selectedSubcategory && (
               <>
                 <span className="text-border">·</span>
-                <ShieldAlert className="w-3.5 h-3.5 text-red-500" />
-                <span className="font-semibold text-red-500">{verifiedCount}</span>
-                <span>экстренных</span>
+                <span>{selectedSubcategory}</span>
               </>
             )}
           </div>
 
-          {/* Emergency banner (when all or emergency selected) */}
-          {(!selectedCategoryId || selectedCategoryId === 'emergency' || selectedCategoryId === 'important') && !searchQuery && (
-            <div className="rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <ShieldAlert className="w-5 h-5 text-red-500 shrink-0" />
-                <span className="font-semibold text-red-600 dark:text-red-400 text-sm">
-                  Экстренные номера
-                </span>
-                <WifiOff className="w-4 h-4 text-red-400 ml-auto shrink-0" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {emergencyOrgs.slice(0, 4).map((org) => (
-                  <button
-                    key={org.id}
-                    onClick={() => window.open(`tel:${org.phone}`)}
-                    data-testid={`button-emergency-${org.id}`}
-                    className="flex items-center gap-2 bg-white dark:bg-red-950/60 rounded-xl px-3 py-2.5 border border-red-100 dark:border-red-900 active:scale-95 transition-transform text-left"
-                  >
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground truncate leading-tight">
-                        {org.name}
-                      </span>
-                      <span className="font-bold text-red-600 dark:text-red-400 text-base leading-tight">
-                        {org.phone}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Organization cards */}
-          {filteredOrgs.length === 0 ? (
+          {filteredContacts.length === 0 ? (
             <div className="text-center py-14">
               <p className="text-muted-foreground mb-2">Ничего не найдено</p>
               <Button
                 variant="link"
                 onClick={() => {
                   setSearchQuery('');
-                  setSelectedCategoryId(null);
+                  setSelectedSubcategory(null);
                 }}
               >
                 Сбросить фильтры
               </Button>
             </div>
           ) : (
-            filteredOrgs.map((org) => (
-              <OrgCard
+            filteredContacts.map((org) => (
+              <ContactCard
                 key={org.id}
                 org={org}
                 isFavorite={favorites.includes(org.id)}
@@ -269,7 +246,7 @@ export default function CityServicesPage() {
       {/* DETAIL LEVEL */}
       {level === 'detail' && selectedOrg && (
         <main className="px-4 py-5 max-w-lg mx-auto">
-          <OrgDetail
+          <ContactDetail
             org={selectedOrg}
             isFavorite={favorites.includes(selectedOrg.id)}
             onToggleFavorite={(e) => toggleFavorite(selectedOrg.id, e)}
@@ -282,9 +259,9 @@ export default function CityServicesPage() {
   );
 }
 
-// ── Organization card ─────────────────────────────────────────────────────────
+// ── Contact card ──────────────────────────────────────────────────────────────
 
-function OrgCard({
+function ContactCard({
   org,
   isFavorite,
   onToggleFavorite,
@@ -295,30 +272,30 @@ function OrgCard({
   onToggleFavorite: (e: React.MouseEvent) => void;
   onClick: () => void;
 }) {
+  const Icon = pillIcons[org.subcategory] ?? BookMarked;
+
   return (
     <div
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
-      data-testid={`card-org-${org.id}`}
+      data-testid={`card-contact-${org.id}`}
       className="w-full flex flex-col gap-2.5 rounded-2xl border border-border bg-card p-4 text-left transition-all active:scale-[0.98] hover:shadow-md hover:border-primary/20 cursor-pointer"
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            {org.isEmergency && (
-              <Badge className="bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400 border-0 text-xs px-1.5 py-0">
-                Экстренная
-              </Badge>
-            )}
-            <span className="text-xs text-muted-foreground">{org.subcategory}</span>
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Icon className="w-5 h-5 text-primary" />
           </div>
-          <h3 className="font-semibold text-sm leading-tight">{org.name}</h3>
+          <div className="flex-1 min-w-0">
+            <span className="text-xs text-muted-foreground">{org.subcategory}</span>
+            <h3 className="font-semibold text-sm leading-tight">{org.name}</h3>
+          </div>
         </div>
         <button
           onClick={onToggleFavorite}
-          data-testid={`button-favorite-${org.id}`}
+          data-testid={`button-favorite-contact-${org.id}`}
           className="shrink-0 p-1 -m-1"
         >
           <Heart
@@ -347,39 +324,46 @@ function OrgCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex gap-1.5">
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={(e) => { e.stopPropagation(); window.open(`tel:${org.phone}`); }}
+          data-testid={`button-call-contact-${org.id}`}
+          className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"
+        >
+          <PhoneCall className="w-3 h-3" />
+          Позвонить
+        </button>
+        {org.address && (
           <button
-            onClick={(e) => { e.stopPropagation(); window.open(`tel:${org.phone}`); }}
-            data-testid={`button-call-${org.id}`}
-            className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(`https://yandex.ru/maps/?text=${encodeURIComponent(org.address)}`, '_blank');
+            }}
+            data-testid={`button-route-contact-${org.id}`}
+            className="inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground px-3 py-1 text-xs font-medium"
           >
-            <PhoneCall className="w-3 h-3" />
-            Позвонить
+            <Navigation className="w-3 h-3" />
+            Маршрут
           </button>
-          {org.address && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                window.open(`https://yandex.ru/maps/?text=${encodeURIComponent(org.address)}`, '_blank');
-              }}
-              data-testid={`button-route-${org.id}`}
-              className="inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground px-3 py-1 text-xs font-medium"
-            >
-              <Navigation className="w-3 h-3" />
-              Маршрут
-            </button>
-          )}
-        </div>
-        <ChevronRightIcon />
+        )}
+        {org.website && (
+          <button
+            onClick={(e) => { e.stopPropagation(); window.open(org.website, '_blank'); }}
+            data-testid={`button-site-contact-${org.id}`}
+            className="inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground px-3 py-1 text-xs font-medium"
+          >
+            <Globe className="w-3 h-3" />
+            Сайт
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-// ── Organization detail ───────────────────────────────────────────────────────
+// ── Contact detail ────────────────────────────────────────────────────────────
 
-function OrgDetail({
+function ContactDetail({
   org,
   isFavorite,
   onToggleFavorite,
@@ -388,22 +372,24 @@ function OrgDetail({
   isFavorite: boolean;
   onToggleFavorite: (e: React.MouseEvent) => void;
 }) {
+  const Icon = pillIcons[org.subcategory] ?? BookMarked;
+
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex-1 min-w-0">
-            {org.isEmergency && (
-              <Badge className="bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400 border-0 text-xs mb-2">
-                Экстренная служба
-              </Badge>
-            )}
-            <h2 className="text-lg font-bold leading-tight">{org.name}</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">{org.subcategory}</p>
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Icon className="w-6 h-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-muted-foreground">{org.subcategory}</p>
+              <h2 className="text-lg font-bold leading-tight">{org.name}</h2>
+            </div>
           </div>
           <button
             onClick={onToggleFavorite}
-            data-testid="button-favorite-detail"
+            data-testid="button-favorite-contact-detail"
             className="p-2 rounded-xl bg-muted/50"
           >
             <Heart
@@ -467,20 +453,11 @@ function OrgDetail({
           Написать в WhatsApp
         </Button>
       )}
-
-      {org.isEmergency && (
-        <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3">
-          <WifiOff className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-700 dark:text-amber-400">
-            Этот номер доступен без интернета и работает при нулевом балансе.
-          </p>
-        </div>
-      )}
     </div>
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── InfoRow ───────────────────────────────────────────────────────────────────
 
 function InfoRow({ icon, label, value, highlight, link }: {
   icon: React.ReactNode; label: string; value: string; highlight?: boolean; link?: string;
@@ -500,12 +477,4 @@ function InfoRow({ icon, label, value, highlight, link }: {
     return <a href={link} target="_blank" rel="noopener noreferrer" className="block hover:bg-muted/30 transition-colors">{inner}</a>;
   }
   return <div>{inner}</div>;
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-  );
 }
