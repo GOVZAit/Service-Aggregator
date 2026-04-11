@@ -27,12 +27,15 @@ export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardP
           </Avatar>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
+            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
               <span className="font-semibold text-foreground truncate">
                 {master.name}
               </span>
               {master.verified && (
-                <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="inline-flex items-center gap-0.5 bg-primary/10 text-primary rounded-full px-1.5 py-0.5 text-[10px] font-semibold flex-shrink-0">
+                  <BadgeCheck className="w-3 h-3" />
+                  Верифицирован
+                </span>
               )}
             </div>
             <p className="text-sm text-muted-foreground mb-1.5">{master.category}</p>

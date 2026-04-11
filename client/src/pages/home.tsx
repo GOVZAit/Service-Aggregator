@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, SlidersHorizontal, MapPin, X, Wrench, Zap, Sparkles, Hammer, Palette, Car, Package, BookOpen, type LucideIcon } from "lucide-react";
+import { Search, SlidersHorizontal, MapPin, X, BadgeCheck, Wrench, Zap, Sparkles, Hammer, Palette, Car, Package, BookOpen, type LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -141,7 +141,7 @@ export default function HomePage() {
 
       <main className="px-4 py-5 max-w-lg mx-auto">
         <section>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-bold">
               {selectedCategoryName || "Рекомендуемые"}
             </h2>
@@ -158,6 +158,24 @@ export default function HomePage() {
               </Button>
             )}
           </div>
+
+          {/* Stats row */}
+          {!mastersLoading && (
+            <div className="flex items-center gap-3 mb-4" data-testid="masters-stats">
+              <span className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{filteredMasters.length}</span>
+                {" "}мастеров
+              </span>
+              <span className="text-muted-foreground/40 text-xs">·</span>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <BadgeCheck className="w-3.5 h-3.5 text-primary" />
+                <span className="font-semibold text-foreground">
+                  {filteredMasters.filter((m) => m.verified).length}
+                </span>
+                {" "}верифицированы
+              </span>
+            </div>
+          )}
 
           {mastersLoading ? (
             <div className="space-y-3">
