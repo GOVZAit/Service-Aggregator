@@ -21,6 +21,8 @@ export interface CityOrganization {
   isEmergency?: boolean;
   importantNumber?: boolean;
   description?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export const cityCategories: CityCategory[] = [
@@ -148,6 +150,7 @@ export const cityOrganizations: CityOrganization[] = [
     district: 'Центральный',
     isEmergency: true,
     description: 'Главное управление МЧС по Чеченской Республике.',
+    lat: 43.3197, lng: 45.6944,
   },
 
   // ── TRANSPORT ──
@@ -162,6 +165,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://grozny.aero',
     district: 'Северный',
     description: 'Международный аэропорт «Грозный» им. А. А. Кадырова.',
+    lat: 43.3872, lng: 45.7037,
   },
   {
     id: 102,
@@ -174,6 +178,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://rzd.ru',
     district: 'Центральный',
     description: 'Поезда в Москву, Санкт-Петербург и другие города России.',
+    lat: 43.3245, lng: 45.7041,
   },
   {
     id: 103,
@@ -185,6 +190,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: '06:00–22:00',
     district: 'Центральный',
     description: 'Автобусы в города ЧР, соседние регионы и Москву.',
+    lat: 43.3168, lng: 45.6921,
   },
   {
     id: 104,
@@ -220,6 +226,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: '06:00–22:00',
     district: 'Центральный',
     description: 'Информация о маршрутах и расписании маршруток по Грозному.',
+    lat: 43.3152, lng: 45.6975,
   },
   {
     id: 107,
@@ -232,6 +239,7 @@ export const cityOrganizations: CityOrganization[] = [
     whatsapp: '+79288881122',
     district: 'Центральный',
     description: 'Аренда легковых автомобилей по Грозному и ЧР.',
+    lat: 43.3142, lng: 45.6940,
   },
 
   // ── GOVERNMENT ──
@@ -246,6 +254,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://mfc-chr.ru',
     district: 'Центральный',
     description: 'Государственные и муниципальные услуги: паспорта, регистрация, льготы.',
+    lat: 43.3145, lng: 45.6955,
   },
   {
     id: 202,
@@ -258,6 +267,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://grozny-city.ru',
     district: 'Центральный',
     description: 'Мэрия города Грозный. Обращения граждан, городские вопросы.',
+    lat: 43.3131, lng: 45.6962,
   },
   {
     id: 203,
@@ -270,6 +280,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://chechnya.gov.ru',
     district: 'Центральный',
     description: 'Официальный сайт Правительства Чеченской Республики.',
+    lat: 43.3129, lng: 45.6965,
   },
   {
     id: 204,
@@ -282,6 +293,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://nalog.gov.ru',
     district: 'Центральный',
     description: 'Налоговый учёт, ИНН, декларации, регистрация ИП.',
+    lat: 43.3162, lng: 45.6985,
   },
   {
     id: 205,
@@ -294,6 +306,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://sfr.gov.ru',
     district: 'Центральный',
     description: 'Пенсионное обеспечение, материнский капитал, выплаты.',
+    lat: 43.3160, lng: 45.6930,
   },
   {
     id: 206,
@@ -317,6 +330,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Пн-Пт 09:00–17:00',
     district: 'Центральный',
     description: 'Вопросы ЖКХ: отопление, водоснабжение, дороги, благоустройство.',
+    lat: 43.3158, lng: 45.6958,
   },
 
   // ── MEDICINE ──
@@ -330,6 +344,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Круглосуточно',
     district: 'Центральный',
     description: 'Главная многопрофильная больница ЧР. Экстренная и плановая помощь.',
+    lat: 43.3195, lng: 45.6960,
   },
   {
     id: 302,
@@ -341,6 +356,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Круглосуточно',
     district: 'Северный',
     description: 'Многопрофильная городская больница. Приёмное отделение 24/7.',
+    lat: 43.3430, lng: 45.7012,
   },
   {
     id: 303,
@@ -352,6 +368,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Круглосуточно',
     district: 'Центральный',
     description: 'Специализированная больница для детей.',
+    lat: 43.3200, lng: 45.6947,
   },
   {
     id: 304,
@@ -363,6 +380,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Пн-Пт 08:00–20:00, Сб 09:00–14:00',
     district: 'Центральный',
     description: 'Первичная медицинская помощь взрослому населению.',
+    lat: 43.3175, lng: 45.6965,
   },
   {
     id: 305,
@@ -374,6 +392,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Пн-Пт 08:00–20:00, Сб 09:00–14:00',
     district: 'Октябрьский',
     description: 'Амбулаторная и поликлиническая помощь населению.',
+    lat: 43.3163, lng: 45.6923,
   },
   {
     id: 306,
@@ -385,6 +404,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Круглосуточно',
     district: 'Центральный',
     description: 'Круглосуточная аптека. Широкий ассортимент лекарств.',
+    lat: 43.3148, lng: 45.6950,
   },
   {
     id: 307,
@@ -397,6 +417,7 @@ export const cityOrganizations: CityOrganization[] = [
     whatsapp: '+79287775544',
     district: 'Центральный',
     description: 'Многопрофильная частная клиника. Консультации, УЗИ, анализы.',
+    lat: 43.3100, lng: 45.6980,
   },
   {
     id: 308,
@@ -408,6 +429,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Пн-Сб 09:00–20:00',
     district: 'Центральный',
     description: 'Лечение, протезирование, имплантация зубов.',
+    lat: 43.3172, lng: 45.6968,
   },
 
   // ── CONTACTS ──
@@ -422,6 +444,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://grozny-city-hotel.ru',
     district: 'Центральный',
     description: 'Пятизвёздочный отель в центре Грозного. Вид на башни «Грозный Сити».',
+    lat: 43.3131, lng: 45.6960,
   },
   {
     id: 402,
@@ -433,6 +456,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Круглосуточно',
     district: 'Центральный',
     description: 'Комфортный отель в центре города. Конференц-зал, ресторан.',
+    lat: 43.3138, lng: 45.6937,
   },
   {
     id: 403,
@@ -445,6 +469,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://sber.ru',
     district: 'Центральный',
     description: 'Кредиты, вклады, переводы, обмен валют.',
+    lat: 43.3173, lng: 45.6963,
   },
   {
     id: 404,
@@ -457,6 +482,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://vtb.ru',
     district: 'Центральный',
     description: 'Ипотека, кредиты, расчётные счета.',
+    lat: 43.3147, lng: 45.6957,
   },
   {
     id: 405,
@@ -468,6 +494,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Пн-Пт 09:00–18:00',
     district: 'Центральный',
     description: 'Нотариальные услуги: доверенности, завещания, договоры.',
+    lat: 43.3155, lng: 45.6956,
   },
   {
     id: 406,
@@ -480,6 +507,7 @@ export const cityOrganizations: CityOrganization[] = [
     website: 'https://lukoil.ru',
     district: 'Центральный',
     description: 'Бензин, дизель, газ. Магазин и кафе.',
+    lat: 43.3178, lng: 45.6970,
   },
   {
     id: 407,
@@ -491,6 +519,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Круглосуточно',
     district: 'Октябрьский',
     description: 'Топливо Euro-5. Программа лояльности.',
+    lat: 43.3200, lng: 45.6960,
   },
   {
     id: 408,
@@ -514,6 +543,7 @@ export const cityOrganizations: CityOrganization[] = [
     hours: 'Круглосуточно',
     district: 'Центральный',
     description: 'Снятие и внесение наличных, переводы.',
+    lat: 43.3146, lng: 45.6952,
   },
 
   // ── IMPORTANT NUMBERS ──

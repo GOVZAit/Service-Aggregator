@@ -17,12 +17,15 @@ import {
   X,
   WifiOff,
   Building2,
+  List,
+  Map as MapIcon,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
 import {
   cityOrganizations,
@@ -41,9 +44,11 @@ const categoryMeta: Record<string, { label: string; icon: LucideIcon; color: str
 };
 
 type Level = 'list' | 'detail';
+type ViewMode = 'list' | 'map';
 
 export default function CityServicesPage() {
   const [level, setLevel] = useState<Level>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<CityOrganization | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,6 +57,7 @@ export default function CityServicesPage() {
   const goToDetail = (org: CityOrganization) => {
     setSelectedOrg(org);
     setLevel('detail');
+    setViewMode('list');
   };
 
   const goBack = () => {
@@ -127,6 +133,34 @@ export default function CityServicesPage() {
                     <span>Городские службы</span>
                   </div>
                 </div>
+                <div className="flex items-center rounded-xl border border-border overflow-hidden">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    data-testid="button-view-list"
+                    className={cn(
+                      "flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors",
+                      viewMode === 'list'
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    Список
+                  </button>
+                  <button
+                    onClick={() => setViewMode('map')}
+                    data-testid="button-view-map"
+                    className={cn(
+                      "flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors",
+                      viewMode === 'map'
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <MapIcon className="w-3.5 h-3.5" />
+                    Карта
+                  </button>
+                </div>
               </div>
 
               {/* Search */}
@@ -189,8 +223,16 @@ export default function CityServicesPage() {
         </div>
       </header>
 
+      {/* MAP VIEW */}
+      {level === 'list' && viewMode === 'map' && (
+        <MapView
+          organizations={filteredOrgs}
+          onSelect={(org) => goToDetail(org)}
+        />
+      )}
+
       {/* LIST LEVEL */}
-      {level === 'list' && (
+      {level === 'list' && viewMode === 'list' && (
         <main className="max-w-lg mx-auto px-4 pt-4 space-y-3">
           {/* Stats bar */}
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">

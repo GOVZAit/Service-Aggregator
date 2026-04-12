@@ -12,11 +12,14 @@ import {
   Heart,
   X,
   BookMarked,
+  List,
+  Map as MapIcon,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
 import { cityOrganizations, type CityOrganization } from "@/lib/city-services-data";
 
@@ -53,9 +56,11 @@ const pillIcons: Record<string, LucideIcon> = {
 };
 
 type Level = 'list' | 'detail';
+type ViewMode = 'list' | 'map';
 
 export default function ContactsPage() {
   const [level, setLevel] = useState<Level>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<CityOrganization | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,6 +69,7 @@ export default function ContactsPage() {
   const goToDetail = (org: CityOrganization) => {
     setSelectedOrg(org);
     setLevel('detail');
+    setViewMode('list');
   };
 
   const goBack = () => {
@@ -138,6 +144,34 @@ export default function ContactsPage() {
                     <span>Полезные контакты</span>
                   </div>
                 </div>
+                <div className="flex items-center rounded-xl border border-border overflow-hidden">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    data-testid="button-contacts-view-list"
+                    className={cn(
+                      "flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors",
+                      viewMode === 'list'
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    Список
+                  </button>
+                  <button
+                    onClick={() => setViewMode('map')}
+                    data-testid="button-contacts-view-map"
+                    className={cn(
+                      "flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors",
+                      viewMode === 'map'
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <MapIcon className="w-3.5 h-3.5" />
+                    Карта
+                  </button>
+                </div>
               </div>
 
               {/* Search */}
@@ -199,8 +233,16 @@ export default function ContactsPage() {
         </div>
       </header>
 
+      {/* MAP VIEW */}
+      {level === 'list' && viewMode === 'map' && (
+        <MapView
+          organizations={filteredContacts}
+          onSelect={(org) => goToDetail(org)}
+        />
+      )}
+
       {/* LIST LEVEL */}
-      {level === 'list' && (
+      {level === 'list' && viewMode === 'list' && (
         <main className="max-w-lg mx-auto px-4 pt-4 space-y-3">
           {/* Stats bar */}
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
