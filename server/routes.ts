@@ -114,6 +114,17 @@ export async function registerRoutes(
     res.json(request);
   });
 
+  app.post("/api/requests", async (req, res) => {
+    const { insertRequestSchema } = await import("@shared/schema");
+    const result = insertRequestSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: result.error.issues[0].message });
+    }
+    const { userName = 'Клиент', userAvatar = '' } = req.body;
+    const request = await storage.createRequest({ ...result.data, userName, userAvatar });
+    res.status(201).json(request);
+  });
+
   // ── Orders ──────────────────────────────────────────────────────────────────
 
   app.get("/api/orders", async (_req, res) => {

@@ -13,6 +13,7 @@ import { MasterCard } from "@/components/master-card";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
 import FilterSheet, { type FilterState } from "@/components/filter-sheet";
+import { BroadcastModal } from "@/components/broadcast-modal";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,8 @@ export default function HomePage() {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showFilter, setShowFilter] = useState(false);
   const [filterState, setFilterState] = useState<FilterState>({ sortBy: "rating", verifiedOnly: false });
+  const [showBroadcast, setShowBroadcast] = useState(false);
+  const [broadcastCategory, setBroadcastCategory] = useState<string | undefined>();
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -208,6 +211,24 @@ export default function HomePage() {
       </header>
 
       <main className="px-4 py-5 max-w-lg mx-auto">
+        {/* Broadcast banner */}
+        <div className="mb-4 rounded-2xl bg-gradient-to-r from-primary/10 to-violet-500/10 border border-primary/20 px-4 py-3 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+            <Zap className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground leading-tight">Нужен мастер срочно?</p>
+            <p className="text-xs text-muted-foreground leading-tight mt-0.5">Отправьте заявку сразу всем и примите первого</p>
+          </div>
+          <button
+            onClick={() => { setBroadcastCategory(selectedCategoryName ?? undefined); setShowBroadcast(true); }}
+            data-testid="button-broadcast"
+            className="shrink-0 text-xs font-bold text-white bg-primary px-3 py-2 rounded-xl whitespace-nowrap"
+          >
+            Найти
+          </button>
+        </div>
+
         <section>
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-bold">
@@ -301,6 +322,13 @@ export default function HomePage() {
           onChange={setFilterState}
           onClose={() => setShowFilter(false)}
           totalCount={filteredMasters.length}
+        />
+      )}
+
+      {showBroadcast && (
+        <BroadcastModal
+          initialCategory={broadcastCategory}
+          onClose={() => { setShowBroadcast(false); setBroadcastCategory(undefined); }}
         />
       )}
 

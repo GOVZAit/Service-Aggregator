@@ -18,6 +18,14 @@ export interface Service {
   price: string;
 }
 
+// How master controls inbound calls from clients
+export type CallMode = 'always' | 'schedule' | 'online_only' | 'disabled';
+
+export interface WorkingHours {
+  from: string; // "09:00"
+  to: string;   // "18:00"
+}
+
 export interface Master {
   id: number;
   name: string;
@@ -34,6 +42,11 @@ export interface Master {
   description: string;
   portfolio: string[];
   services: Service[];
+  // Availability & contact
+  phone?: string;
+  callMode: CallMode;
+  workingHours: WorkingHours;
+  isOnline: boolean;
 }
 
 export interface RequestUser {
@@ -121,11 +134,11 @@ export const insertMessageSchema = z.object({
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export const insertRequestSchema = z.object({
-  title: z.string().min(1),
-  category: z.string().min(1),
-  description: z.string().min(1),
-  budget: z.string().min(1),
-  location: z.string().min(1),
+  title: z.string().min(1, 'Введите заголовок'),
+  category: z.string().min(1, 'Выберите категорию'),
+  description: z.string().min(1, 'Опишите задачу'),
+  budget: z.string().min(1, 'Укажите бюджет'),
+  location: z.string().min(1, 'Укажите адрес'),
 });
 
 export type InsertRequest = z.infer<typeof insertRequestSchema>;

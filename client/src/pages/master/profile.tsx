@@ -4,9 +4,11 @@ import { useAuth } from "@/contexts/auth-context";
 import MasterBottomNavigation from "@/components/master-bottom-navigation";
 import {
   User, Phone, Briefcase, Star, Award, Edit3, LogOut,
-  Moon, Sun, ChevronRight, Plus, Camera, Check, X
+  Moon, Sun, Plus, Camera, Check, X, PhoneCall, PhoneOff,
+  Clock, Calendar, ChevronDown, ChevronUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { CallMode } from "@shared/schema";
 
 const categoryOptions = [
   "Сантехника", "Электрика", "Уборка", "Ремонт", "Красота", "Авто", "Доставка", "Репетиторы"
@@ -25,6 +27,15 @@ const portfolioPhotos = [
   "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=200&h=200&fit=crop",
 ];
 
+const CALL_MODE_OPTIONS: Array<{ id: CallMode; label: string; desc: string; icon: any }> = [
+  { id: "always", label: "Всегда доступен", desc: "Клиенты могут позвонить 24/7", icon: PhoneCall },
+  { id: "schedule", label: "По расписанию", desc: "Только в рабочие часы", icon: Clock },
+  { id: "online_only", label: "Только онлайн", desc: "Пока онлайн-статус включён", icon: Phone },
+  { id: "disabled", label: "Звонки отключены", desc: "Только чат и заявки", icon: PhoneOff },
+];
+
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
+
 export default function MasterProfilePage() {
   const { user, logout } = useAuth();
   const [, navigate] = useLocation();
@@ -37,6 +48,15 @@ export default function MasterProfilePage() {
   );
   const [descDraft, setDescDraft] = useState(description);
   const [selectedCategory, setSelectedCategory] = useState("Сантехника");
+
+  // Availability settings
+  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneDraft, setPhoneDraft] = useState(phone);
+  const [callMode, setCallMode] = useState<CallMode>("always");
+  const [workFrom, setWorkFrom] = useState("09:00");
+  const [workTo, setWorkTo] = useState("18:00");
+  const [showSchedule, setShowSchedule] = useState(false);
 
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
@@ -171,6 +191,138 @@ export default function MasterProfilePage() {
           </div>
         </section>
 
+        {/* ── Availability & Call Settings ─────────────────────────── */}
+        <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
+            <PhoneCall className="w-4 h-4 text-primary" />
+            <h3 className="font-semibold text-sm">Доступность для звонков</h3>
+          </div>
+
+          {/* Phone number */}
+          <div className="px-4 py-3 border-b border-border/60">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Номер телефона</p>
+              {!editingPhone && (
+                <button
+                  onClick={() => { setPhoneDraft(phone); setEditingPhone(true); }}
+                  data-testid="button-edit-phone"
+                  className="text-xs text-primary font-medium"
+                >
+                  Изменить
+                </button>
+              )}
+            </div>
+            {editingPhone ? (
+              <div className="flex gap-2 mt-1">
+                <input
+                  value={phoneDraft}
+                  onChange={(e) => setPhoneDraft(e.target.value)}
+                  placeholder="+7 (928) 000-00-00"
+                  data-testid="input-phone"
+                  className="flex-1 text-sm bg-muted border border-border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  onClick={() => setEditingPhone(false)}
+                  className="px-3 py-2 rounded-xl border border-border text-xs text-muted-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => { setPhone(phoneDraft); setEditingPhone(false); }}
+                  data-testid="button-save-phone"
+                  className="px-3 py-2 rounded-xl bg-primary text-white text-xs"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm font-medium mt-1">{phone || <span className="text-muted-foreground">Не указан</span>}</p>
+            )}
+          </div>
+
+          {/* Call mode */}
+          <div className="px-4 py-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Режим звонков</p>
+            {CALL_MODE_OPTIONS.map((opt) => {
+              const Icon = opt.icon;
+              const isSelected = callMode === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => {
+                    setCallMode(opt.id);
+                    if (opt.id === "schedule") setShowSchedule(true);
+                  }}
+                  data-testid={`call-mode-${opt.id}`}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-left transition-all",
+                    isSelected
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-muted/30 hover:border-primary/40"
+                  )}
+                >
+                  <div className={cn(
+                    "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+                    isSelected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  )}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className={cn("text-sm font-semibold", isSelected ? "text-primary" : "text-foreground")}>{opt.label}</p>
+                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                  </div>
+                  {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Working hours (shown when schedule mode) */}
+          {callMode === "schedule" && (
+            <div className="px-4 pb-4">
+              <button
+                onClick={() => setShowSchedule((v) => !v)}
+                className="w-full flex items-center justify-between text-sm font-semibold text-primary border border-primary/30 rounded-xl px-4 py-2.5 mb-3"
+                data-testid="button-toggle-schedule"
+              >
+                <span className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Рабочие часы: {workFrom} — {workTo}
+                </span>
+                {showSchedule ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+
+              {showSchedule && (
+                <div className="flex items-center gap-3 bg-muted/50 rounded-xl px-4 py-3">
+                  <div className="flex-1 space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">Начало</p>
+                    <select
+                      value={workFrom}
+                      onChange={(e) => setWorkFrom(e.target.value)}
+                      data-testid="select-work-from"
+                      className="w-full bg-background border border-border rounded-lg px-2 py-1.5 text-sm font-semibold outline-none"
+                    >
+                      {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </div>
+                  <div className="text-muted-foreground font-bold mt-4">—</div>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">Конец</p>
+                    <select
+                      value={workTo}
+                      onChange={(e) => setWorkTo(e.target.value)}
+                      data-testid="select-work-to"
+                      className="w-full bg-background border border-border rounded-lg px-2 py-1.5 text-sm font-semibold outline-none"
+                    >
+                      {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
         {/* My services */}
         <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
           <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
@@ -215,7 +367,7 @@ export default function MasterProfilePage() {
         {/* Settings */}
         <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
           <div className="px-4 py-3 border-b border-border/60">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide text-xs">Настройки</h3>
+            <h3 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">Настройки</h3>
           </div>
           <button
             onClick={toggleTheme}

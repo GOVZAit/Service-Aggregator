@@ -26,6 +26,10 @@ const mastersData: Master[] = [
       { name: 'Прочистка засора', price: '2 000 ₽' },
       { name: 'Замена труб', price: 'от 5 000 ₽' },
     ],
+    phone: '+7 (928) 111-22-33',
+    callMode: 'always',
+    workingHours: { from: '08:00', to: '20:00' },
+    isOnline: true,
   },
   {
     id: 2,
@@ -52,6 +56,10 @@ const mastersData: Master[] = [
       { name: 'Генеральная уборка', price: 'от 5 000 ₽' },
       { name: 'Мытьё окон', price: '500 ₽/окно' },
     ],
+    phone: '+7 (928) 222-33-44',
+    callMode: 'schedule',
+    workingHours: { from: '09:00', to: '18:00' },
+    isOnline: true,
   },
   {
     id: 3,
@@ -78,6 +86,10 @@ const mastersData: Master[] = [
       { name: 'Разводка проводки', price: 'от 10 000 ₽' },
       { name: 'Установка щитка', price: '5 000 ₽' },
     ],
+    phone: '+7 (928) 333-44-55',
+    callMode: 'online_only',
+    workingHours: { from: '09:00', to: '19:00' },
+    isOnline: false,
   },
   {
     id: 4,
@@ -104,6 +116,10 @@ const mastersData: Master[] = [
       { name: 'Наращивание', price: '3 000 ₽' },
       { name: 'Дизайн', price: 'от 500 ₽' },
     ],
+    phone: '+7 (928) 444-55-66',
+    callMode: 'disabled',
+    workingHours: { from: '10:00', to: '20:00' },
+    isOnline: false,
   },
   {
     id: 5,
@@ -130,6 +146,10 @@ const mastersData: Master[] = [
       { name: 'Поклейка обоев', price: '400 ₽/м²' },
       { name: 'Косметический ремонт', price: 'от 30 000 ₽' },
     ],
+    phone: '+7 (928) 555-66-77',
+    callMode: 'always',
+    workingHours: { from: '08:00', to: '18:00' },
+    isOnline: true,
   },
   {
     id: 6,
@@ -156,6 +176,10 @@ const mastersData: Master[] = [
       { name: 'Ремонт ходовой', price: 'от 5 000 ₽' },
       { name: 'Замена тормозов', price: '3 500 ₽' },
     ],
+    phone: '+7 (928) 666-77-88',
+    callMode: 'schedule',
+    workingHours: { from: '09:00', to: '19:00' },
+    isOnline: true,
   },
   {
     id: 7,
@@ -182,6 +206,10 @@ const mastersData: Master[] = [
       { name: 'Подготовка к ОГЭ', price: '1 000 ₽/час' },
       { name: 'Подготовка к ЕГЭ', price: '1 200 ₽/час' },
     ],
+    phone: '+7 (928) 777-88-99',
+    callMode: 'online_only',
+    workingHours: { from: '10:00', to: '21:00' },
+    isOnline: false,
   },
   {
     id: 8,
@@ -208,6 +236,10 @@ const mastersData: Master[] = [
       { name: 'Помощь с переездом', price: 'от 2 000 ₽' },
       { name: 'Грузчик (1 час)', price: '600 ₽' },
     ],
+    phone: '+7 (928) 888-99-00',
+    callMode: 'always',
+    workingHours: { from: '07:00', to: '23:00' },
+    isOnline: true,
   },
 ];
 
@@ -290,18 +322,19 @@ export interface IStorage {
   getMasterById(id: number): Promise<Master | undefined>;
   getMastersByCategory(categoryId: number): Promise<Master[]>;
   searchMasters(query: string): Promise<Master[]>;
-  
+
   getRequests(): Promise<ServiceRequest[]>;
   getRequestById(id: number): Promise<ServiceRequest | undefined>;
-  
+  createRequest(data: Omit<ServiceRequest, 'id' | 'postedAt' | 'responses' | 'user'> & { userName: string; userAvatar: string }): Promise<ServiceRequest>;
+
   getOrders(): Promise<Order[]>;
   getOrderById(id: number): Promise<Order | undefined>;
-  
+
   getMessages(masterId: number): Promise<ChatMessage[]>;
   addMessage(masterId: number, message: ChatMessage): Promise<ChatMessage>;
 
   // Auth
-  createUser(data: { name: string; phone: string; passwordHash: string }): Promise<AuthUser>;
+  createUser(data: { name: string; phone: string; passwordHash: string; role: 'client' | 'master' }): Promise<AuthUser>;
   getUserByPhone(phone: string): Promise<AuthUser | undefined>;
   getUserById(id: number): Promise<AuthUser | undefined>;
 }
@@ -313,6 +346,7 @@ export class MemStorage implements IStorage {
   private chatMessages: Map<number, ChatMessage[]>;
   private users: Map<number, AuthUser>;
   private nextUserId: number;
+  private nextRequestId: number;
 
   constructor() {
     this.masters = [...mastersData];
@@ -321,6 +355,7 @@ export class MemStorage implements IStorage {
     this.chatMessages = new Map();
     this.users = new Map();
     this.nextUserId = 1;
+    this.nextRequestId = requestsData.length + 1;
   }
 
   async getMasters(): Promise<Master[]> {
@@ -337,7 +372,7 @@ export class MemStorage implements IStorage {
 
   async searchMasters(query: string): Promise<Master[]> {
     const q = query.toLowerCase();
-    return this.masters.filter(m => 
+    return this.masters.filter(m =>
       m.name.toLowerCase().includes(q) ||
       m.category.toLowerCase().includes(q) ||
       m.description.toLowerCase().includes(q)
@@ -345,11 +380,27 @@ export class MemStorage implements IStorage {
   }
 
   async getRequests(): Promise<ServiceRequest[]> {
-    return this.requests;
+    return [...this.requests].reverse();
   }
 
   async getRequestById(id: number): Promise<ServiceRequest | undefined> {
     return this.requests.find(r => r.id === id);
+  }
+
+  async createRequest(data: Omit<ServiceRequest, 'id' | 'postedAt' | 'responses' | 'user'> & { userName: string; userAvatar: string }): Promise<ServiceRequest> {
+    const request: ServiceRequest = {
+      id: this.nextRequestId++,
+      title: data.title,
+      category: data.category,
+      description: data.description,
+      budget: data.budget,
+      location: data.location,
+      postedAt: 'только что',
+      responses: 0,
+      user: { name: data.userName, avatar: data.userAvatar },
+    };
+    this.requests.push(request);
+    return request;
   }
 
   async getOrders(): Promise<Order[]> {

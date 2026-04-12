@@ -57,6 +57,26 @@ Preferred communication style: Simple, everyday language.
 - Orders (booked services with status tracking)
 - ChatMessages (in-profile messaging)
 
+### Call Availability System
+Each master has a `callMode` field controlling when their phone number is active for clients:
+- `always` — Кнопка "Позвонить" активна 24/7
+- `schedule` — Активна только в рабочие часы (`workingHours.from`–`workingHours.to`)
+- `online_only` — Активна только пока онлайн-переключатель включён (`isOnline: true`)
+- `disabled` — Звонки полностью отключены; клиент видит "Звонки откл."
+
+Client-facing master profile shows the call button state with contextual hints ("Офлайн", "Принимает звонки 09:00–18:00", etc). Clicking "Позвонить" reveals the number, second click opens tel: link.
+
+Executor sets their phone, callMode, and working hours in the `/master/profile` availability section.
+
+### Broadcast Request (Автопоиск)
+Clients can tap "Найти" on the home page banner to open a 3-step wizard:
+1. Category selection
+2. Description + budget
+3. Address + summary
+
+On submit, calls `POST /api/requests` which stores the request visible to ALL masters in that category. First master to accept from their orders queue gets the job.
+New requests appear at the top of the `/api/requests` list (reversed order).
+
 ### Authentication & Roles
 - **Session-based auth** with express-session (SESSION_SECRET env var)
 - **Password hashing**: bcryptjs

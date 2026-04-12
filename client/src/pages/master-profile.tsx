@@ -3,11 +3,10 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Heart, MapPin, Clock, BadgeCheck, Shield,
-  MessageCircle, Phone, Send, Image as ImageIcon, Loader2, Star,
+  MessageCircle, Phone, PhoneOff, Send, Image as ImageIcon, Loader2, Star,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,6 +15,44 @@ import { RatingStars } from "@/components/ui/rating-stars";
 import { BookingModal } from "@/components/booking-modal";
 import { apiRequest } from "@/lib/queryClient";
 import type { Master, ChatMessage } from "@shared/schema";
+
+// ── Call availability logic ───────────────────────────────────────────────────
+
+type CallState =
+  | { status: 'active'; phone: string }
+  | { status: 'offline'; note: string }
+  | { status: 'outside_hours'; note: string }
+  | { status: 'disabled' };
+
+function getCallState(master: Master): CallState {
+  if (master.callMode === 'disabled') return { status: 'disabled' };
+
+  if (master.callMode === 'always') {
+    return { status: 'active', phone: master.phone ?? '' };
+  }
+
+  if (master.callMode === 'online_only') {
+    if (master.isOnline) return { status: 'active', phone: master.phone ?? '' };
+    return { status: 'offline', note: 'Мастер сейчас офлайн' };
+  }
+
+  // schedule
+  const now = new Date();
+  const [fH, fM] = (master.workingHours?.from ?? '09:00').split(':').map(Number);
+  const [tH, tM] = (master.workingHours?.to ?? '18:00').split(':').map(Number);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const fromMin = fH * 60 + fM;
+  const toMin = tH * 60 + tM;
+  if (nowMin >= fromMin && nowMin < toMin) {
+    return { status: 'active', phone: master.phone ?? '' };
+  }
+  return {
+    status: 'outside_hours',
+    note: `Принимает звонки ${master.workingHours?.from ?? '09:00'}–${master.workingHours?.to ?? '18:00'}`,
+  };
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
 
 const reviewsByMasterId: Record<number, Array<{ name: string; avatar: string; rating: number; text: string; date: string; service: string }>> = {
   1: [
@@ -48,6 +85,8 @@ function StarRow({ rating }: { rating: number }) {
   );
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function MasterProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
@@ -56,6 +95,7 @@ export default function MasterProfilePage() {
   const [showChat, setShowChat] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [newMessage, setNewMessage] = useState("");
+  const [revealPhone, setRevealPhone] = useState(false);
 
   const masterId = Number(id);
 
@@ -91,6 +131,7 @@ export default function MasterProfilePage() {
     sendMessageMutation.mutate(newMessage);
   };
 
+  // ── Loading state ─────────────────────────────────────────────────────────
   if (masterLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -136,8 +177,9 @@ export default function MasterProfilePage() {
   }
 
   const reviews = reviewsByMasterId[masterId] ?? defaultReviews;
+  const callState = getCallState(master);
 
-  // ── Chat view ────────────────────────────────────────────────────────────────
+  // ── Chat view ─────────────────────────────────────────────────────────────
   if (showChat) {
     const allMessages = messages.length > 0 ? messages : [
       { id: 1, text: 'Здравствуйте! Чем могу помочь?', sender: 'master' as const, time: '10:30' }
@@ -157,9 +199,13 @@ export default function MasterProfilePage() {
               <p className="font-semibold truncate">{master.name}</p>
               <p className="text-xs text-green-500 font-medium">онлайн</p>
             </div>
-            <Button variant="ghost" size="icon">
-              <Phone className="w-5 h-5" />
-            </Button>
+            {callState.status === 'active' && (
+              <a href={`tel:${callState.phone}`}>
+                <Button variant="ghost" size="icon">
+                  <Phone className="w-5 h-5" />
+                </Button>
+              </a>
+            )}
           </div>
         </header>
 
@@ -210,7 +256,7 @@ export default function MasterProfilePage() {
     );
   }
 
-  // ── Profile view ─────────────────────────────────────────────────────────────
+  // ── Profile view ──────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background pb-24">
       {showBooking && (
@@ -316,7 +362,6 @@ export default function MasterProfilePage() {
           </TabsContent>
 
           <TabsContent value="reviews" className="mt-4 space-y-3">
-            {/* Rating summary */}
             <div className="rounded-xl bg-muted p-4 flex items-center gap-4">
               <div className="text-center">
                 <p className="text-4xl font-bold">{master.rating}</p>
@@ -331,10 +376,7 @@ export default function MasterProfilePage() {
                     <div key={stars} className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground w-3">{stars}</span>
                       <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-yellow-400 rounded-full transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
+                        <div className="h-full bg-yellow-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   );
@@ -349,9 +391,7 @@ export default function MasterProfilePage() {
                     {review.avatar ? (
                       <AvatarImage src={review.avatar} alt={review.name} className="object-cover" />
                     ) : null}
-                    <AvatarFallback className="text-xs font-bold">
-                      {review.name.slice(0, 2)}
-                    </AvatarFallback>
+                    <AvatarFallback className="text-xs font-bold">{review.name.slice(0, 2)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
@@ -360,9 +400,7 @@ export default function MasterProfilePage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <StarRow rating={review.rating} />
-                      {review.service && (
-                        <span className="text-xs text-muted-foreground">· {review.service}</span>
-                      )}
+                      {review.service && <span className="text-xs text-muted-foreground">· {review.service}</span>}
                     </div>
                   </div>
                 </div>
@@ -373,25 +411,78 @@ export default function MasterProfilePage() {
         </Tabs>
       </main>
 
-      {/* Action bar */}
+      {/* ── Action bar ──────────────────────────────────────────────────────── */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 safe-area-pb z-30">
-        <div className="flex gap-3 max-w-lg mx-auto">
-          <Button
-            variant="outline"
-            className="flex-1 rounded-xl"
-            onClick={() => setShowChat(true)}
-            data-testid="button-chat"
-          >
-            <MessageCircle className="w-5 h-5 mr-2" />
-            Написать
-          </Button>
-          <Button
-            className="flex-1 rounded-xl"
-            onClick={() => setShowBooking(true)}
-            data-testid="button-book"
-          >
-            Записаться
-          </Button>
+        <div className="max-w-lg mx-auto space-y-2">
+          {/* Call state banner */}
+          {callState.status !== 'active' && callState.status !== 'disabled' && (
+            <div className="text-center text-xs text-muted-foreground bg-muted rounded-xl px-3 py-2">
+              {callState.status === 'offline' && `📵 ${callState.note}`}
+              {callState.status === 'outside_hours' && `🕐 ${callState.note}`}
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1 rounded-xl"
+              onClick={() => setShowChat(true)}
+              data-testid="button-chat"
+            >
+              <MessageCircle className="w-5 h-5 mr-2" />
+              Написать
+            </Button>
+
+            {callState.status === 'active' ? (
+              revealPhone ? (
+                <a
+                  href={`tel:${callState.phone}`}
+                  data-testid="link-call"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-green-600 text-white text-sm font-semibold"
+                >
+                  <Phone className="w-4 h-4" />
+                  {callState.phone}
+                </a>
+              ) : (
+                <Button
+                  className="flex-1 rounded-xl bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => setRevealPhone(true)}
+                  data-testid="button-call"
+                >
+                  <Phone className="w-4 h-4 mr-2" />
+                  Позвонить
+                </Button>
+              )
+            ) : callState.status === 'disabled' ? (
+              <Button
+                variant="outline"
+                disabled
+                className="flex-1 rounded-xl opacity-50"
+                data-testid="button-call-disabled"
+              >
+                <PhoneOff className="w-4 h-4 mr-2" />
+                Звонки откл.
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                disabled
+                className="flex-1 rounded-xl opacity-60"
+                data-testid="button-call-unavailable"
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                Недоступен
+              </Button>
+            )}
+
+            <Button
+              className="flex-1 rounded-xl"
+              onClick={() => setShowBooking(true)}
+              data-testid="button-book"
+            >
+              Записаться
+            </Button>
+          </div>
         </div>
       </div>
     </div>
