@@ -1,4 +1,4 @@
-import type { Master, ServiceRequest, Order, ChatMessage } from "@shared/schema";
+import type { Master, ServiceRequest, Order, ChatMessage, AuthUser } from "@shared/schema";
 
 const mastersData: Master[] = [
   {
@@ -299,6 +299,11 @@ export interface IStorage {
   
   getMessages(masterId: number): Promise<ChatMessage[]>;
   addMessage(masterId: number, message: ChatMessage): Promise<ChatMessage>;
+
+  // Auth
+  createUser(data: { name: string; phone: string; passwordHash: string }): Promise<AuthUser>;
+  getUserByPhone(phone: string): Promise<AuthUser | undefined>;
+  getUserById(id: number): Promise<AuthUser | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -306,12 +311,16 @@ export class MemStorage implements IStorage {
   private requests: ServiceRequest[];
   private orders: Order[];
   private chatMessages: Map<number, ChatMessage[]>;
+  private users: Map<number, AuthUser>;
+  private nextUserId: number;
 
   constructor() {
     this.masters = [...mastersData];
     this.requests = [...requestsData];
     this.orders = [...ordersData];
     this.chatMessages = new Map();
+    this.users = new Map();
+    this.nextUserId = 1;
   }
 
   async getMasters(): Promise<Master[]> {
@@ -360,6 +369,29 @@ export class MemStorage implements IStorage {
     messages.push(message);
     this.chatMessages.set(masterId, messages);
     return message;
+  }
+
+  async createUser(data: { name: string; phone: string; passwordHash: string }): Promise<AuthUser> {
+    const user: AuthUser = {
+      id: this.nextUserId++,
+      name: data.name,
+      phone: data.phone,
+      passwordHash: data.passwordHash,
+      createdAt: new Date().toISOString(),
+    };
+    this.users.set(user.id, user);
+    return user;
+  }
+
+  async getUserByPhone(phone: string): Promise<AuthUser | undefined> {
+    for (const user of this.users.values()) {
+      if (user.phone === phone) return user;
+    }
+    return undefined;
+  }
+
+  async getUserById(id: number): Promise<AuthUser | undefined> {
+    return this.users.get(id);
   }
 }
 

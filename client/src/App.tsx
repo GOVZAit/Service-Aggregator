@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect } from "react";
+import { AuthProvider } from "@/contexts/auth-context";
 import HomePage from "@/pages/home";
 import MasterProfilePage from "@/pages/master-profile";
 import RequestsPage from "@/pages/requests";
@@ -11,6 +12,7 @@ import OrdersPage from "@/pages/orders";
 import ProfilePage from "@/pages/profile";
 import CityServicesPage from "@/pages/city-services";
 import ContactsPage from "@/pages/contacts";
+import AuthPage from "@/pages/auth";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -23,6 +25,7 @@ function Router() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/city" component={CityServicesPage} />
       <Route path="/contacts" component={ContactsPage} />
+      <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -46,11 +49,13 @@ function ThemeInitializer() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ThemeInitializer />
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <ThemeInitializer />
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

@@ -57,6 +57,17 @@ Preferred communication style: Simple, everyday language.
 - Orders (booked services with status tracking)
 - ChatMessages (in-profile messaging)
 
+### Authentication
+- **Session-based auth** with express-session (SESSION_SECRET env var)
+- **Password hashing**: bcryptjs
+- **Registration**: name + phone number + password (POST /api/auth/register)
+- **Login**: phone number + password (POST /api/auth/login)
+- **Session check**: GET /api/auth/me (returns current user or 401)
+- **Logout**: POST /api/auth/logout
+- **Frontend**: AuthContext at `client/src/contexts/auth-context.tsx` wraps entire app
+- **Auth page**: `/auth` with Вход/Регистрация tab toggle; supports `?tab=register`
+- **Profile page**: shows login prompt if not authenticated; shows real user data when logged in
+
 ### Build System
 - **Development**: `npm run dev` - tsx runs server with Vite middleware
 - **Production Build**: `npm run build` - Vite builds client, esbuild bundles server

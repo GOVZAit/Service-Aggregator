@@ -81,6 +81,34 @@ export interface User {
   favoritesCount: number;
 }
 
+// ── Auth types ────────────────────────────────────────────────────────────────
+
+export interface AuthUser {
+  id: number;
+  name: string;
+  phone: string;
+  passwordHash: string;
+  createdAt: string;
+}
+
+export type PublicUser = Omit<AuthUser, 'passwordHash'>;
+
+export const registerSchema = z.object({
+  name: z.string().min(2, 'Минимум 2 символа'),
+  phone: z.string().min(6, 'Введите номер телефона'),
+  password: z.string().min(6, 'Минимум 6 символов'),
+});
+
+export const loginSchema = z.object({
+  phone: z.string().min(1, 'Введите номер телефона'),
+  password: z.string().min(1, 'Введите пароль'),
+});
+
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+
+// ── Messages / requests ───────────────────────────────────────────────────────
+
 export const insertMessageSchema = z.object({
   text: z.string().min(1),
   sender: z.enum(['user', 'master']),
