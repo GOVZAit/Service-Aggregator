@@ -63,7 +63,7 @@ export default function AuthPage() {
     setError("");
     try {
       const newUser = await register(values.name, values.phone, values.password, selectedRole);
-      navigate(newUser.role === "master" ? "/master" : "/");
+      navigate(newUser.role === "master" ? "/master/onboarding" : "/");
     } catch (e: any) {
       setError(e.message);
     }

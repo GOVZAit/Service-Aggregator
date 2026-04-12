@@ -21,9 +21,10 @@ import NotFound from "@/pages/not-found";
 import MasterDashboardPage from "@/pages/master/dashboard";
 import MasterOrdersPage from "@/pages/master/orders";
 import MasterProfileEditPage from "@/pages/master/profile";
+import MasterOnboardingPage from "@/pages/master/onboarding";
 
 // Executor-only routes (executor interface)
-const EXECUTOR_ROUTES = ["/master", "/master/orders", "/master/profile"];
+const EXECUTOR_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding"];
 
 function isExecutorRoute(path: string) {
   return EXECUTOR_ROUTES.includes(path);
@@ -59,6 +60,7 @@ function Router() {
         <Route path="/master" component={MasterDashboardPage} />
         <Route path="/master/orders" component={MasterOrdersPage} />
         <Route path="/master/profile" component={MasterProfileEditPage} />
+        <Route path="/master/onboarding" component={MasterOnboardingPage} />
 
         {/* Client routes */}
         <Route path="/" component={HomePage} />
