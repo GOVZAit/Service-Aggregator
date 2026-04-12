@@ -3,7 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Phone, Lock, User, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Phone, Lock, User, ArrowLeft, Briefcase, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/form";
 import { useAuth } from "@/contexts/auth-context";
 import { registerSchema, loginSchema } from "@shared/schema";
+import { cn } from "@/lib/utils";
+import type { UserRole } from "@shared/schema";
 
 const registerFormSchema = registerSchema
   .extend({ confirmPassword: z.string().min(1, "Повторите пароль") })
@@ -35,24 +37,23 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
+  const [selectedRole, setSelectedRole] = useState<UserRole>("client");
 
-  // Login form
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: { phone: "", password: "" },
   });
 
-  // Register form
   const registerForm = useForm({
     resolver: zodResolver(registerFormSchema),
-    defaultValues: { name: "", phone: "", password: "", confirmPassword: "" },
+    defaultValues: { name: "", phone: "", password: "", confirmPassword: "", role: "client" as UserRole },
   });
 
   const onLogin = async (values: { phone: string; password: string }) => {
     setError("");
     try {
-      await login(values.phone, values.password);
-      navigate("/profile");
+      const loggedUser = await login(values.phone, values.password);
+      navigate(loggedUser.role === "master" ? "/master" : "/");
     } catch (e: any) {
       setError(e.message);
     }
@@ -61,8 +62,8 @@ export default function AuthPage() {
   const onRegister = async (values: { name: string; phone: string; password: string }) => {
     setError("");
     try {
-      await register(values.name, values.phone, values.password);
-      navigate("/profile");
+      const newUser = await register(values.name, values.phone, values.password, selectedRole);
+      navigate(newUser.role === "master" ? "/master" : "/");
     } catch (e: any) {
       setError(e.message);
     }
@@ -70,7 +71,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="px-4 pt-12 pb-6 max-w-lg mx-auto w-full">
         <button
           onClick={() => navigate("/")}
@@ -86,7 +86,6 @@ export default function AuthPage() {
           <p className="text-muted-foreground text-sm">Сервисы и мастера Грозного</p>
         </div>
 
-        {/* Tabs */}
         <div className="flex bg-muted rounded-2xl p-1">
           <button
             onClick={() => { setTab("login"); setError(""); }}
@@ -113,9 +112,7 @@ export default function AuthPage() {
         </div>
       </header>
 
-      {/* Form */}
       <main className="flex-1 px-4 max-w-lg mx-auto w-full">
-        {/* Error */}
         {error && (
           <div className="rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-4 py-3 text-sm text-red-600 dark:text-red-400 mb-4">
             {error}
@@ -135,12 +132,7 @@ export default function AuthPage() {
                     <FormControl>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          {...field}
-                          placeholder="+7 (999) 000-00-00"
-                          className="pl-9"
-                          data-testid="input-login-phone"
-                        />
+                        <Input {...field} placeholder="+7 (999) 000-00-00" className="pl-9" data-testid="input-login-phone" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -163,11 +155,7 @@ export default function AuthPage() {
                           className="pl-9 pr-10"
                           data-testid="input-login-password"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        >
+                        <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
@@ -192,6 +180,48 @@ export default function AuthPage() {
         {tab === "register" && (
           <Form {...registerForm}>
             <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
+
+              {/* Role selector */}
+              <div>
+                <p className="text-sm font-medium mb-2">Я регистрируюсь как</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole("client")}
+                    data-testid="role-client"
+                    className={cn(
+                      "flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all",
+                      selectedRole === "client"
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-card hover:border-primary/40"
+                    )}
+                  >
+                    <UserRound className={cn("w-6 h-6", selectedRole === "client" ? "text-primary" : "text-muted-foreground")} />
+                    <div className="text-center">
+                      <p className={cn("text-sm font-semibold", selectedRole === "client" ? "text-primary" : "text-foreground")}>Клиент</p>
+                      <p className="text-xs text-muted-foreground">Ищу мастера</p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole("master")}
+                    data-testid="role-master"
+                    className={cn(
+                      "flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all",
+                      selectedRole === "master"
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-card hover:border-primary/40"
+                    )}
+                  >
+                    <Briefcase className={cn("w-6 h-6", selectedRole === "master" ? "text-primary" : "text-muted-foreground")} />
+                    <div className="text-center">
+                      <p className={cn("text-sm font-semibold", selectedRole === "master" ? "text-primary" : "text-foreground")}>Исполнитель</p>
+                      <p className="text-xs text-muted-foreground">Выполняю заказы</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               <FormField
                 control={registerForm.control}
                 name="name"
@@ -201,12 +231,7 @@ export default function AuthPage() {
                     <FormControl>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          {...field}
-                          placeholder="Ваше имя"
-                          className="pl-9"
-                          data-testid="input-register-name"
-                        />
+                        <Input {...field} placeholder="Ваше имя" className="pl-9" data-testid="input-register-name" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -222,12 +247,7 @@ export default function AuthPage() {
                     <FormControl>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          {...field}
-                          placeholder="+7 (999) 000-00-00"
-                          className="pl-9"
-                          data-testid="input-register-phone"
-                        />
+                        <Input {...field} placeholder="+7 (999) 000-00-00" className="pl-9" data-testid="input-register-phone" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -250,11 +270,7 @@ export default function AuthPage() {
                           className="pl-9 pr-10"
                           data-testid="input-register-password"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        >
+                        <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
@@ -279,11 +295,7 @@ export default function AuthPage() {
                           className="pl-9 pr-10"
                           data-testid="input-register-confirm"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirm((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        >
+                        <button type="button" onClick={() => setShowConfirm((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                           {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
@@ -298,7 +310,11 @@ export default function AuthPage() {
                 disabled={registerForm.formState.isSubmitting}
                 data-testid="button-register-submit"
               >
-                {registerForm.formState.isSubmitting ? "Регистрируем..." : "Создать аккаунт"}
+                {registerForm.formState.isSubmitting
+                  ? "Регистрируем..."
+                  : selectedRole === "master"
+                  ? "Зарегистрироваться как исполнитель"
+                  : "Создать аккаунт"}
               </Button>
             </form>
           </Form>

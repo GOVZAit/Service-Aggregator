@@ -57,16 +57,26 @@ Preferred communication style: Simple, everyday language.
 - Orders (booked services with status tracking)
 - ChatMessages (in-profile messaging)
 
-### Authentication
+### Authentication & Roles
 - **Session-based auth** with express-session (SESSION_SECRET env var)
 - **Password hashing**: bcryptjs
-- **Registration**: name + phone number + password (POST /api/auth/register)
+- **Registration**: name + phone number + password + role (POST /api/auth/register)
 - **Login**: phone number + password (POST /api/auth/login)
-- **Session check**: GET /api/auth/me (returns current user or 401)
+- **Session check**: GET /api/auth/me (returns current user with role or 401)
 - **Logout**: POST /api/auth/logout
 - **Frontend**: AuthContext at `client/src/contexts/auth-context.tsx` wraps entire app
-- **Auth page**: `/auth` with Вход/Регистрация tab toggle; supports `?tab=register`
-- **Profile page**: shows login prompt if not authenticated; shows real user data when logged in
+- **Auth page**: `/auth` with Вход/Регистрация tab toggle; supports `?tab=register`; role selector cards (Клиент / Исполнитель) on registration
+- **Roles**: `UserRole = 'client' | 'master'` — stored in AuthUser, returned in PublicUser
+- **Role routing**: `RoleGuard` component in App.tsx auto-redirects based on role after login; masters → `/master`, clients → `/`
+
+### Executor (Master) Interface
+Routes under `/master` prefix — completely separate from client interface:
+- `/master` — Dashboard: online toggle, stats (views/orders/earnings), new incoming requests, quick tips
+- `/master/orders` — Заявки with 3 tabs: Новые (accept/decline), Активные (call client), Завершённые (with reviews)  
+- `/master/profile` — Профиль: avatar, description editor, category selector, services list, portfolio grid, theme toggle, logout
+- **Bottom navigation**: `client/src/components/master-bottom-navigation.tsx` — 3 tabs (Главная/Заявки/Профиль)
+- **RoleGuard**: Executors redirected to `/master` if they visit client routes; clients redirected to `/` if they visit executor routes
+- Route ordering: executor routes declared before `/master/:id` in Switch to avoid parameterized route conflicts
 
 ### Build System
 - **Development**: `npm run dev` - tsx runs server with Vite middleware

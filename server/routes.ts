@@ -22,7 +22,7 @@ export async function registerRoutes(
     if (!result.success) {
       return res.status(400).json({ message: result.error.issues[0].message });
     }
-    const { name, phone, password } = result.data;
+    const { name, phone, password, role } = result.data;
 
     const existing = await storage.getUserByPhone(phone);
     if (existing) {
@@ -30,7 +30,7 @@ export async function registerRoutes(
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await storage.createUser({ name, phone, passwordHash });
+    const user = await storage.createUser({ name, phone, passwordHash, role: role ?? 'client' });
 
     req.session.userId = user.id;
     const { passwordHash: _, ...publicUser } = user;

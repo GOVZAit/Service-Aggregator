@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import type { PublicUser } from "@shared/schema";
+import type { PublicUser, UserRole } from "@shared/schema";
 
 interface AuthContextValue {
   user: PublicUser | null;
   isLoading: boolean;
-  login: (phone: string, password: string) => Promise<void>;
-  register: (name: string, phone: string, password: string) => Promise<void>;
+  login: (phone: string, password: string) => Promise<PublicUser>;
+  register: (name: string, phone: string, password: string, role: UserRole) => Promise<PublicUser>;
   logout: () => Promise<void>;
 }
 
@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const login = useCallback(async (phone: string, password: string) => {
+  const login = useCallback(async (phone: string, password: string): Promise<PublicUser> => {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -32,17 +32,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Ошибка входа");
     setUser(data.user);
+    return data.user;
   }, []);
 
-  const register = useCallback(async (name: string, phone: string, password: string) => {
+  const register = useCallback(async (name: string, phone: string, password: string, role: UserRole): Promise<PublicUser> => {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone, password }),
+      body: JSON.stringify({ name, phone, password, role }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Ошибка регистрации");
     setUser(data.user);
+    return data.user;
   }, []);
 
   const logout = useCallback(async () => {

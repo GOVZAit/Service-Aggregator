@@ -83,11 +83,14 @@ export interface User {
 
 // ── Auth types ────────────────────────────────────────────────────────────────
 
+export type UserRole = 'client' | 'master';
+
 export interface AuthUser {
   id: number;
   name: string;
   phone: string;
   passwordHash: string;
+  role: UserRole;
   createdAt: string;
 }
 
@@ -97,6 +100,7 @@ export const registerSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   phone: z.string().min(6, 'Введите номер телефона'),
   password: z.string().min(6, 'Минимум 6 символов'),
+  role: z.enum(['client', 'master']).default('client'),
 });
 
 export const loginSchema = z.object({
