@@ -82,7 +82,7 @@ export default function AuthPage() {
         </button>
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-1">GOVZAservice</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-1">995</h1>
           <p className="text-muted-foreground text-sm">Сервисы и мастера Грозного</p>
         </div>
 
@@ -321,7 +321,7 @@ export default function AuthPage() {
         )}
 
         <p className="text-xs text-center text-muted-foreground mt-6 pb-10">
-          Продолжая, вы соглашаетесь с условиями использования сервиса GOVZAservice
+          Продолжая, вы соглашаетесь с условиями использования сервиса 995
         </p>
       </main>
     </div>

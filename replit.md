@@ -1,8 +1,8 @@
-# GOVZAservice
+# 995
 
 ## Overview
 
-A Russian-language service marketplace application (GOVZAservice) connecting customers with local service providers (masters) for various services like plumbing, electrical work, cleaning, repairs, beauty services, and more. The platform follows a mobile-first design approach inspired by Airbnb, Linear, and Thumbtack, enabling users to browse service providers, view profiles with portfolios, submit service requests, and manage orders.
+A Russian-language service marketplace application (995) connecting customers with local service providers (masters) for various services like plumbing, electrical work, cleaning, repairs, beauty services, and more. The platform follows a mobile-first design approach inspired by Airbnb, Linear, and Thumbtack, enabling users to browse service providers, view profiles with portfolios, submit service requests, and manage orders.
 
 ## User Preferences
 
