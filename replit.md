@@ -68,6 +68,21 @@ Client-facing master profile shows the call button state with contextual hints (
 
 Executor sets their phone, callMode, and working hours in the `/master/profile` availability section.
 
+### Home Screen (Phase 1 redesign)
+- **Header**: District selector (Грозный + 5 районов via bottom sheet) on the left, avatar on the right
+- **Big search bar** (52px, rounded 2xl) replacing previous compact search
+- **Categories** as horizontal-scroll chips with emoji + Lucide colors (🔧⚡🧹🔨💇‍♀️🚗📦📚)
+- **"Сейчас онлайн" strip**: horizontal-scroll mini-cards of online masters in the current district/category, with animated ping dot. Hidden when there's an active text search
+- District filter cascades into both the main list and the online strip
+
+### Master Card (upgraded)
+- Online green dot on avatar (`master.isOnline`)
+- "ТОП" gold crown badge for `master.topMaster === true` (shown alongside Verified)
+- Larger rating display: amber bubble with star + numeric rating + review count
+- Price ("от X ₽") prominent in top-right under heart
+- Portfolio preview: 3 thumbnail grid below main row
+- District + distance combined in meta row
+
 ### Broadcast Request (Автопоиск)
 Clients can tap "Найти" on the home page banner to open a 3-step wizard:
 1. Category selection

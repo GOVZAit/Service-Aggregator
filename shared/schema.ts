@@ -1,17 +1,29 @@
 import { z } from "zod";
 
 export const categories = [
-  { id: 1, name: 'Сантехника', iconName: 'Wrench', color: '#007AFF' },
-  { id: 2, name: 'Электрика', iconName: 'Zap', color: '#FF9500' },
-  { id: 3, name: 'Уборка', iconName: 'Sparkles', color: '#34C759' },
-  { id: 4, name: 'Ремонт', iconName: 'Hammer', color: '#FF3B30' },
-  { id: 5, name: 'Красота', iconName: 'Palette', color: '#FF2D55' },
-  { id: 6, name: 'Авто', iconName: 'Car', color: '#5856D6' },
-  { id: 7, name: 'Доставка', iconName: 'Package', color: '#AF52DE' },
-  { id: 8, name: 'Репетиторы', iconName: 'BookOpen', color: '#00C7BE' },
+  { id: 1, name: 'Сантехника', iconName: 'Wrench', emoji: '🔧', color: '#007AFF' },
+  { id: 2, name: 'Электрика', iconName: 'Zap', emoji: '⚡', color: '#FF9500' },
+  { id: 3, name: 'Уборка', iconName: 'Sparkles', emoji: '🧹', color: '#34C759' },
+  { id: 4, name: 'Ремонт', iconName: 'Hammer', emoji: '🔨', color: '#FF3B30' },
+  { id: 5, name: 'Красота', iconName: 'Palette', emoji: '💇‍♀️', color: '#FF2D55' },
+  { id: 6, name: 'Авто', iconName: 'Car', emoji: '🚗', color: '#5856D6' },
+  { id: 7, name: 'Доставка', iconName: 'Package', emoji: '📦', color: '#AF52DE' },
+  { id: 8, name: 'Репетиторы', iconName: 'BookOpen', emoji: '📚', color: '#00C7BE' },
 ] as const;
 
 export type Category = typeof categories[number];
+
+// Districts of Grozny for location filter
+export const districts = [
+  'Все районы',
+  'Заводской',
+  'Ленинский',
+  'Октябрьский',
+  'Старопромысловский',
+  'Шейх-Мансуровский',
+] as const;
+
+export type District = typeof districts[number];
 
 export interface Service {
   name: string;
@@ -47,6 +59,9 @@ export interface Master {
   callMode: CallMode;
   workingHours: WorkingHours;
   isOnline: boolean;
+  // New: location and recognition
+  district?: string;
+  topMaster?: boolean;
 }
 
 export interface RequestUser {

@@ -30,6 +30,8 @@ const mastersData: Master[] = [
     callMode: 'always',
     workingHours: { from: '08:00', to: '20:00' },
     isOnline: true,
+    district: 'Заводской',
+    topMaster: true,
   },
   {
     id: 2,
@@ -60,6 +62,8 @@ const mastersData: Master[] = [
     callMode: 'schedule',
     workingHours: { from: '09:00', to: '18:00' },
     isOnline: true,
+    district: 'Ленинский',
+    topMaster: true,
   },
   {
     id: 3,
@@ -90,6 +94,7 @@ const mastersData: Master[] = [
     callMode: 'online_only',
     workingHours: { from: '09:00', to: '19:00' },
     isOnline: false,
+    district: 'Октябрьский',
   },
   {
     id: 4,
@@ -120,6 +125,7 @@ const mastersData: Master[] = [
     callMode: 'disabled',
     workingHours: { from: '10:00', to: '20:00' },
     isOnline: false,
+    district: 'Шейх-Мансуровский',
   },
   {
     id: 5,
@@ -150,6 +156,7 @@ const mastersData: Master[] = [
     callMode: 'always',
     workingHours: { from: '08:00', to: '18:00' },
     isOnline: true,
+    district: 'Старопромысловский',
   },
   {
     id: 6,
@@ -180,6 +187,8 @@ const mastersData: Master[] = [
     callMode: 'schedule',
     workingHours: { from: '09:00', to: '19:00' },
     isOnline: true,
+    district: 'Заводской',
+    topMaster: true,
   },
   {
     id: 7,
@@ -210,6 +219,7 @@ const mastersData: Master[] = [
     callMode: 'online_only',
     workingHours: { from: '10:00', to: '21:00' },
     isOnline: false,
+    district: 'Ленинский',
   },
   {
     id: 8,
@@ -240,6 +250,8 @@ const mastersData: Master[] = [
     callMode: 'always',
     workingHours: { from: '07:00', to: '23:00' },
     isOnline: true,
+    district: 'Октябрьский',
+    topMaster: true,
   },
 ];
 
