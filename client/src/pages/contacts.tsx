@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
-import { cityOrganizations, type CityOrganization } from "@/lib/city-services-data";
+import { cityOrganizations, getOrgDistance, type CityOrganization } from "@/lib/city-services-data";
 
 // Only the "contacts" category
 const CONTACTS_CATEGORY_ID = 'contacts';
@@ -353,6 +353,12 @@ function ContactCard({
         <div className="flex items-center gap-1.5">
           <PhoneCall className="w-3.5 h-3.5 text-primary shrink-0" />
           <span className="text-sm font-medium text-primary">{org.phone}</span>
+        </div>
+        <div className="flex items-center gap-1.5" data-testid={`text-location-contact-${org.id}`}>
+          <Navigation className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <span className="text-xs text-muted-foreground truncate">
+            {org.district !== 'Все районы' ? `${org.district} · ` : ''}~{getOrgDistance(org)}
+          </span>
         </div>
         {org.address && (
           <div className="flex items-start gap-1.5">

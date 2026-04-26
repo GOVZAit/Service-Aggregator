@@ -25,6 +25,13 @@ export interface CityOrganization {
   lng?: number;
 }
 
+// Approximate distance based on org id (deterministic, stable across renders).
+// In production this would be computed from user geolocation + org coordinates.
+export function getOrgDistance(org: { id: number; district?: string }): string {
+  const km = ((org.id * 37) % 55) / 10 + 0.3; // 0.3 — 5.7 км
+  return `${km.toFixed(1)} км`;
+}
+
 export const cityCategories: CityCategory[] = [
   {
     id: 'emergency',

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Search, SlidersHorizontal, MapPin, X, BadgeCheck, Zap, ChevronDown, Check, Star,
+  Search, SlidersHorizontal, MapPin, X, BadgeCheck, Zap, ChevronDown, Check,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ import { BroadcastModal } from "@/components/broadcast-modal";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { Link } from "wouter";
 import { districts } from "@shared/schema";
 import type { Category, Master } from "@shared/schema";
 
@@ -116,16 +115,6 @@ export default function HomePage() {
 
     return result;
   }, [selectedCategory, debouncedSearch, allMasters, filterState, district]);
-
-  // Online masters for the "Сейчас онлайн" strip (respects district + category, ignores text/sort)
-  const onlineMasters = useMemo(() => {
-    let result = allMasters.filter((m) => m.isOnline);
-    if (district !== DEFAULT_DISTRICT) result = result.filter((m) => m.district === district);
-    if (selectedCategory) result = result.filter((m) => m.categoryId === selectedCategory);
-    return result.slice(0, 8);
-  }, [allMasters, selectedCategory, district]);
-
-  const showOnlineStrip = !debouncedSearch.trim() && onlineMasters.length > 0;
 
   const selectedCategoryName = selectedCategory
     ? categories.find((c) => c.id === selectedCategory)?.name
@@ -256,47 +245,6 @@ export default function HomePage() {
             Найти
           </button>
         </div>
-
-        {/* Сейчас онлайн */}
-        {showOnlineStrip && (
-          <section className="mb-5" data-testid="section-online">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold flex items-center gap-2">
-                <span className="relative flex w-2.5 h-2.5">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
-                  <span className="relative inline-flex rounded-full w-2.5 h-2.5 bg-green-500" />
-                </span>
-                Сейчас онлайн
-              </h2>
-              <span className="text-xs text-muted-foreground font-medium">
-                {onlineMasters.length} {onlineMasters.length === 1 ? "мастер" : "мастеров"}
-              </span>
-            </div>
-            <div className="flex gap-3 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
-              {onlineMasters.map((m) => (
-                <Link key={m.id} href={`/master/${m.id}`}>
-                  <div
-                    data-testid={`online-card-${m.id}`}
-                    className="shrink-0 w-32 bg-card border border-border/60 rounded-2xl p-3 hover-elevate active-elevate-2 transition-all cursor-pointer"
-                  >
-                    <div className="relative w-12 h-12 mx-auto mb-2">
-                      <div className="w-12 h-12 rounded-2xl bg-muted overflow-hidden">
-                        <img src={m.avatar} alt={m.name} className="w-full h-full object-cover" />
-                      </div>
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-card" />
-                    </div>
-                    <p className="text-xs font-semibold text-center truncate">{m.name.split(" ")[0]}</p>
-                    <p className="text-[10px] text-muted-foreground text-center truncate mb-1.5">{m.category}</p>
-                    <div className="flex items-center justify-center gap-0.5">
-                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                      <span className="text-[11px] font-bold">{m.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
 
         <section>
           <div className="flex items-center justify-between mb-2">

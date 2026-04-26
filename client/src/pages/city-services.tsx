@@ -29,6 +29,7 @@ import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
 import {
   cityOrganizations,
+  getOrgDistance,
   type CityOrganization,
 } from "@/lib/city-services-data";
 
@@ -376,6 +377,12 @@ function OrgCard({
         <div className="flex items-center gap-1.5">
           <PhoneCall className="w-3.5 h-3.5 text-primary shrink-0" />
           <span className="text-sm font-medium text-primary">{org.phone}</span>
+        </div>
+        <div className="flex items-center gap-1.5" data-testid={`text-location-${org.id}`}>
+          <Navigation className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <span className="text-xs text-muted-foreground truncate">
+            {org.district !== 'Все районы' ? `${org.district} · ` : ''}~{getOrgDistance(org)}
+          </span>
         </div>
         {org.address && (
           <div className="flex items-start gap-1.5">
