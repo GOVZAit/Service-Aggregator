@@ -3,7 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Heart, MapPin, Clock, BadgeCheck, Shield,
-  MessageCircle, Phone, PhoneOff, Send, Image as ImageIcon, Loader2, Star,
+  MessageCircle, Phone, PhoneOff, Send, Image as ImageIcon, Loader2, Star, Building2,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -286,6 +286,15 @@ export default function MasterProfilePage() {
               <AvatarFallback className="rounded-2xl text-2xl">{master.name.slice(0, 2)}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
+              {master.companyName && (
+                <div
+                  className="flex items-center gap-1 text-xs font-semibold text-primary uppercase tracking-wide mb-1"
+                  data-testid="text-master-company"
+                >
+                  <Building2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{master.companyName}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2 mb-1">
                 <h1 className="text-xl font-bold truncate">{master.name}</h1>
                 {master.verified && <Shield className="w-4 h-4 text-green-500 shrink-0" />}

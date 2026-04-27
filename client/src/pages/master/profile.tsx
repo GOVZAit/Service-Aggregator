@@ -5,7 +5,7 @@ import MasterBottomNavigation from "@/components/master-bottom-navigation";
 import {
   User, Phone, Briefcase, Star, Award, Edit3, LogOut,
   Moon, Sun, Plus, Camera, Check, X, PhoneCall, PhoneOff,
-  Clock, Calendar, ChevronDown, ChevronUp
+  Clock, Calendar, ChevronDown, ChevronUp, Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CallMode } from "@shared/schema";
@@ -48,6 +48,11 @@ export default function MasterProfilePage() {
   );
   const [descDraft, setDescDraft] = useState(description);
   const [selectedCategory, setSelectedCategory] = useState("Сантехника");
+
+  // Optional brand / company name
+  const [companyName, setCompanyName] = useState("");
+  const [editingCompany, setEditingCompany] = useState(false);
+  const [companyDraft, setCompanyDraft] = useState("");
 
   // Availability settings
   const [phone, setPhone] = useState(user?.phone ?? "");
@@ -164,6 +169,65 @@ export default function MasterProfilePage() {
               <p className="text-sm text-foreground/80 leading-relaxed">{description}</p>
             )}
           </div>
+        </section>
+
+        {/* Brand / company name (optional) */}
+        <section className="rounded-2xl bg-card border border-border/60 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" />
+              <h3 className="font-semibold text-sm">Название компании / бренда</h3>
+            </div>
+            {!editingCompany && (
+              <button
+                onClick={() => { setCompanyDraft(companyName); setEditingCompany(true); }}
+                data-testid="button-edit-company"
+                className="flex items-center gap-1 text-xs text-primary font-medium"
+              >
+                <Edit3 className="w-3 h-3" />
+                Изменить
+              </button>
+            )}
+          </div>
+
+          {editingCompany ? (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={companyDraft}
+                onChange={(e) => setCompanyDraft(e.target.value)}
+                placeholder="Например: Чистый Дом"
+                maxLength={50}
+                data-testid="input-company"
+                className="w-full text-sm text-foreground bg-muted border border-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Необязательно. Укажите, если работаете под брендом или представляете компанию.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingCompany(false)}
+                  data-testid="button-cancel-company"
+                  className="flex-1 flex items-center justify-center gap-1 text-sm text-muted-foreground border border-border rounded-xl py-2"
+                >
+                  <X className="w-4 h-4" />Отмена
+                </button>
+                <button
+                  onClick={() => { setCompanyName(companyDraft.trim()); setEditingCompany(false); }}
+                  data-testid="button-save-company"
+                  className="flex-[2] flex items-center justify-center gap-1 text-sm text-white bg-primary rounded-xl py-2"
+                >
+                  <Check className="w-4 h-4" />Сохранить
+                </button>
+              </div>
+            </div>
+          ) : companyName ? (
+            <p className="text-sm font-medium text-foreground" data-testid="text-company-display">{companyName}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Не указано. Если хотите представлять компанию или бренд — добавьте название.
+            </p>
+          )}
         </section>
 
         {/* Category */}

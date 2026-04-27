@@ -62,6 +62,8 @@ export interface Master {
   // New: location and recognition
   district?: string;
   topMaster?: boolean;
+  // Optional brand / company name the master represents
+  companyName?: string;
 }
 
 export interface RequestUser {

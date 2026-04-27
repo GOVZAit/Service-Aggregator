@@ -64,6 +64,7 @@ const mastersData: Master[] = [
     isOnline: true,
     district: 'Ленинский',
     topMaster: true,
+    companyName: 'Чистый Дом',
   },
   {
     id: 3,
@@ -157,6 +158,7 @@ const mastersData: Master[] = [
     workingHours: { from: '08:00', to: '18:00' },
     isOnline: true,
     district: 'Старопромысловский',
+    companyName: 'Рем-Бригада «Грозный»',
   },
   {
     id: 6,
@@ -189,6 +191,7 @@ const mastersData: Master[] = [
     isOnline: true,
     district: 'Заводской',
     topMaster: true,
+    companyName: 'Автосервис «Кавказ»',
   },
   {
     id: 7,
@@ -252,6 +255,7 @@ const mastersData: Master[] = [
     isOnline: true,
     district: 'Октябрьский',
     topMaster: true,
+    companyName: 'Грозный-Экспресс',
   },
 ];
 
@@ -387,7 +391,8 @@ export class MemStorage implements IStorage {
     return this.masters.filter(m =>
       m.name.toLowerCase().includes(q) ||
       m.category.toLowerCase().includes(q) ||
-      m.description.toLowerCase().includes(q)
+      m.description.toLowerCase().includes(q) ||
+      (m.companyName?.toLowerCase().includes(q) ?? false)
     );
   }
 

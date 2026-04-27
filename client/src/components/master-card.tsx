@@ -1,4 +1,4 @@
-import { Heart, MapPin, Clock, BadgeCheck, Crown, Star } from "lucide-react";
+import { Heart, MapPin, Clock, BadgeCheck, Crown, Star, Building2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { Master } from "@shared/schema";
@@ -37,6 +37,15 @@ export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardP
           </div>
 
           <div className="flex-1 min-w-0">
+            {master.companyName && (
+              <div
+                className="flex items-center gap-1 text-[11px] font-semibold text-primary/90 uppercase tracking-wide mb-0.5 truncate"
+                data-testid={`text-company-${master.id}`}
+              >
+                <Building2 className="w-3 h-3 shrink-0" />
+                <span className="truncate">{master.companyName}</span>
+              </div>
+            )}
             <div className="flex items-center gap-1.5 mb-1 flex-wrap">
               <span className="font-semibold text-foreground truncate" data-testid={`text-name-${master.id}`}>
                 {master.name}
