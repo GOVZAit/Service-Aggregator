@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "bPyr1sYpcLw1T12zd7bvM"
+uri = "file://TZ.md"
+type = "text"
+title = "ТЗ на разработку «995»"
