@@ -15,6 +15,7 @@ import ProfilePage from "@/pages/profile";
 import CityServicesPage from "@/pages/city-services";
 import ContactsPage from "@/pages/contacts";
 import AuthPage from "@/pages/auth";
+import PreviewWhatsApp from "@/pages/preview-whatsapp";
 import NotFound from "@/pages/not-found";
 
 // Master (executor) pages
@@ -71,6 +72,7 @@ function Router() {
         <Route path="/city" component={CityServicesPage} />
         <Route path="/contacts" component={ContactsPage} />
         <Route path="/auth" component={AuthPage} />
+        <Route path="/preview/whatsapp" component={PreviewWhatsApp} />
 
         <Route component={NotFound} />
       </Switch>
