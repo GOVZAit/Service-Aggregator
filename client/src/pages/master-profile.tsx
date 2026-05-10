@@ -286,20 +286,21 @@ export default function MasterProfilePage() {
               <AvatarFallback className="rounded-2xl text-2xl">{master.name.slice(0, 2)}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              {master.companyName && (
-                <div
-                  className="flex items-center gap-1 text-xs font-semibold text-primary uppercase tracking-wide mb-1"
-                  data-testid="text-master-company"
-                >
-                  <Building2 className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{master.companyName}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-xl font-bold truncate">{master.name}</h1>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h1 className="text-xl font-bold truncate" data-testid="text-master-name">{master.name}</h1>
                 {master.verified && <Shield className="w-4 h-4 text-green-500 shrink-0" />}
               </div>
               <p className="text-muted-foreground text-sm mb-2">{master.category}</p>
+              {master.companyName && (
+                <div
+                  className="inline-flex items-center gap-1 max-w-full bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium mb-2"
+                  data-testid="text-master-company"
+                  title={master.companyName}
+                >
+                  <Building2 className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{master.companyName}</span>
+                </div>
+              )}
               <RatingStars rating={master.rating} reviews={master.reviews} />
               <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                 <MapPin className="w-3 h-3" />
@@ -312,6 +313,36 @@ export default function MasterProfilePage() {
           </div>
 
           <p className="text-sm text-muted-foreground leading-relaxed mb-4">{master.description}</p>
+
+          {/* Portfolio preview strip — visible immediately, full grid in the tab below */}
+          {master.portfolio.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Примеры работ
+                </p>
+                <span className="text-xs text-muted-foreground" data-testid="text-portfolio-count">
+                  {master.portfolio.length} фото
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {master.portfolio.slice(0, 3).map((img, idx) => (
+                  <div
+                    key={idx}
+                    className="aspect-square rounded-lg overflow-hidden bg-muted"
+                    data-testid={`portfolio-preview-${idx}`}
+                  >
+                    <img
+                      src={img}
+                      alt={`Работа ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="bg-primary/10 rounded-xl py-3 px-2">
