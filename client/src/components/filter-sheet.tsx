@@ -209,7 +209,9 @@ export default function FilterSheet({ value, onChange, onClose, totalCount }: Fi
 
 /** Inline filter panel for the desktop sidebar (applies changes immediately). */
 export function FilterPanel({ value, onChange }: FilterPanelProps) {
-  const hasChanges = value.sortBy !== "rating" || value.verifiedOnly;
+  const hasChanges =
+    value.sortBy !== "rating" || value.verifiedOnly || value.onlineOnly ||
+    value.certifiedOnly || value.executorType !== "all";
 
   return (
     <div className="space-y-5" data-testid="filter-panel-desktop">
@@ -251,36 +253,75 @@ export function FilterPanel({ value, onChange }: FilterPanelProps) {
           <Star className="w-4 h-4 text-primary" />
           <p className="text-sm font-semibold">Фильтры</p>
         </div>
-        <button
-          onClick={() => onChange({ ...value, verifiedOnly: !value.verifiedOnly })}
-          data-testid="desktop-filter-verified-only"
-          className={cn(
-            "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all",
-            value.verifiedOnly ? "border-primary bg-primary/5" : "border-border bg-card"
-          )}
-        >
-          <div className="flex items-center gap-3">
-            <BadgeCheck className={cn("w-5 h-5", value.verifiedOnly ? "text-primary" : "text-muted-foreground")} />
-            <div className="text-left">
-              <p className={cn("text-sm font-medium", value.verifiedOnly && "text-primary")}>Только проверенные</p>
-              <p className="text-xs text-muted-foreground">Мастера с верификацией</p>
-            </div>
-          </div>
-          <div className={cn(
-            "w-12 h-6 rounded-full transition-all relative shrink-0",
-            value.verifiedOnly ? "bg-primary" : "bg-muted"
-          )}>
-            <div className={cn(
-              "absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all",
-              value.verifiedOnly ? "right-1" : "left-1"
-            )} />
-          </div>
-        </button>
+        <div className="space-y-2">
+          {([
+            { key: "verifiedOnly" as const, icon: BadgeCheck, label: "Только проверенные", desc: "Личность подтверждена командой" },
+            { key: "onlineOnly" as const, icon: Wifi, label: "Онлайн сейчас", desc: "Быстрее ответят на заявку" },
+            { key: "certifiedOnly" as const, icon: Award, label: "Есть сертификат", desc: "Подтверждённая квалификация" },
+          ]).map(({ key, icon: Icon, label, desc }) => (
+            <button
+              key={key}
+              onClick={() => onChange({ ...value, [key]: !value[key] })}
+              data-testid={`desktop-filter-${key}`}
+              aria-pressed={value[key]}
+              className={cn(
+                "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all",
+                value[key] ? "border-primary bg-primary/5" : "border-border bg-card"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Icon className={cn("w-5 h-5", value[key] ? "text-primary" : "text-muted-foreground")} />
+                <div className="text-left">
+                  <p className={cn("text-sm font-medium", value[key] && "text-primary")}>{label}</p>
+                  <p className="text-xs text-muted-foreground">{desc}</p>
+                </div>
+              </div>
+              <div className={cn(
+                "w-12 h-6 rounded-full transition-all relative shrink-0",
+                value[key] ? "bg-primary" : "bg-muted"
+              )}>
+                <div className={cn(
+                  "absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all",
+                  value[key] ? "right-1" : "left-1"
+                )} />
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Briefcase className="w-4 h-4 text-primary" />
+          <p className="text-sm font-semibold">Кто исполнитель</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {([
+            { key: "all", label: "Все" },
+            { key: "private", label: "Частное лицо" },
+            { key: "self_employed", label: "Самозанятый" },
+            { key: "company", label: "Компания" },
+          ] as const).map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => onChange({ ...value, executorType: opt.key })}
+              data-testid={`desktop-filter-executor-${opt.key}`}
+              className={cn(
+                "px-3.5 py-2 rounded-xl border-2 text-sm font-medium transition-all",
+                value.executorType === opt.key
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border bg-card"
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {hasChanges && (
         <button
-          onClick={() => onChange({ sortBy: "rating", verifiedOnly: false })}
+          onClick={() => onChange(defaultFilterState)}
           data-testid="desktop-button-filter-reset"
           className="w-full h-11 rounded-xl border border-border text-sm font-medium text-muted-foreground hover-elevate"
         >

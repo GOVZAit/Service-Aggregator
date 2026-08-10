@@ -11,14 +11,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { MasterCard } from "@/components/master-card";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
-import FilterSheet, { type FilterState, defaultFilterState } from "@/components/filter-sheet";
+import FilterSheet, { FilterPanel, type FilterState, defaultFilterState } from "@/components/filter-sheet";
 import { BroadcastModal } from "@/components/broadcast-modal";
+import { WelcomeOnboarding, useWelcomeOnboarding } from "@/components/welcome-onboarding";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { districts } from "@shared/schema";
 import type { Category, Master } from "@shared/schema";
-import FilterSheet, { FilterPanel, type FilterState } from "@/components/filter-sheet";
 
 function MasterCardSkeleton() {
   return (
@@ -59,6 +59,7 @@ export default function HomePage() {
   const [broadcastCategory, setBroadcastCategory] = useState<string | undefined>();
   const [district, setDistrict] = useState<string>(DEFAULT_DISTRICT);
   const [showLocation, setShowLocation] = useState(false);
+  const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOnboarding();
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -143,6 +144,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background pb-24 lg:pb-10">
+      {showWelcome && <WelcomeOnboarding onDone={dismissWelcome} />}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt">
         <div className="max-w-lg lg:max-w-6xl mx-auto px-4 lg:px-6 pt-3 pb-3">
           <div className="flex items-center justify-between mb-3">
