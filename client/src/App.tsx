@@ -14,6 +14,7 @@ import OrdersPage from "@/pages/orders";
 import ProfilePage from "@/pages/profile";
 import CityServicesPage from "@/pages/city-services";
 import ContactsPage from "@/pages/contacts";
+import DoctorsPage from "@/pages/doctors";
 import AuthPage from "@/pages/auth";
 import PreviewWhatsApp from "@/pages/preview-whatsapp";
 import NotFound from "@/pages/not-found";
@@ -70,6 +71,7 @@ function Router() {
         <Route path="/orders" component={OrdersPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/city" component={CityServicesPage} />
+        <Route path="/doctors" component={DoctorsPage} />
         <Route path="/contacts" component={ContactsPage} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/preview/whatsapp" component={PreviewWhatsApp} />

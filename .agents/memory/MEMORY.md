@@ -1,0 +1,1 @@
+- [Bottom nav is the only navigation](navigation.md) — never hide BottomNavigation on any breakpoint without an equivalent nav; on lg it's a floating dock, pages need bottom padding for it.

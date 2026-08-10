@@ -107,7 +107,7 @@ export default function CityServicesPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border safe-area-pt">
-        <div className="max-w-lg mx-auto px-4 pt-4 pb-3">
+        <div className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-4 pb-3">
           {level === 'detail' ? (
             <div className="flex items-center gap-3">
               <Button
@@ -234,7 +234,7 @@ export default function CityServicesPage() {
 
       {/* LIST LEVEL */}
       {level === 'list' && viewMode === 'list' && (
-        <main className="max-w-lg mx-auto px-4 pt-4 space-y-3">
+        <main className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-4 space-y-3">
           {/* Stats bar */}
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
             <span className="font-semibold text-foreground">{filteredOrgs.length}</span>
@@ -296,15 +296,17 @@ export default function CityServicesPage() {
               </Button>
             </div>
           ) : (
-            filteredOrgs.map((org) => (
-              <OrgCard
-                key={org.id}
-                org={org}
-                isFavorite={favorites.includes(org.id)}
-                onToggleFavorite={(e) => toggleFavorite(org.id, e)}
-                onClick={() => goToDetail(org)}
-              />
-            ))
+            <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
+              {filteredOrgs.map((org) => (
+                <OrgCard
+                  key={org.id}
+                  org={org}
+                  isFavorite={favorites.includes(org.id)}
+                  onToggleFavorite={(e) => toggleFavorite(org.id, e)}
+                  onClick={() => goToDetail(org)}
+                />
+              ))}
+            </div>
           )}
         </main>
       )}

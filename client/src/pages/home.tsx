@@ -132,7 +132,7 @@ export default function HomePage() {
     : "АБ";
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-10">
+    <div className="min-h-screen bg-background pb-24 lg:pb-28">
       {showWelcome && <WelcomeOnboarding onDone={dismissWelcome} />}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt">
         <div className="max-w-lg lg:max-w-6xl mx-auto px-4 lg:px-6 pt-3 pb-3">
@@ -394,9 +394,7 @@ export default function HomePage() {
         </SheetContent>
       </Sheet>
 
-      <div className="lg:hidden">
-        <BottomNavigation />
-      </div>
+      <BottomNavigation />
     </div>
   );
 }
