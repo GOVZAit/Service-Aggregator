@@ -3,7 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Heart, MapPin, Clock, BadgeCheck, Shield,
-  MessageCircle, Phone, PhoneOff, Send, Image as ImageIcon, Loader2, Star, Building2,
+  MessageCircle, Phone, PhoneOff, Send, Image as ImageIcon, Loader2, Star, Building2, Award,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { BookingModal } from "@/components/booking-modal";
 import { apiRequest } from "@/lib/queryClient";
+import { executorTypeLabels } from "@shared/schema";
 import type { Master, ChatMessage } from "@shared/schema";
 
 // ── Call availability logic ───────────────────────────────────────────────────
@@ -178,6 +179,12 @@ export default function MasterProfilePage() {
 
   const reviews = reviewsByMasterId[masterId] ?? defaultReviews;
   const callState = getCallState(master);
+  const portfolioVisible = master.showPortfolio !== false && master.portfolio.length > 0;
+  const reviewsVisible = master.showReviews !== false;
+  const pricesVisible = master.showPrices !== false && master.services.length > 0;
+  const tabCount = (pricesVisible ? 1 : 0) + (portfolioVisible ? 1 : 0) + (reviewsVisible ? 1 : 0);
+  const defaultTab = pricesVisible ? "services" : portfolioVisible ? "portfolio" : "reviews";
+  const tabGridClass = tabCount === 3 ? "grid-cols-3" : tabCount === 2 ? "grid-cols-2" : "grid-cols-1";
 
   // ── Chat view ─────────────────────────────────────────────────────────────
   if (showChat) {
@@ -314,8 +321,23 @@ export default function MasterProfilePage() {
 
           <p className="text-sm text-muted-foreground leading-relaxed mb-4">{master.description}</p>
 
+          {/* Executor type & certificate */}
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {master.executorType && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium bg-muted text-muted-foreground rounded-full px-2.5 py-1" data-testid="badge-executor-type">
+                {executorTypeLabels[master.executorType]}
+              </span>
+            )}
+            {master.hasCertificate && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-full px-2.5 py-1" data-testid="badge-certificate">
+                <Award className="w-3 h-3" />
+                Сертификат подтверждён
+              </span>
+            )}
+          </div>
+
           {/* Portfolio preview strip — visible immediately, full grid in the tab below */}
-          {master.portfolio.length > 0 && (
+          {portfolioVisible && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -368,13 +390,15 @@ export default function MasterProfilePage() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="services" className="mb-6">
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="services" data-testid="tab-services">Услуги</TabsTrigger>
-            <TabsTrigger value="portfolio" data-testid="tab-portfolio">Портфолио</TabsTrigger>
-            <TabsTrigger value="reviews" data-testid="tab-reviews">Отзывы ({reviews.length})</TabsTrigger>
+        {tabCount > 0 && (
+        <Tabs defaultValue={defaultTab} className="mb-6">
+          <TabsList className={`w-full grid ${tabGridClass}`}>
+            {pricesVisible && <TabsTrigger value="services" data-testid="tab-services">Услуги</TabsTrigger>}
+            {portfolioVisible && <TabsTrigger value="portfolio" data-testid="tab-portfolio">Портфолио</TabsTrigger>}
+            {reviewsVisible && <TabsTrigger value="reviews" data-testid="tab-reviews">Отзывы ({reviews.length})</TabsTrigger>}
           </TabsList>
 
+          {pricesVisible && (
           <TabsContent value="services" className="mt-4 space-y-2">
             {master.services.map((service, idx) => (
               <div
@@ -386,7 +410,9 @@ export default function MasterProfilePage() {
               </div>
             ))}
           </TabsContent>
+          )}
 
+          {portfolioVisible && (
           <TabsContent value="portfolio" className="mt-4">
             <div className="grid grid-cols-2 gap-3">
               {master.portfolio.map((img, idx) => (
@@ -400,7 +426,9 @@ export default function MasterProfilePage() {
               ))}
             </div>
           </TabsContent>
+          )}
 
+          {reviewsVisible && (
           <TabsContent value="reviews" className="mt-4 space-y-3">
             <div className="rounded-xl bg-muted p-4 flex items-center gap-4">
               <div className="text-center">
@@ -448,7 +476,9 @@ export default function MasterProfilePage() {
               </div>
             ))}
           </TabsContent>
+          )}
         </Tabs>
+        )}
       </main>
 
       {/* ── Action bar ──────────────────────────────────────────────────────── */}

@@ -8,7 +8,8 @@ import {
   Clock, Calendar, ChevronDown, ChevronUp, Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { CallMode } from "@shared/schema";
+import { executorTypeLabels } from "@shared/schema";
+import type { CallMode, ExecutorType } from "@shared/schema";
 
 const categoryOptions = [
   "Сантехника", "Электрика", "Уборка", "Ремонт", "Красота", "Авто", "Доставка", "Репетиторы"
@@ -59,6 +60,26 @@ export default function MasterProfilePage() {
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneDraft, setPhoneDraft] = useState(phone);
   const [callMode, setCallMode] = useState<CallMode>("always");
+
+  // Profile block visibility (persisted locally for demo)
+  const [blockVisibility, setBlockVisibility] = useState<{ portfolio: boolean; reviews: boolean; prices: boolean }>(() => {
+    try {
+      const saved = localStorage.getItem("master-block-visibility");
+      if (saved) return JSON.parse(saved);
+    } catch { /* ignore */ }
+    return { portfolio: true, reviews: true, prices: true };
+  });
+  const toggleBlock = (key: "portfolio" | "reviews" | "prices") => {
+    setBlockVisibility((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem("master-block-visibility", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  // Executor type & certificate
+  const [executorType, setExecutorType] = useState<ExecutorType>("private");
+  const [hasCertificate, setHasCertificate] = useState(false);
   const [workFrom, setWorkFrom] = useState("09:00");
   const [workTo, setWorkTo] = useState("18:00");
   const [showSchedule, setShowSchedule] = useState(false);
@@ -425,6 +446,77 @@ export default function MasterProfilePage() {
             >
               <Plus className="w-6 h-6" />
             </button>
+          </div>
+        </section>
+
+        {/* Executor type & certificate */}
+        <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/60">
+            <h3 className="font-semibold text-sm">Тип исполнителя</h3>
+          </div>
+          <div className="p-4 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(executorTypeLabels) as ExecutorType[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setExecutorType(t)}
+                  data-testid={`button-executor-${t}`}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl border-2 text-sm font-medium transition-all",
+                    executorType === t ? "border-primary bg-primary/5 text-primary" : "border-border bg-card"
+                  )}
+                >
+                  {executorTypeLabels[t]}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setHasCertificate(!hasCertificate)}
+              data-testid="toggle-certificate"
+              aria-pressed={hasCertificate}
+              className="w-full flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <Award className={cn("w-4 h-4", hasCertificate ? "text-primary" : "text-muted-foreground")} />
+                <span className="text-sm">Есть сертификат / диплом</span>
+              </div>
+              <div className={cn("w-12 h-6 rounded-full transition-all relative", hasCertificate ? "bg-primary" : "bg-muted")}>
+                <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all", hasCertificate ? "right-1" : "left-1")} />
+              </div>
+            </button>
+            {hasCertificate && (
+              <p className="text-xs text-muted-foreground">
+                Отправьте фото документа в поддержку — после проверки в профиле появится значок «Сертификат подтверждён».
+              </p>
+            )}
+          </div>
+        </section>
+
+        {/* Profile block visibility */}
+        <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/60">
+            <h3 className="font-semibold text-sm">Видимость блоков профиля</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Что клиенты видят в вашем профиле</p>
+          </div>
+          <div className="divide-y divide-border/60">
+            {([
+              { key: "prices" as const, label: "Услуги и цены" },
+              { key: "portfolio" as const, label: "Портфолио" },
+              { key: "reviews" as const, label: "Отзывы" },
+            ]).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => toggleBlock(key)}
+                data-testid={`toggle-block-${key}`}
+                aria-pressed={blockVisibility[key]}
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
+              >
+                <span className="text-sm">{label}</span>
+                <div className={cn("w-12 h-6 rounded-full transition-all relative", blockVisibility[key] ? "bg-primary" : "bg-muted")}>
+                  <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all", blockVisibility[key] ? "right-1" : "left-1")} />
+                </div>
+              </button>
+            ))}
           </div>
         </section>
 

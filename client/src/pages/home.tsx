@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { MasterCard } from "@/components/master-card";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
-import FilterSheet, { type FilterState } from "@/components/filter-sheet";
+import FilterSheet, { type FilterState, defaultFilterState } from "@/components/filter-sheet";
 import { BroadcastModal } from "@/components/broadcast-modal";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
@@ -53,7 +53,7 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showFilter, setShowFilter] = useState(false);
-  const [filterState, setFilterState] = useState<FilterState>({ sortBy: "rating", verifiedOnly: false });
+  const [filterState, setFilterState] = useState<FilterState>(defaultFilterState);
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [broadcastCategory, setBroadcastCategory] = useState<string | undefined>();
   const [district, setDistrict] = useState<string>(DEFAULT_DISTRICT);
@@ -102,6 +102,18 @@ export default function HomePage() {
       result = result.filter((m) => m.verified);
     }
 
+    if (filterState.onlineOnly) {
+      result = result.filter((m) => m.isOnline);
+    }
+
+    if (filterState.certifiedOnly) {
+      result = result.filter((m) => m.hasCertificate);
+    }
+
+    if (filterState.executorType !== "all") {
+      result = result.filter((m) => (m.executorType ?? "private") === filterState.executorType);
+    }
+
     result = [...result].sort((a, b) => {
       switch (filterState.sortBy) {
         case "rating": return b.rating - a.rating;
@@ -120,7 +132,9 @@ export default function HomePage() {
     ? categories.find((c) => c.id === selectedCategory)?.name
     : null;
 
-  const hasActiveFilters = filterState.verifiedOnly || filterState.sortBy !== "rating";
+  const hasActiveFilters =
+    filterState.verifiedOnly || filterState.onlineOnly || filterState.certifiedOnly ||
+    filterState.executorType !== "all" || filterState.sortBy !== "rating";
 
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
@@ -257,7 +271,7 @@ export default function HomePage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => { setSelectedCategory(null); setFilterState({ sortBy: "rating", verifiedOnly: false }); setDistrict(DEFAULT_DISTRICT); }}
+                onClick={() => { setSelectedCategory(null); setFilterState(defaultFilterState); setDistrict(DEFAULT_DISTRICT); }}
                 className="text-primary text-xs"
                 data-testid="button-reset-category"
               >
@@ -318,7 +332,7 @@ export default function HomePage() {
               action={
                 <Button
                   variant="outline"
-                  onClick={() => { setSelectedCategory(null); setSearchQuery(""); setFilterState({ sortBy: "rating", verifiedOnly: false }); setDistrict(DEFAULT_DISTRICT); }}
+                  onClick={() => { setSelectedCategory(null); setSearchQuery(""); setFilterState(defaultFilterState); setDistrict(DEFAULT_DISTRICT); }}
                   className="rounded-xl"
                   data-testid="button-reset-all-filters"
                 >

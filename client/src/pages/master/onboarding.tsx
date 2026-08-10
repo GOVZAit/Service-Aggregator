@@ -2,13 +2,15 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
 import {
-  Briefcase, FileText, CheckCircle2, ChevronRight,
+  Briefcase, FileText, CheckCircle2, ChevronRight, BadgeCheck, Award,
   Wrench, Zap, Sparkles, Hammer, Palette, Car, Package, BookOpen,
   type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { executorTypeLabels } from "@shared/schema";
+import type { ExecutorType } from "@shared/schema";
 
-type Step = "welcome" | "category" | "description" | "done";
+type Step = "welcome" | "category" | "details" | "description" | "done";
 
 const categories: { name: string; icon: LucideIcon; color: string }[] = [
   { name: "Сантехника", icon: Wrench, color: "#007AFF" },
@@ -23,6 +25,7 @@ const categories: { name: string; icon: LucideIcon; color: string }[] = [
 
 const steps: { key: Step; icon: LucideIcon; label: string }[] = [
   { key: "category", icon: Briefcase, label: "Категория" },
+  { key: "details", icon: BadgeCheck, label: "Детали" },
   { key: "description", icon: FileText, label: "О себе" },
   { key: "done", icon: CheckCircle2, label: "Готово" },
 ];
@@ -33,6 +36,8 @@ export default function MasterOnboardingPage() {
   const [step, setStep] = useState<Step>("welcome");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [description, setDescription] = useState("");
+  const [executorType, setExecutorType] = useState<ExecutorType | null>(null);
+  const [hasCertificate, setHasCertificate] = useState(false);
 
   const stepIndex = steps.findIndex((s) => s.key === step);
 
@@ -98,6 +103,12 @@ export default function MasterOnboardingPage() {
             <div className="flex justify-between">
               <span className="text-muted-foreground">Категория</span>
               <span className="font-medium">{selectedCategory}</span>
+            </div>
+          )}
+          {executorType && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Тип исполнителя</span>
+              <span className="font-medium">{executorTypeLabels[executorType]}{hasCertificate ? " · сертификат" : ""}</span>
             </div>
           )}
           {description && (
@@ -206,14 +217,15 @@ export default function MasterOnboardingPage() {
       <div className="px-5 pb-10 space-y-3 shrink-0">
         <button
           onClick={() => {
-            if (step === "category") setStep("description");
+            if (step === "category") setStep("details");
+            else if (step === "details") setStep("description");
             else if (step === "description") setStep("done");
           }}
-          disabled={step === "category" && !selectedCategory}
+          disabled={(step === "category" && !selectedCategory) || (step === "details" && !executorType)}
           data-testid="button-onboarding-next"
           className={cn(
             "w-full py-3.5 rounded-2xl font-bold text-base transition-all",
-            (step === "description" || selectedCategory)
+            (step === "description" || (step === "details" ? executorType : selectedCategory))
               ? "bg-primary text-white"
               : "bg-muted text-muted-foreground cursor-not-allowed"
           )}

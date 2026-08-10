@@ -1,13 +1,25 @@
 import { useState } from "react";
-import { X, Star, BadgeCheck, ArrowUpDown } from "lucide-react";
+import { X, Star, BadgeCheck, ArrowUpDown, Wifi, Award, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { ExecutorType } from "@shared/schema";
 
 export type SortBy = "rating" | "price_asc" | "price_desc" | "reviews" | "distance";
 
 export interface FilterState {
   sortBy: SortBy;
   verifiedOnly: boolean;
+  onlineOnly: boolean;
+  certifiedOnly: boolean;
+  executorType: ExecutorType | "all";
 }
+
+export const defaultFilterState: FilterState = {
+  sortBy: "rating",
+  verifiedOnly: false,
+  onlineOnly: false,
+  certifiedOnly: false,
+  executorType: "all",
+};
 
 interface FilterSheetProps {
   value: FilterState;
@@ -33,14 +45,14 @@ export default function FilterSheet({ value, onChange, onClose, totalCount }: Fi
   };
 
   const reset = () => {
-    const defaults: FilterState = { sortBy: "rating", verifiedOnly: false };
-    setDraft(defaults);
-    onChange(defaults);
+    setDraft(defaultFilterState);
+    onChange(defaultFilterState);
     onClose();
   };
 
   const hasChanges =
-    draft.sortBy !== "rating" || draft.verifiedOnly;
+    draft.sortBy !== "rating" || draft.verifiedOnly || draft.onlineOnly ||
+    draft.certifiedOnly || draft.executorType !== "all";
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col">
@@ -100,31 +112,71 @@ export default function FilterSheet({ value, onChange, onClose, totalCount }: Fi
               <Star className="w-4 h-4 text-primary" />
               <p className="text-sm font-semibold">Фильтры</p>
             </div>
-            <button
-              onClick={() => setDraft((d) => ({ ...d, verifiedOnly: !d.verifiedOnly }))}
-              data-testid="filter-verified-only"
-              className={cn(
-                "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all",
-                draft.verifiedOnly ? "border-primary bg-primary/5" : "border-border bg-card"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <BadgeCheck className={cn("w-5 h-5", draft.verifiedOnly ? "text-primary" : "text-muted-foreground")} />
-                <div className="text-left">
-                  <p className={cn("text-sm font-medium", draft.verifiedOnly && "text-primary")}>Только проверенные</p>
-                  <p className="text-xs text-muted-foreground">Мастера с верификацией</p>
-                </div>
-              </div>
-              <div className={cn(
-                "w-12 h-6 rounded-full transition-all relative",
-                draft.verifiedOnly ? "bg-primary" : "bg-muted"
-              )}>
-                <div className={cn(
-                  "absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all",
-                  draft.verifiedOnly ? "right-1" : "left-1"
-                )} />
-              </div>
-            </button>
+            <div className="space-y-2">
+              {([
+                { key: "verifiedOnly" as const, icon: BadgeCheck, label: "Только проверенные", desc: "Личность подтверждена командой" },
+                { key: "onlineOnly" as const, icon: Wifi, label: "Онлайн сейчас", desc: "Быстрее ответят на заявку" },
+                { key: "certifiedOnly" as const, icon: Award, label: "Есть сертификат", desc: "Подтверждённая квалификация" },
+              ]).map(({ key, icon: Icon, label, desc }) => (
+                <button
+                  key={key}
+                  onClick={() => setDraft((d) => ({ ...d, [key]: !d[key] }))}
+                  data-testid={`filter-${key}`}
+                  aria-pressed={draft[key]}
+                  className={cn(
+                    "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all",
+                    draft[key] ? "border-primary bg-primary/5" : "border-border bg-card"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className={cn("w-5 h-5", draft[key] ? "text-primary" : "text-muted-foreground")} />
+                    <div className="text-left">
+                      <p className={cn("text-sm font-medium", draft[key] && "text-primary")}>{label}</p>
+                      <p className="text-xs text-muted-foreground">{desc}</p>
+                    </div>
+                  </div>
+                  <div className={cn(
+                    "w-12 h-6 rounded-full transition-all relative shrink-0",
+                    draft[key] ? "bg-primary" : "bg-muted"
+                  )}>
+                    <div className={cn(
+                      "absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all",
+                      draft[key] ? "right-1" : "left-1"
+                    )} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Executor type */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Briefcase className="w-4 h-4 text-primary" />
+              <p className="text-sm font-semibold">Кто исполнитель</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { key: "all", label: "Все" },
+                { key: "private", label: "Частное лицо" },
+                { key: "self_employed", label: "Самозанятый" },
+                { key: "company", label: "Компания" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setDraft((d) => ({ ...d, executorType: opt.key }))}
+                  data-testid={`filter-executor-${opt.key}`}
+                  className={cn(
+                    "px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all",
+                    draft.executorType === opt.key
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border bg-card text-foreground"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

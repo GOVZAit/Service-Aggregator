@@ -38,6 +38,15 @@ export interface WorkingHours {
   to: string;   // "18:00"
 }
 
+// Who performs the work
+export type ExecutorType = 'private' | 'self_employed' | 'company';
+
+export const executorTypeLabels: Record<ExecutorType, string> = {
+  private: 'Частное лицо',
+  self_employed: 'Самозанятый',
+  company: 'Компания',
+};
+
 export interface Master {
   id: number;
   name: string;
@@ -64,6 +73,13 @@ export interface Master {
   topMaster?: boolean;
   // Optional brand / company name the master represents
   companyName?: string;
+  // Trust & filtering
+  hasCertificate?: boolean;
+  executorType?: ExecutorType;
+  // Profile block visibility (master can hide sections)
+  showPortfolio?: boolean;
+  showReviews?: boolean;
+  showPrices?: boolean;
 }
 
 export interface RequestUser {

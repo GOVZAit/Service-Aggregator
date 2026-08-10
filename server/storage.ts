@@ -32,6 +32,9 @@ const mastersData: Master[] = [
     isOnline: true,
     district: 'Заводской',
     topMaster: true,
+    hasCertificate: true,
+    executorType: 'self_employed',
+    showPortfolio: true,
   },
   {
     id: 2,
@@ -65,6 +68,9 @@ const mastersData: Master[] = [
     district: 'Ленинский',
     topMaster: true,
     companyName: 'Чистый Дом',
+    hasCertificate: true,
+    executorType: 'company',
+    showPortfolio: true,
   },
   {
     id: 3,
@@ -96,6 +102,9 @@ const mastersData: Master[] = [
     workingHours: { from: '09:00', to: '19:00' },
     isOnline: false,
     district: 'Октябрьский',
+    hasCertificate: false,
+    executorType: 'private',
+    showPortfolio: true,
   },
   {
     id: 4,
@@ -127,6 +136,9 @@ const mastersData: Master[] = [
     workingHours: { from: '10:00', to: '20:00' },
     isOnline: false,
     district: 'Шейх-Мансуровский',
+    hasCertificate: false,
+    executorType: 'private',
+    showPortfolio: false,
   },
   {
     id: 5,
@@ -159,6 +171,9 @@ const mastersData: Master[] = [
     isOnline: true,
     district: 'Старопромысловский',
     companyName: 'Рем-Бригада «Грозный»',
+    hasCertificate: true,
+    executorType: 'company',
+    showPortfolio: true,
   },
   {
     id: 6,
@@ -192,6 +207,9 @@ const mastersData: Master[] = [
     district: 'Заводской',
     topMaster: true,
     companyName: 'Автосервис «Кавказ»',
+    hasCertificate: true,
+    executorType: 'company',
+    showPortfolio: true,
   },
   {
     id: 7,
@@ -223,6 +241,9 @@ const mastersData: Master[] = [
     workingHours: { from: '10:00', to: '21:00' },
     isOnline: false,
     district: 'Ленинский',
+    hasCertificate: false,
+    executorType: 'self_employed',
+    showPortfolio: true,
   },
   {
     id: 8,
@@ -256,6 +277,9 @@ const mastersData: Master[] = [
     district: 'Октябрьский',
     topMaster: true,
     companyName: 'Грозный-Экспресс',
+    hasCertificate: false,
+    executorType: 'company',
+    showPortfolio: false,
   },
 ];
 
