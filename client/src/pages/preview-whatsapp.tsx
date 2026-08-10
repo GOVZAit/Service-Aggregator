@@ -93,7 +93,7 @@ function ChatList({ chats, onOpen }: { chats: Chat[]; onOpen: (c: Chat) => void 
     <>
       {/* Header */}
       <header className="text-white px-4 py-3 flex items-center justify-between" style={{ background: WA_GREEN }}>
-        <h1 className="text-xl font-semibold tracking-wide">995 Чаты</h1>
+        <h1 className="text-xl font-semibold tracking-wide">Служба 995 Чаты</h1>
         <div className="flex items-center gap-4">
           <Search className="w-5 h-5" />
           <MoreVertical className="w-5 h-5" />

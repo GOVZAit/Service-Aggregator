@@ -446,7 +446,7 @@ export default function MasterProfilePage() {
           </button>
           <div className="px-4 py-3 border-t border-border/60 flex items-center gap-3 text-xs text-muted-foreground">
             <User className="w-4 h-4" />
-            <span>Исполнитель · 995</span>
+            <span>Исполнитель · Служба 995</span>
           </div>
         </section>
 

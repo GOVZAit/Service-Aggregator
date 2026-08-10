@@ -362,7 +362,7 @@ export default function MasterProfilePage() {
           {master.verified && (
             <div className="mt-4 flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-xl px-3 py-2">
               <BadgeCheck className="w-4 h-4 shrink-0" />
-              <span>Личность и профессиональные навыки проверены командой 995</span>
+              <span>Личность и профессиональные навыки проверены командой Служба 995</span>
             </div>
           )}
         </div>
