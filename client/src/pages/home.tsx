@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { MapView } from "@/components/map-view";
 import {
   Search, SlidersHorizontal, MapPin, X, BadgeCheck, Zap, ChevronDown, Check,
 } from "lucide-react";
@@ -17,7 +19,7 @@ import { WelcomeOnboarding, useWelcomeOnboarding } from "@/components/welcome-on
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { districts } from "@shared/schema";
+import { cities } from "@shared/schema";
 import type { Category, Master } from "@shared/schema";
 
 function MasterCardSkeleton() {
@@ -46,7 +48,7 @@ function extractMinPrice(price: string): number {
   return parseInt(match) || 0;
 }
 
-const DEFAULT_DISTRICT: string = districts[0]; // "Все районы"
+const DEFAULT_CITY: string = cities[0]; // "Все города"
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -57,8 +59,10 @@ export default function HomePage() {
   const [filterState, setFilterState] = useState<FilterState>(defaultFilterState);
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [broadcastCategory, setBroadcastCategory] = useState<string | undefined>();
-  const [district, setDistrict] = useState<string>(DEFAULT_DISTRICT);
+  const [city, setCity] = useState<string>(DEFAULT_CITY);
   const [showLocation, setShowLocation] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [, navigate] = useLocation();
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOnboarding();
 
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -83,8 +87,8 @@ export default function HomePage() {
   const baseMasters = useMemo(() => {
     let result = allMasters;
 
-    if (district !== DEFAULT_DISTRICT) {
-      result = result.filter((m) => m.district === district);
+    if (city !== DEFAULT_CITY) {
+      result = result.filter((m) => m.city === city);
     }
 
     if (selectedCategory) {
@@ -102,7 +106,7 @@ export default function HomePage() {
     }
 
     return result;
-  }, [selectedCategory, debouncedSearch, allMasters, district]);
+  }, [selectedCategory, debouncedSearch, allMasters, city]);
 
   const filteredMasters = useMemo(() => {
     const result = applyMasterFilters(baseMasters, filterState);
@@ -144,9 +148,9 @@ export default function HomePage() {
             >
               <MapPin className="w-4 h-4 text-primary shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] text-muted-foreground leading-none">Грозный, ЧР</p>
+                <p className="text-[10px] text-muted-foreground leading-none">Чеченская Республика</p>
                 <div className="flex items-center gap-0.5 font-semibold text-sm leading-tight">
-                  <span className="truncate">{district}</span>
+                  <span className="truncate">{city}</span>
                   <ChevronDown className="w-3.5 h-3.5 shrink-0" />
                 </div>
               </div>
@@ -268,11 +272,11 @@ export default function HomePage() {
             <h2 className="text-lg font-bold">
               {selectedCategoryName || "Рекомендуемые"}
             </h2>
-            {(selectedCategory || hasActiveFilters || district !== DEFAULT_DISTRICT) && (
+            {(selectedCategory || hasActiveFilters || city !== DEFAULT_CITY) && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => { setSelectedCategory(null); setFilterState(defaultFilterState); setDistrict(DEFAULT_DISTRICT); }}
+                onClick={() => { setSelectedCategory(null); setFilterState(defaultFilterState); setCity(DEFAULT_CITY); }}
                 className="text-primary text-xs"
                 data-testid="button-reset-category"
               >
@@ -284,6 +288,30 @@ export default function HomePage() {
 
           {!mastersLoading && filteredMasters.length > 0 && (
             <div className="flex items-center gap-3 mb-4 flex-wrap" data-testid="masters-stats">
+              <div className="flex bg-muted/60 rounded-xl p-0.5 mr-1">
+                <button
+                  onClick={() => setViewMode("list")}
+                  aria-pressed={viewMode === "list"}
+                  data-testid="masters-view-list"
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                    viewMode === "list" ? "bg-background shadow-sm" : "text-muted-foreground"
+                  )}
+                >
+                  Список
+                </button>
+                <button
+                  onClick={() => setViewMode("map")}
+                  aria-pressed={viewMode === "map"}
+                  data-testid="masters-view-map"
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                    viewMode === "map" ? "bg-background shadow-sm" : "text-muted-foreground"
+                  )}
+                >
+                  Карта
+                </button>
+              </div>
               <span className="text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">{filteredMasters.length}</span>{" "}мастеров
               </span>
@@ -295,10 +323,10 @@ export default function HomePage() {
                 </span>
                 {" "}проверены
               </span>
-              {district !== DEFAULT_DISTRICT && (
+              {city !== DEFAULT_CITY && (
                 <>
                   <span className="text-muted-foreground/40 text-xs">·</span>
-                  <span className="text-xs text-primary font-medium">{district}</span>
+                  <span className="text-xs text-primary font-medium">{city}</span>
                 </>
               )}
             </div>
@@ -311,6 +339,23 @@ export default function HomePage() {
               ))}
             </div>
           ) : filteredMasters.length > 0 ? (
+            viewMode === "map" ? (
+              <div className="rounded-3xl overflow-hidden border border-border/60 h-[420px] lg:h-[540px]">
+                <MapView
+                  organizations={filteredMasters.map((m) => ({
+                    id: m.id,
+                    name: m.name,
+                    subcategory: m.category,
+                    address: [m.city, m.district].filter(Boolean).join(", "),
+                    phone: m.phone,
+                    hours: `${m.workingHours.from}–${m.workingHours.to}`,
+                    lat: m.lat,
+                    lng: m.lng,
+                  }))}
+                  onSelect={(p) => navigate(`/master/${p.id}`)}
+                />
+              </div>
+            ) : (
             <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
               {filteredMasters.map((master) => (
                 <MasterCard
@@ -321,6 +366,7 @@ export default function HomePage() {
                 />
               ))}
             </div>
+            )
           ) : (
             <EmptyState
               icon={<Search className="w-10 h-10" />}
@@ -328,12 +374,12 @@ export default function HomePage() {
               description={
                 debouncedSearch
                   ? `По запросу «${debouncedSearch}» мастеров не найдено. Попробуйте изменить запрос или сбросить фильтры.`
-                  : "В выбранной категории или районе нет мастеров. Попробуйте сбросить фильтры."
+                  : "В выбранной категории или городе нет мастеров. Попробуйте сбросить фильтры."
               }
               action={
                 <Button
                   variant="outline"
-                  onClick={() => { setSelectedCategory(null); setSearchQuery(""); setFilterState(defaultFilterState); setDistrict(DEFAULT_DISTRICT); }}
+                  onClick={() => { setSelectedCategory(null); setSearchQuery(""); setFilterState(defaultFilterState); setCity(DEFAULT_CITY); }}
                   className="rounded-xl"
                   data-testid="button-reset-all-filters"
                 >
@@ -368,18 +414,18 @@ export default function HomePage() {
           <SheetHeader className="text-left mb-2">
             <SheetTitle className="flex items-center gap-2">
               <MapPin className="w-5 h-5 text-primary" />
-              Выберите район
+              Выберите город
             </SheetTitle>
           </SheetHeader>
-          <p className="text-xs text-muted-foreground mb-4">Грозный, Чеченская Республика</p>
+          <p className="text-xs text-muted-foreground mb-4">Чеченская Республика</p>
           <div className="space-y-1.5 pb-4">
-            {districts.map((d) => {
-              const isActive = district === d;
+            {cities.map((d) => {
+              const isActive = city === d;
               return (
                 <button
                   key={d}
-                  onClick={() => { setDistrict(d); setShowLocation(false); }}
-                  data-testid={`option-district-${d}`}
+                  onClick={() => { setCity(d); setShowLocation(false); }}
+                  data-testid={`option-city-${d}`}
                   className={cn(
                     "w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-left transition-colors",
                     isActive ? "bg-primary/10 text-primary" : "bg-muted/40 hover-elevate active-elevate-2"

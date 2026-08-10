@@ -1,18 +1,26 @@
+// Where a doctor sees patients — a doctor can work in several clinics
+export interface DoctorLocation {
+  clinic: string;
+  address: string;
+  city: string;
+  schedule: string;
+  lat?: number;
+  lng?: number;
+}
+
 export interface Doctor {
   id: number;
   name: string;
   specialty: string;
   specialtyId: string;
-  clinic: string;
-  address: string;
-  district: string;
+  locations: DoctorLocation[];
   experienceYears: number;
   rating: number;
   reviews: number;
   price: string;
   phone: string;
-  schedule: string;
   acceptsChildren?: boolean;
+  /** Doctor also sees patients at home */
   homeVisits?: boolean;
   avatar: string;
 }
@@ -40,15 +48,29 @@ export const doctors: Doctor[] = [
     name: 'Аминат Джабраилова',
     specialty: 'Терапевт',
     specialtyId: 'therapist',
-    clinic: 'Республиканская клиническая больница',
-    address: 'ул. Хвостова, 4',
-    district: 'Ленинский',
+    locations: [
+      {
+        clinic: 'Республиканская клиническая больница',
+        address: 'ул. Хвостова, 4',
+        city: 'Грозный',
+        schedule: 'Пн–Пт 08:00–14:00',
+        lat: 43.3168,
+        lng: 45.6842,
+      },
+      {
+        clinic: 'Медцентр «Здоровье»',
+        address: 'пр. Кадырова, 39',
+        city: 'Грозный',
+        schedule: 'Пн, Ср, Пт 15:00–18:00',
+        lat: 43.3110,
+        lng: 45.6890,
+      },
+    ],
     experienceYears: 18,
     rating: 4.9,
     reviews: 214,
     price: 'приём от 800 ₽',
     phone: '+7 (8712) 22-33-11',
-    schedule: 'Пн–Пт 08:00–16:00',
     homeVisits: true,
     avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop&crop=face',
   },
@@ -57,15 +79,21 @@ export const doctors: Doctor[] = [
     name: 'Магомед Ахмадов',
     specialty: 'Кардиолог',
     specialtyId: 'cardiologist',
-    clinic: 'Республиканский кардиодиспансер',
-    address: 'ул. Гаражная, 2а',
-    district: 'Октябрьский',
+    locations: [
+      {
+        clinic: 'Республиканский кардиодиспансер',
+        address: 'ул. Гаражная, 2а',
+        city: 'Грозный',
+        schedule: 'Пн–Сб 09:00–17:00',
+        lat: 43.3055,
+        lng: 45.7010,
+      },
+    ],
     experienceYears: 22,
     rating: 5.0,
     reviews: 187,
     price: 'приём от 1 200 ₽',
     phone: '+7 (8712) 29-44-55',
-    schedule: 'Пн–Сб 09:00–17:00',
     avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200&h=200&fit=crop&crop=face',
   },
   {
@@ -73,15 +101,29 @@ export const doctors: Doctor[] = [
     name: 'Хеда Исраилова',
     specialty: 'Педиатр',
     specialtyId: 'pediatrician',
-    clinic: 'Детская поликлиника №1',
-    address: 'пр. Кирова, 10',
-    district: 'Заводской',
+    locations: [
+      {
+        clinic: 'Детская поликлиника №1',
+        address: 'пр. Кирова, 10',
+        city: 'Грозный',
+        schedule: 'Пн–Пт 08:00–15:00',
+        lat: 43.3222,
+        lng: 45.6930,
+      },
+      {
+        clinic: 'Детский центр «Малыш»',
+        address: 'ул. Ватутина, 5',
+        city: 'Гудермес',
+        schedule: 'Сб 09:00–14:00',
+        lat: 43.3505,
+        lng: 46.1050,
+      },
+    ],
     experienceYears: 14,
     rating: 4.8,
     reviews: 302,
     price: 'приём от 700 ₽',
     phone: '+7 (8712) 22-58-90',
-    schedule: 'Пн–Пт 08:00–15:00',
     acceptsChildren: true,
     homeVisits: true,
     avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=200&h=200&fit=crop&crop=face',
@@ -91,15 +133,21 @@ export const doctors: Doctor[] = [
     name: 'Руслан Товсултанов',
     specialty: 'Стоматолог',
     specialtyId: 'dentist',
-    clinic: 'Стоматология «Дент-Люкс»',
-    address: 'пр. Путина, 28',
-    district: 'Ленинский',
+    locations: [
+      {
+        clinic: 'Стоматология «Дент-Люкс»',
+        address: 'пр. Путина, 28',
+        city: 'Грозный',
+        schedule: 'Ежедневно 09:00–20:00',
+        lat: 43.3190,
+        lng: 45.6980,
+      },
+    ],
     experienceYears: 12,
     rating: 4.9,
     reviews: 256,
     price: 'приём от 500 ₽',
     phone: '+7 (928) 890-12-34',
-    schedule: 'Ежедневно 09:00–20:00',
     acceptsChildren: true,
     avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=200&h=200&fit=crop&crop=face',
   },
@@ -108,15 +156,21 @@ export const doctors: Doctor[] = [
     name: 'Зарема Мовсарова',
     specialty: 'Гинеколог',
     specialtyId: 'gynecologist',
-    clinic: 'Республиканский перинатальный центр',
-    address: 'ул. Сайханова, 65',
-    district: 'Октябрьский',
+    locations: [
+      {
+        clinic: 'Республиканский перинатальный центр',
+        address: 'ул. Сайханова, 65',
+        city: 'Грозный',
+        schedule: 'Пн–Пт 09:00–16:00',
+        lat: 43.3010,
+        lng: 45.7150,
+      },
+    ],
     experienceYears: 16,
     rating: 4.9,
     reviews: 178,
     price: 'приём от 1 000 ₽',
     phone: '+7 (8712) 29-61-20',
-    schedule: 'Пн–Пт 09:00–16:00',
     avatar: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?w=200&h=200&fit=crop&crop=face',
   },
   {
@@ -124,15 +178,29 @@ export const doctors: Doctor[] = [
     name: 'Ибрагим Дадаев',
     specialty: 'Невролог',
     specialtyId: 'neurologist',
-    clinic: 'Клиника «Медикс»',
-    address: 'ул. Маяковского, 92',
-    district: 'Старопромысловский',
+    locations: [
+      {
+        clinic: 'Клиника «Медикс»',
+        address: 'ул. Маяковского, 92',
+        city: 'Грозный',
+        schedule: 'Пн, Ср, Пт 09:00–15:00',
+        lat: 43.3350,
+        lng: 45.6800,
+      },
+      {
+        clinic: 'ЦРБ Урус-Мартана',
+        address: 'ул. Больничная, 8',
+        city: 'Урус-Мартан',
+        schedule: 'Вт, Чт 10:00–16:00',
+        lat: 43.1240,
+        lng: 45.5390,
+      },
+    ],
     experienceYears: 20,
     rating: 4.7,
     reviews: 143,
     price: 'приём от 1 100 ₽',
     phone: '+7 (928) 002-45-67',
-    schedule: 'Пн–Сб 09:00–18:00',
     homeVisits: true,
     avatar: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=200&h=200&fit=crop&crop=face',
   },
@@ -141,15 +209,21 @@ export const doctors: Doctor[] = [
     name: 'Липа Успанова',
     specialty: 'Офтальмолог',
     specialtyId: 'ophthalmologist',
-    clinic: 'Центр микрохирургии глаза',
-    address: 'ул. Назарбаева, 108',
-    district: 'Шейх-Мансуровский',
+    locations: [
+      {
+        clinic: 'Центр микрохирургии глаза',
+        address: 'ул. Назарбаева, 108',
+        city: 'Грозный',
+        schedule: 'Пн–Пт 08:30–17:00',
+        lat: 43.2980,
+        lng: 45.6900,
+      },
+    ],
     experienceYears: 11,
     rating: 4.8,
     reviews: 96,
     price: 'приём от 900 ₽',
     phone: '+7 (8712) 33-71-02',
-    schedule: 'Пн–Пт 08:30–17:00',
     acceptsChildren: true,
     avatar: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=200&h=200&fit=crop&crop=face',
   },
@@ -158,15 +232,21 @@ export const doctors: Doctor[] = [
     name: 'Адам Сайдулаев',
     specialty: 'ЛОР',
     specialtyId: 'ent',
-    clinic: 'Городская поликлиника №3',
-    address: 'ул. Тухачевского, 21',
-    district: 'Старопромысловский',
+    locations: [
+      {
+        clinic: 'ЦРБ Аргуна',
+        address: 'ул. Шоссейная, 1',
+        city: 'Аргун',
+        schedule: 'Пн–Пт 08:00–15:30',
+        lat: 43.2930,
+        lng: 45.8830,
+      },
+    ],
     experienceYears: 9,
     rating: 4.6,
     reviews: 88,
     price: 'приём от 800 ₽',
     phone: '+7 (8712) 24-15-33',
-    schedule: 'Пн–Пт 08:00–15:30',
     acceptsChildren: true,
     avatar: 'https://images.unsplash.com/photo-1607990281513-2c110a25bd8c?w=200&h=200&fit=crop&crop=face',
   },

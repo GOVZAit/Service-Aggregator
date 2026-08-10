@@ -13,17 +13,17 @@ export const categories = [
 
 export type Category = typeof categories[number];
 
-// Districts of Grozny for location filter
-export const districts = [
-  'Все районы',
-  'Заводской',
-  'Ленинский',
-  'Октябрьский',
-  'Старопромысловский',
-  'Шейх-Мансуровский',
+// Cities of the Chechen Republic for location filter
+export const cities = [
+  'Все города',
+  'Грозный',
+  'Гудермес',
+  'Аргун',
+  'Урус-Мартан',
+  'Шали',
 ] as const;
 
-export type District = typeof districts[number];
+export type City = typeof cities[number];
 
 export interface Service {
   name: string;
@@ -70,6 +70,9 @@ export interface Master {
   isOnline: boolean;
   // New: location and recognition
   district?: string;
+  city?: string;
+  lat?: number;
+  lng?: number;
   topMaster?: boolean;
   // Optional brand / company name the master represents
   companyName?: string;

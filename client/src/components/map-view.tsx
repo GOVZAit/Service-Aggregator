@@ -1,14 +1,26 @@
 import { useEffect, useRef } from "react";
-import type { CityOrganization } from "@/lib/city-services-data";
 
-interface MapViewProps {
-  organizations: CityOrganization[];
-  onSelect?: (org: CityOrganization) => void;
+// Minimal shape a marker needs — city organizations, masters and doctors all fit
+export interface MapPoint {
+  id: number | string;
+  name: string;
+  subcategory?: string;
+  address?: string;
+  phone?: string;
+  hours?: string;
+  lat?: number;
+  lng?: number;
+  isEmergency?: boolean;
+}
+
+interface MapViewProps<T extends MapPoint> {
+  organizations: T[];
+  onSelect?: (org: T) => void;
 }
 
 const GROZNY_CENTER: [number, number] = [43.3170, 45.6992];
 
-export function MapView({ organizations, onSelect }: MapViewProps) {
+export function MapView<T extends MapPoint>({ organizations, onSelect }: MapViewProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const lRef = useRef<any>(null);
@@ -16,7 +28,7 @@ export function MapView({ organizations, onSelect }: MapViewProps) {
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
-  const addMarkers = (orgs: CityOrganization[]) => {
+  const addMarkers = (orgs: T[]) => {
     const L = lRef.current;
     const map = mapRef.current;
     if (!L || !map) return;
@@ -48,9 +60,9 @@ export function MapView({ organizations, onSelect }: MapViewProps) {
       const popupContent = `
         <div style="font-family:system-ui,sans-serif;min-width:160px;max-width:210px">
           <div style="font-size:13px;font-weight:700;margin-bottom:3px;line-height:1.3">${org.name}</div>
-          <div style="font-size:11px;color:#888;margin-bottom:5px">${org.subcategory}</div>
+          ${org.subcategory ? `<div style="font-size:11px;color:#888;margin-bottom:5px">${org.subcategory}</div>` : ""}
           ${org.address ? `<div style="font-size:11px;color:#666;margin-bottom:5px">📍 ${org.address}</div>` : ""}
-          <div style="font-size:12px;font-weight:700;color:#007AFF">📞 ${org.phone}</div>
+          ${org.phone ? `<div style="font-size:12px;font-weight:700;color:#007AFF">📞 ${org.phone}</div>` : ""}
           ${org.hours ? `<div style="font-size:10px;color:#aaa;margin-top:3px">🕐 ${org.hours}</div>` : ""}
         </div>
       `;

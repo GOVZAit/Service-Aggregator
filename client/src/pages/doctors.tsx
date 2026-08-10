@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { doctors, doctorSpecialties, type Doctor } from "@/lib/doctors-data";
@@ -21,7 +22,7 @@ const sortOptions: { key: DoctorSort; label: string }[] = [
   { key: "experience", label: "По стажу" },
 ];
 
-const districts = Array.from(new Set(doctors.map((d) => d.district)));
+const doctorCities = Array.from(new Set(doctors.flatMap((d) => d.locations.map((l) => l.city))));
 
 // Doctor chats live in the same in-memory message store as master chats;
 // offset the id so they never collide with master ids.
@@ -34,16 +35,17 @@ export default function DoctorsPage() {
   const [specialty, setSpecialty] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<DoctorSort>("rating");
-  const [district, setDistrict] = useState<string | null>(null);
+  const [cityFilter, setCityFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [childrenOnly, setChildrenOnly] = useState(false);
   const [homeVisitsOnly, setHomeVisitsOnly] = useState(false);
   const [chatDoctor, setChatDoctor] = useState<Doctor | null>(null);
 
-  const hasActiveFilters = district !== null || childrenOnly || homeVisitsOnly || sortBy !== "rating";
+  const hasActiveFilters = cityFilter !== null || childrenOnly || homeVisitsOnly || sortBy !== "rating";
 
   const resetFilters = () => {
     setSortBy("rating");
-    setDistrict(null);
+    setCityFilter(null);
     setChildrenOnly(false);
     setHomeVisitsOnly(false);
   };
@@ -51,7 +53,7 @@ export default function DoctorsPage() {
   const filtered = useMemo(() => {
     let result = doctors;
     if (specialty) result = result.filter((d) => d.specialtyId === specialty);
-    if (district) result = result.filter((d) => d.district === district);
+    if (cityFilter) result = result.filter((d) => d.locations.some((l) => l.city === cityFilter));
     if (childrenOnly) result = result.filter((d) => d.acceptsChildren);
     if (homeVisitsOnly) result = result.filter((d) => d.homeVisits);
     if (searchQuery.trim()) {
@@ -60,7 +62,7 @@ export default function DoctorsPage() {
         (d) =>
           d.name.toLowerCase().includes(q) ||
           d.specialty.toLowerCase().includes(q) ||
-          d.clinic.toLowerCase().includes(q)
+          d.locations.some((l) => l.clinic.toLowerCase().includes(q) || l.city.toLowerCase().includes(q))
       );
     }
     return [...result].sort((a, b) => {
@@ -70,7 +72,7 @@ export default function DoctorsPage() {
         default: return b.rating - a.rating;
       }
     });
-  }, [searchQuery, specialty, district, childrenOnly, homeVisitsOnly, sortBy]);
+  }, [searchQuery, specialty, cityFilter, childrenOnly, homeVisitsOnly, sortBy]);
 
   if (chatDoctor) {
     return <DoctorChat doctor={chatDoctor} onBack={() => setChatDoctor(null)} />;
@@ -86,7 +88,7 @@ export default function DoctorsPage() {
             </div>
             <div>
               <h1 className="font-bold text-lg leading-tight">Врачи</h1>
-              <p className="text-xs text-muted-foreground">Грозный · запись по телефону</p>
+              <p className="text-xs text-muted-foreground">Чеченская Республика · запись по телефону</p>
             </div>
           </div>
 
@@ -178,20 +180,20 @@ export default function DoctorsPage() {
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Район</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Город</p>
                 <div className="flex gap-2 flex-wrap">
-                  {districts.map((d) => (
+                  {doctorCities.map((c) => (
                     <button
-                      key={d}
-                      onClick={() => setDistrict((prev) => (prev === d ? null : d))}
-                      aria-pressed={district === d}
-                      data-testid={`doctor-district-${d}`}
+                      key={c}
+                      onClick={() => setCityFilter((prev) => (prev === c ? null : c))}
+                      aria-pressed={cityFilter === c}
+                      data-testid={`doctor-city-${c}`}
                       className={cn(
                         "px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
-                        district === d ? "bg-emerald-600 text-white" : "bg-muted/60 hover:bg-muted"
+                        cityFilter === c ? "bg-emerald-600 text-white" : "bg-muted/60 hover:bg-muted"
                       )}
                     >
-                      {d}
+                      {c}
                     </button>
                   ))}
                 </div>
@@ -237,7 +239,57 @@ export default function DoctorsPage() {
       </header>
 
       <main className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-4">
-        {filtered.length === 0 ? (
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">{filtered.length}</span>{" "}
+            {filtered.length === 1 ? "врач" : filtered.length < 5 ? "врача" : "врачей"}
+            {cityFilter && <span className="text-emerald-600 font-medium"> · {cityFilter}</span>}
+          </p>
+          <div className="flex bg-muted/60 rounded-xl p-0.5">
+            <button
+              onClick={() => setViewMode("list")}
+              aria-pressed={viewMode === "list"}
+              data-testid="doctors-view-list"
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                viewMode === "list" ? "bg-background shadow-sm" : "text-muted-foreground"
+              )}
+            >
+              Список
+            </button>
+            <button
+              onClick={() => setViewMode("map")}
+              aria-pressed={viewMode === "map"}
+              data-testid="doctors-view-map"
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                viewMode === "map" ? "bg-background shadow-sm" : "text-muted-foreground"
+              )}
+            >
+              Карта
+            </button>
+          </div>
+        </div>
+        {viewMode === "map" && filtered.length > 0 ? (
+          <div className="rounded-3xl overflow-hidden border border-border/60 h-[420px] lg:h-[540px]">
+            <MapView
+              organizations={filtered.flatMap((doc) =>
+                doc.locations
+                  .filter((loc) => !cityFilter || loc.city === cityFilter)
+                  .map((loc, i) => ({
+                  id: `${doc.id}-${i}`,
+                  name: doc.name,
+                  subcategory: `${doc.specialty} · ${loc.clinic}`,
+                  address: `${loc.city}, ${loc.address}`,
+                  phone: doc.phone,
+                  hours: loc.schedule,
+                  lat: loc.lat,
+                  lng: loc.lng,
+                }))
+              )}
+            />
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">🔍</p>
             <p className="font-semibold mb-1">Никого не нашли</p>
@@ -279,34 +331,38 @@ export default function DoctorsPage() {
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Стаж {doc.experienceYears} лет · {doc.price} · {doc.district}
+                      Стаж {doc.experienceYears} лет · {doc.price}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-3 space-y-1.5 text-sm">
-                  <p className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{doc.clinic} — {doc.address}</span>
-                  </p>
-                  <p className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="w-4 h-4 shrink-0" />
-                    {doc.schedule}
-                  </p>
+                <div className="mt-3 space-y-2">
+                  {doc.locations.map((loc, i) => (
+                    <div key={i} className="rounded-xl bg-muted/40 px-3 py-2 text-sm">
+                      <p className="flex items-center gap-2 font-medium">
+                        <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
+                        <span className="truncate">{loc.clinic}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 ml-6">{loc.city}, {loc.address}</p>
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 ml-6">
+                        <Clock className="w-3.5 h-3.5 shrink-0" />
+                        {loc.schedule}
+                      </p>
+                    </div>
+                  ))}
+                  {doc.homeVisits && (
+                    <div className="rounded-xl bg-emerald-500/10 px-3 py-2 text-sm flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-medium">
+                      <HomeIcon className="w-4 h-4 shrink-0" />
+                      Принимает на дому — по договорённости
+                    </div>
+                  )}
                 </div>
 
-                {(doc.acceptsChildren || doc.homeVisits) && (
+                {doc.acceptsChildren && (
                   <div className="flex gap-2 mt-3 flex-wrap">
-                    {doc.acceptsChildren && (
-                      <Badge variant="secondary" className="gap-1 rounded-lg">
-                        <Baby className="w-3 h-3" /> Принимает детей
-                      </Badge>
-                    )}
-                    {doc.homeVisits && (
-                      <Badge variant="secondary" className="gap-1 rounded-lg">
-                        <HomeIcon className="w-3 h-3" /> Выезд на дом
-                      </Badge>
-                    )}
+                    <Badge variant="secondary" className="gap-1 rounded-lg">
+                      <Baby className="w-3 h-3" /> Принимает детей
+                    </Badge>
                   </div>
                 )}
 
@@ -392,7 +448,7 @@ function DoctorChat({ doctor, onBack }: { doctor: Doctor; onBack: () => void }) 
         </Avatar>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-sm truncate">{doctor.name}</p>
-          <p className="text-xs text-emerald-600">{doctor.specialty} · {doctor.clinic}</p>
+          <p className="text-xs text-emerald-600">{doctor.specialty} · {doctor.locations[0].clinic}</p>
         </div>
         <a
           href={`tel:${doctor.phone.replace(/[^+\d]/g, "")}`}
