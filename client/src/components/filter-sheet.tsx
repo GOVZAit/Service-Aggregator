@@ -52,8 +52,10 @@ export default function FilterSheet({ value, onChange, onClose, totalCount }: Fi
 
         <div className="px-5 pt-2 pb-3 flex items-center justify-between border-b border-border/60">
           <h2 className="font-bold text-lg">Фильтры и сортировка</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-            <X className="w-4 h-4" />
+          <button onClick={onClose} aria-label="Закрыть фильтры" className="w-11 h-11 -mr-2 rounded-full flex items-center justify-center">
+            <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+              <X className="w-4 h-4" />
+            </span>
           </button>
         </div>
 

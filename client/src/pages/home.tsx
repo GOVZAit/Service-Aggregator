@@ -167,7 +167,8 @@ export default function HomePage() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground p-1"
+                  aria-label="Очистить поиск"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground w-11 h-11 flex items-center justify-center"
                   data-testid="button-clear-search"
                 >
                   <X className="w-4 h-4" />
@@ -176,6 +177,7 @@ export default function HomePage() {
             </div>
             <button
               onClick={() => setShowFilter(true)}
+              aria-label="Фильтры и сортировка"
               data-testid="button-filter"
               className={cn(
                 "rounded-2xl flex items-center justify-center transition-colors relative shrink-0",

@@ -94,8 +94,10 @@ export function BookingModal({ master, onClose }: BookingModalProps) {
                 <h2 className="font-bold text-lg">Записаться к мастеру</h2>
                 <p className="text-xs text-muted-foreground">{master.name} · {master.category}</p>
               </div>
-              <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center" data-testid="button-close-booking">
-                <X className="w-4 h-4" />
+              <button onClick={onClose} aria-label="Закрыть" className="w-11 h-11 -mr-2 rounded-full flex items-center justify-center" data-testid="button-close-booking">
+                <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <X className="w-4 h-4" />
+                </span>
               </button>
             </div>
 

@@ -137,7 +137,7 @@ export default function MasterProfilePage() {
       <div className="min-h-screen bg-background">
         <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-3 safe-area-pt">
           <div className="flex items-center gap-4 max-w-lg mx-auto">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Назад" onClick={() => navigate('/')}>
               <ArrowLeft className="w-6 h-6" />
             </Button>
             <span className="font-semibold">Профиль мастера</span>
@@ -188,7 +188,7 @@ export default function MasterProfilePage() {
       <div className="min-h-screen bg-background flex flex-col">
         <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-3 safe-area-pt">
           <div className="flex items-center gap-3 max-w-lg mx-auto">
-            <Button variant="ghost" size="icon" onClick={() => setShowChat(false)} data-testid="button-back-from-chat">
+            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Назад" onClick={() => setShowChat(false)} data-testid="button-back-from-chat">
               <ArrowLeft className="w-6 h-6" />
             </Button>
             <Avatar className="w-10 h-10 rounded-xl">
@@ -201,7 +201,7 @@ export default function MasterProfilePage() {
             </div>
             {callState.status === 'active' && (
               <a href={`tel:${callState.phone}`}>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Позвонить мастеру">
                   <Phone className="w-5 h-5" />
                 </Button>
               </a>
@@ -236,7 +236,7 @@ export default function MasterProfilePage() {
 
         <div className="sticky bottom-0 bg-background border-t border-border p-4 safe-area-pb">
           <div className="flex items-center gap-2 max-w-lg mx-auto">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Прикрепить фото">
               <ImageIcon className="w-5 h-5" />
             </Button>
             <Input
@@ -247,7 +247,7 @@ export default function MasterProfilePage() {
               className="flex-1"
               data-testid="input-chat-message"
             />
-            <Button size="icon" onClick={sendMessage} disabled={sendMessageMutation.isPending} data-testid="button-send-message">
+            <Button size="icon" className="w-11 h-11" aria-label="Отправить сообщение" onClick={sendMessage} disabled={sendMessageMutation.isPending} data-testid="button-send-message">
               {sendMessageMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </Button>
           </div>
@@ -265,19 +265,19 @@ export default function MasterProfilePage() {
 
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-3 safe-area-pt">
         <div className="flex items-center gap-4 max-w-lg mx-auto">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} data-testid="button-back">
+          <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Назад" onClick={() => navigate('/')} data-testid="button-back">
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <span className="font-semibold">Профиль мастера</span>
           <div className="ml-auto flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => setIsFavorite(!isFavorite)} data-testid="button-favorite-profile">
+            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} aria-pressed={isFavorite} onClick={() => setIsFavorite(!isFavorite)} data-testid="button-favorite-profile">
               <Heart className={`w-5 h-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'text-muted-foreground'}`} />
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="px-4 py-5 max-w-lg mx-auto">
+      <main className="px-4 py-5 pb-44 max-w-lg mx-auto">
         {/* Profile card */}
         <div className="rounded-2xl bg-card border border-border/60 p-5 mb-4">
           <div className="flex gap-4 mb-4">
@@ -462,6 +462,16 @@ export default function MasterProfilePage() {
             </div>
           )}
 
+          {/* Primary CTA — full width */}
+          <Button
+            className="w-full rounded-xl h-12 text-base font-semibold"
+            onClick={() => setShowBooking(true)}
+            data-testid="button-book"
+          >
+            Записаться
+          </Button>
+
+          {/* Secondary actions */}
           <div className="flex gap-3">
             <Button
               variant="outline"
@@ -478,14 +488,15 @@ export default function MasterProfilePage() {
                 <a
                   href={`tel:${callState.phone}`}
                   data-testid="link-call"
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-green-600 text-white text-sm font-semibold"
+                  className="flex-1 min-w-0 flex items-center justify-center gap-2 rounded-xl border border-green-600 text-green-600 text-sm font-semibold px-2"
                 >
-                  <Phone className="w-4 h-4" />
-                  {callState.phone}
+                  <Phone className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{callState.phone}</span>
                 </a>
               ) : (
                 <Button
-                  className="flex-1 rounded-xl bg-green-600 hover:bg-green-700 text-white"
+                  variant="outline"
+                  className="flex-1 rounded-xl border-green-600 text-green-600 hover:bg-green-600/10"
                   onClick={() => setRevealPhone(true)}
                   data-testid="button-call"
                 >
@@ -514,14 +525,6 @@ export default function MasterProfilePage() {
                 Недоступен
               </Button>
             )}
-
-            <Button
-              className="flex-1 rounded-xl"
-              onClick={() => setShowBooking(true)}
-              data-testid="button-book"
-            >
-              Записаться
-            </Button>
           </div>
         </div>
       </div>

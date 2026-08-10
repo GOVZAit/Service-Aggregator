@@ -81,8 +81,8 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
   const stepIndex = { category: 0, details: 1, location: 2, done: 3 };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-background rounded-t-3xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/50 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-background rounded-t-3xl max-h-[90vh] overflow-y-auto safe-area-pb">
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-border" />
@@ -94,15 +94,18 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
               <Zap className="w-5 h-5 text-primary" />
               <h2 className="font-bold text-base">Найти мастера</h2>
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-              <X className="w-4 h-4" />
+            <button onClick={onClose} aria-label="Закрыть" className="w-11 h-11 -mr-2 rounded-full flex items-center justify-center">
+              <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                <X className="w-4 h-4" />
+              </span>
             </button>
           </div>
         )}
 
-        {/* Progress dots */}
+        {/* Progress */}
         {step !== "done" && (
-          <div className="flex items-center justify-center gap-2 py-3">
+          <div className="flex items-center justify-center gap-2 py-3" aria-label={`Шаг ${stepIndex[step] + 1} из 3`}>
+            <span className="text-xs font-medium text-muted-foreground">Шаг {stepIndex[step] + 1} из 3</span>
             {["category", "details", "location"].map((s, i) => (
               <div
                 key={s}
