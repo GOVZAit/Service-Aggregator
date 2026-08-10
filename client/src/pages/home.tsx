@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { districts } from "@shared/schema";
 import type { Category, Master } from "@shared/schema";
+import FilterSheet, { FilterPanel, type FilterState } from "@/components/filter-sheet";
 
 function MasterCardSkeleton() {
   return (
@@ -141,9 +142,9 @@ export default function HomePage() {
     : "АБ";
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 lg:pb-10">
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt">
-        <div className="max-w-lg mx-auto px-4 pt-3 pb-3">
+        <div className="max-w-lg lg:max-w-6xl mx-auto px-4 lg:px-6 pt-3 pb-3">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={() => setShowLocation(true)}
@@ -194,7 +195,7 @@ export default function HomePage() {
               aria-label="Фильтры и сортировка"
               data-testid="button-filter"
               className={cn(
-                "rounded-2xl flex items-center justify-center transition-colors relative shrink-0",
+                "rounded-2xl flex items-center justify-center transition-colors relative shrink-0 lg:hidden",
                 hasActiveFilters
                   ? "bg-primary text-white"
                   : "bg-muted/60 text-foreground hover:bg-muted"
@@ -209,7 +210,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="max-w-lg mx-auto px-4 pb-3 pt-1">
+        <div className="max-w-lg lg:max-w-6xl mx-auto px-4 lg:px-6 pb-3 pt-1">
           {categoriesLoading ? (
             <div className="flex gap-2 overflow-hidden">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -217,7 +218,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4">
+            <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 lg:-mx-6 lg:px-6 lg:flex-wrap lg:overflow-visible">
               {categories.map((cat) => {
                 const isSelected = selectedCategory === cat.id;
                 return (
@@ -243,7 +244,16 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="px-4 py-4 max-w-lg mx-auto">
+      <main className="px-4 py-4 max-w-lg mx-auto lg:max-w-6xl lg:px-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+        {/* Desktop sidebar with filters */}
+        <aside className="hidden lg:block sticky top-[190px] self-start" data-testid="desktop-sidebar">
+          <div className="rounded-2xl border border-border/60 bg-card p-4">
+            <h2 className="font-bold text-base mb-4">Фильтры и сортировка</h2>
+            <FilterPanel value={filterState} onChange={setFilterState} />
+          </div>
+        </aside>
+
+        <div className="min-w-0">
         {/* Broadcast banner */}
         <div className="mb-5 rounded-2xl bg-gradient-to-r from-primary/10 to-violet-500/10 border border-primary/20 px-4 py-3 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
@@ -304,13 +314,13 @@ export default function HomePage() {
           )}
 
           {mastersLoading ? (
-            <div className="space-y-3">
+            <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 <MasterCardSkeleton key={i} />
               ))}
             </div>
           ) : filteredMasters.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
               {filteredMasters.map((master) => (
                 <MasterCard
                   key={master.id}
@@ -342,6 +352,7 @@ export default function HomePage() {
             />
           )}
         </section>
+        </div>
       </main>
 
       {showFilter && (
@@ -392,7 +403,9 @@ export default function HomePage() {
         </SheetContent>
       </Sheet>
 
-      <BottomNavigation />
+      <div className="lg:hidden">
+        <BottomNavigation />
+      </div>
     </div>
   );
 }

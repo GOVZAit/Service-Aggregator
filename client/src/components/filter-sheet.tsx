@@ -36,6 +36,10 @@ const sortOptions: { key: SortBy; label: string; desc: string }[] = [
   { key: "distance", label: "По расстоянию", desc: "Ближайшие первые" },
 ];
 
+interface FilterPanelProps {
+  value: FilterState;
+  onChange: (v: FilterState) => void;
+}
 export default function FilterSheet({ value, onChange, onClose, totalCount }: FilterSheetProps) {
   const [draft, setDraft] = useState<FilterState>(value);
 
@@ -199,6 +203,90 @@ export default function FilterSheet({ value, onChange, onClose, totalCount }: Fi
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Inline filter panel for the desktop sidebar (applies changes immediately). */
+export function FilterPanel({ value, onChange }: FilterPanelProps) {
+  const hasChanges = value.sortBy !== "rating" || value.verifiedOnly;
+
+  return (
+    <div className="space-y-5" data-testid="filter-panel-desktop">
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <ArrowUpDown className="w-4 h-4 text-primary" />
+          <p className="text-sm font-semibold">Сортировка</p>
+        </div>
+        <div className="space-y-2">
+          {sortOptions.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => onChange({ ...value, sortBy: opt.key })}
+              data-testid={`desktop-sort-option-${opt.key}`}
+              className={cn(
+                "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left",
+                value.sortBy === opt.key
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-card hover:border-primary/30"
+              )}
+            >
+              <div>
+                <p className={cn("text-sm font-medium", value.sortBy === opt.key && "text-primary")}>{opt.label}</p>
+                <p className="text-xs text-muted-foreground">{opt.desc}</p>
+              </div>
+              <div className={cn(
+                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0",
+                value.sortBy === opt.key ? "border-primary bg-primary" : "border-border"
+              )}>
+                {value.sortBy === opt.key && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Star className="w-4 h-4 text-primary" />
+          <p className="text-sm font-semibold">Фильтры</p>
+        </div>
+        <button
+          onClick={() => onChange({ ...value, verifiedOnly: !value.verifiedOnly })}
+          data-testid="desktop-filter-verified-only"
+          className={cn(
+            "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all",
+            value.verifiedOnly ? "border-primary bg-primary/5" : "border-border bg-card"
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <BadgeCheck className={cn("w-5 h-5", value.verifiedOnly ? "text-primary" : "text-muted-foreground")} />
+            <div className="text-left">
+              <p className={cn("text-sm font-medium", value.verifiedOnly && "text-primary")}>Только проверенные</p>
+              <p className="text-xs text-muted-foreground">Мастера с верификацией</p>
+            </div>
+          </div>
+          <div className={cn(
+            "w-12 h-6 rounded-full transition-all relative shrink-0",
+            value.verifiedOnly ? "bg-primary" : "bg-muted"
+          )}>
+            <div className={cn(
+              "absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all",
+              value.verifiedOnly ? "right-1" : "left-1"
+            )} />
+          </div>
+        </button>
+      </div>
+
+      {hasChanges && (
+        <button
+          onClick={() => onChange({ sortBy: "rating", verifiedOnly: false })}
+          data-testid="desktop-button-filter-reset"
+          className="w-full h-11 rounded-xl border border-border text-sm font-medium text-muted-foreground hover-elevate"
+        >
+          Сбросить фильтры
+        </button>
+      )}
     </div>
   );
 }
