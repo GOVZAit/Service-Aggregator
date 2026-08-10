@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { categories, registerSchema, loginSchema } from "@shared/schema";
+import { categories, registerSchema, loginSchema, masterSettingsSchema } from "@shared/schema";
 
 declare module "express-session" {
   interface SessionData {
@@ -100,6 +100,23 @@ export async function registerRoutes(
     const master = await storage.getMasterById(Number(req.params.id));
     if (!master) return res.status(404).json({ error: "Master not found" });
     res.json(master);
+  });
+
+  app.patch("/api/masters/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Не авторизован" });
+    }
+    const user = await storage.getUserById(req.session.userId);
+    if (!user || user.role !== "master") {
+      return res.status(403).json({ message: "Доступно только исполнителям" });
+    }
+    const result = masterSettingsSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: result.error.issues[0].message });
+    }
+    const updated = await storage.updateMaster(Number(req.params.id), result.data);
+    if (!updated) return res.status(404).json({ error: "Master not found" });
+    res.json(updated);
   });
 
   // ── Service Requests ────────────────────────────────────────────────────────

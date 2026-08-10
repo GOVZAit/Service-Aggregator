@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/auth-context";
 import MasterBottomNavigation from "@/components/master-bottom-navigation";
 import {
@@ -9,7 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { executorTypeLabels } from "@shared/schema";
-import type { CallMode, ExecutorType } from "@shared/schema";
+import type { CallMode, ExecutorType, Master, MasterSettingsInput } from "@shared/schema";
 
 const categoryOptions = [
   "Сантехника", "Электрика", "Уборка", "Ремонт", "Красота", "Авто", "Доставка", "Репетиторы"
@@ -61,25 +63,36 @@ export default function MasterProfilePage() {
   const [phoneDraft, setPhoneDraft] = useState(phone);
   const [callMode, setCallMode] = useState<CallMode>("always");
 
-  // Profile block visibility (persisted locally for demo)
-  const [blockVisibility, setBlockVisibility] = useState<{ portfolio: boolean; reviews: boolean; prices: boolean }>(() => {
-    try {
-      const saved = localStorage.getItem("master-block-visibility");
-      if (saved) return JSON.parse(saved);
-    } catch { /* ignore */ }
-    return { portfolio: true, reviews: true, prices: true };
+  // Profile settings persisted on the server (demo cabinet is bound to master #1)
+  const DEMO_MASTER_ID = 1;
+  const queryClient = useQueryClient();
+  const { data: masterData } = useQuery<Master>({
+    queryKey: [`/api/masters/${DEMO_MASTER_ID}`],
   });
+  const settingsMutation = useMutation({
+    mutationFn: (patch: MasterSettingsInput) =>
+      apiRequest("PATCH", `/api/masters/${DEMO_MASTER_ID}`, patch),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/masters/${DEMO_MASTER_ID}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/masters"] });
+    },
+  });
+
+  const blockVisibility = {
+    portfolio: masterData?.showPortfolio !== false,
+    reviews: masterData?.showReviews !== false,
+    prices: masterData?.showPrices !== false,
+  };
   const toggleBlock = (key: "portfolio" | "reviews" | "prices") => {
-    setBlockVisibility((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      localStorage.setItem("master-block-visibility", JSON.stringify(next));
-      return next;
-    });
+    const field = key === "portfolio" ? "showPortfolio" : key === "reviews" ? "showReviews" : "showPrices";
+    settingsMutation.mutate({ [field]: !blockVisibility[key] });
   };
 
   // Executor type & certificate
-  const [executorType, setExecutorType] = useState<ExecutorType>("private");
-  const [hasCertificate, setHasCertificate] = useState(false);
+  const executorType: ExecutorType = masterData?.executorType ?? "private";
+  const hasCertificate = masterData?.hasCertificate ?? false;
+  const setExecutorType = (t: ExecutorType) => settingsMutation.mutate({ executorType: t });
+  const setHasCertificate = (v: boolean) => settingsMutation.mutate({ hasCertificate: v });
   const [workFrom, setWorkFrom] = useState("09:00");
   const [workTo, setWorkTo] = useState("18:00");
   const [showSchedule, setShowSchedule] = useState(false);

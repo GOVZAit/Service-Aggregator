@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, Star, BadgeCheck, ArrowUpDown, Wifi, Award, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ExecutorType } from "@shared/schema";
+import type { ExecutorType, Master } from "@shared/schema";
 
 export type SortBy = "rating" | "price_asc" | "price_desc" | "reviews" | "distance";
 
@@ -21,11 +21,24 @@ export const defaultFilterState: FilterState = {
   executorType: "all",
 };
 
+/** Apply the non-sort filters to a list of masters. Shared by the home page and the sheet's live count. */
+export function applyMasterFilters(masters: Master[], state: FilterState): Master[] {
+  let result = masters;
+  if (state.verifiedOnly) result = result.filter((m) => m.verified);
+  if (state.onlineOnly) result = result.filter((m) => m.isOnline);
+  if (state.certifiedOnly) result = result.filter((m) => m.hasCertificate);
+  if (state.executorType !== "all") {
+    result = result.filter((m) => (m.executorType ?? "private") === state.executorType);
+  }
+  return result;
+}
+
 interface FilterSheetProps {
   value: FilterState;
   onChange: (v: FilterState) => void;
   onClose: () => void;
-  totalCount: number;
+  /** Masters already narrowed by category/search/district — used for the live draft count. */
+  masters: Master[];
 }
 
 const sortOptions: { key: SortBy; label: string; desc: string }[] = [
@@ -40,7 +53,7 @@ interface FilterPanelProps {
   value: FilterState;
   onChange: (v: FilterState) => void;
 }
-export default function FilterSheet({ value, onChange, onClose, totalCount }: FilterSheetProps) {
+export default function FilterSheet({ value, onChange, onClose, masters }: FilterSheetProps) {
   const [draft, setDraft] = useState<FilterState>(value);
 
   const apply = () => {
@@ -88,6 +101,7 @@ export default function FilterSheet({ value, onChange, onClose, totalCount }: Fi
                   key={opt.key}
                   onClick={() => setDraft((d) => ({ ...d, sortBy: opt.key }))}
                   data-testid={`sort-option-${opt.key}`}
+                  aria-pressed={draft.sortBy === opt.key}
                   className={cn(
                     "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left",
                     draft.sortBy === opt.key
@@ -170,6 +184,7 @@ export default function FilterSheet({ value, onChange, onClose, totalCount }: Fi
                   key={opt.key}
                   onClick={() => setDraft((d) => ({ ...d, executorType: opt.key }))}
                   data-testid={`filter-executor-${opt.key}`}
+                  aria-pressed={draft.executorType === opt.key}
                   className={cn(
                     "px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all",
                     draft.executorType === opt.key
@@ -199,7 +214,7 @@ export default function FilterSheet({ value, onChange, onClose, totalCount }: Fi
             data-testid="button-filter-apply"
             className="flex-1 h-12 rounded-xl bg-primary text-white font-semibold text-sm"
           >
-            Показать {totalCount} мастеров
+            Показать {applyMasterFilters(masters, draft).length} мастеров
           </button>
         </div>
       </div>
@@ -226,6 +241,7 @@ export function FilterPanel({ value, onChange }: FilterPanelProps) {
               key={opt.key}
               onClick={() => onChange({ ...value, sortBy: opt.key })}
               data-testid={`desktop-sort-option-${opt.key}`}
+              aria-pressed={value.sortBy === opt.key}
               className={cn(
                 "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left",
                 value.sortBy === opt.key
@@ -306,6 +322,7 @@ export function FilterPanel({ value, onChange }: FilterPanelProps) {
               key={opt.key}
               onClick={() => onChange({ ...value, executorType: opt.key })}
               data-testid={`desktop-filter-executor-${opt.key}`}
+              aria-pressed={value.executorType === opt.key}
               className={cn(
                 "px-3.5 py-2 rounded-xl border-2 text-sm font-medium transition-all",
                 value.executorType === opt.key

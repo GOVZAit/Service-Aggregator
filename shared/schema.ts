@@ -149,6 +149,17 @@ export const registerSchema = z.object({
   role: z.enum(['client', 'master']).default('client'),
 });
 
+// Settings a master may update on their own profile
+export const masterSettingsSchema = z.object({
+  showPortfolio: z.boolean().optional(),
+  showReviews: z.boolean().optional(),
+  showPrices: z.boolean().optional(),
+  hasCertificate: z.boolean().optional(),
+  executorType: z.enum(['private', 'self_employed', 'company']).optional(),
+}).strict();
+
+export type MasterSettingsInput = z.infer<typeof masterSettingsSchema>;
+
 export const loginSchema = z.object({
   phone: z.string().min(1, 'Введите номер телефона'),
   password: z.string().min(1, 'Введите пароль'),

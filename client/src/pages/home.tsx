@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { MasterCard } from "@/components/master-card";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
-import FilterSheet, { FilterPanel, type FilterState, defaultFilterState } from "@/components/filter-sheet";
+import FilterSheet, { FilterPanel, applyMasterFilters, type FilterState, defaultFilterState } from "@/components/filter-sheet";
 import { BroadcastModal } from "@/components/broadcast-modal";
 import { WelcomeOnboarding, useWelcomeOnboarding } from "@/components/welcome-onboarding";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -79,7 +79,8 @@ export default function HomePage() {
     );
   };
 
-  const filteredMasters = useMemo(() => {
+  // Masters narrowed by district / category / search (before the filter sheet state)
+  const baseMasters = useMemo(() => {
     let result = allMasters;
 
     if (district !== DEFAULT_DISTRICT) {
@@ -100,23 +101,13 @@ export default function HomePage() {
       );
     }
 
-    if (filterState.verifiedOnly) {
-      result = result.filter((m) => m.verified);
-    }
+    return result;
+  }, [selectedCategory, debouncedSearch, allMasters, district]);
 
-    if (filterState.onlineOnly) {
-      result = result.filter((m) => m.isOnline);
-    }
+  const filteredMasters = useMemo(() => {
+    const result = applyMasterFilters(baseMasters, filterState);
 
-    if (filterState.certifiedOnly) {
-      result = result.filter((m) => m.hasCertificate);
-    }
-
-    if (filterState.executorType !== "all") {
-      result = result.filter((m) => (m.executorType ?? "private") === filterState.executorType);
-    }
-
-    result = [...result].sort((a, b) => {
+    return [...result].sort((a, b) => {
       switch (filterState.sortBy) {
         case "rating": return b.rating - a.rating;
         case "reviews": return b.reviews - a.reviews;
@@ -126,9 +117,7 @@ export default function HomePage() {
         default: return 0;
       }
     });
-
-    return result;
-  }, [selectedCategory, debouncedSearch, allMasters, filterState, district]);
+  }, [baseMasters, filterState]);
 
   const selectedCategoryName = selectedCategory
     ? categories.find((c) => c.id === selectedCategory)?.name
@@ -362,7 +351,7 @@ export default function HomePage() {
           value={filterState}
           onChange={setFilterState}
           onClose={() => setShowFilter(false)}
-          totalCount={filteredMasters.length}
+          masters={baseMasters}
         />
       )}
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search, Send, ShieldCheck, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +41,18 @@ export function useWelcomeOnboarding() {
 
 export function WelcomeOnboarding({ onDone }: { onDone: () => void }) {
   const [index, setIndex] = useState(0);
+  const nextRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    nextRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDone();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const slide = slides[index];
   const Icon = slide.icon;
   const isLast = index === slides.length - 1;
@@ -77,6 +89,7 @@ export function WelcomeOnboarding({ onDone }: { onDone: () => void }) {
           ))}
         </div>
         <button
+          ref={nextRef}
           onClick={() => (isLast ? onDone() : setIndex(index + 1))}
           data-testid="button-onboarding-next"
           className="w-full h-13 py-3.5 rounded-2xl bg-primary text-white font-bold text-base flex items-center justify-center gap-2"

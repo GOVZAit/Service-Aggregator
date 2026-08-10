@@ -186,6 +186,49 @@ export default function MasterOnboardingPage() {
           </>
         )}
 
+        {step === "details" && (
+          <>
+            <h2 className="text-xl font-bold mb-1">Кто вы как исполнитель?</h2>
+            <p className="text-muted-foreground text-sm mb-5">Это увидят клиенты в вашем профиле</p>
+            <div className="space-y-2 mb-6">
+              {(Object.keys(executorTypeLabels) as ExecutorType[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setExecutorType(t)}
+                  data-testid={`onboarding-executor-${t}`}
+                  aria-pressed={executorType === t}
+                  className={cn(
+                    "w-full px-4 py-3.5 rounded-2xl border-2 text-left text-sm font-medium transition-all",
+                    executorType === t ? "border-primary bg-primary/5 text-primary" : "border-border bg-card"
+                  )}
+                >
+                  {executorTypeLabels[t]}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setHasCertificate(!hasCertificate)}
+              data-testid="onboarding-toggle-certificate"
+              aria-pressed={hasCertificate}
+              className={cn(
+                "w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all",
+                hasCertificate ? "border-primary bg-primary/5" : "border-border bg-card"
+              )}
+            >
+              <div className="flex items-center gap-3 text-left">
+                <Award className={cn("w-5 h-5 shrink-0", hasCertificate ? "text-primary" : "text-muted-foreground")} />
+                <div>
+                  <p className={cn("text-sm font-medium", hasCertificate && "text-primary")}>У меня есть сертификат / диплом</p>
+                  <p className="text-xs text-muted-foreground">Подтвердите позже фото документа</p>
+                </div>
+              </div>
+              <div className={cn("w-12 h-6 rounded-full transition-all relative shrink-0", hasCertificate ? "bg-primary" : "bg-muted")}>
+                <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all", hasCertificate ? "right-1" : "left-1")} />
+              </div>
+            </button>
+          </>
+        )}
+
         {step === "description" && (
           <>
             <h2 className="text-xl font-bold mb-1">Расскажите о себе</h2>

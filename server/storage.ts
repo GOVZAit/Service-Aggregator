@@ -362,6 +362,7 @@ export interface IStorage {
   getMasterById(id: number): Promise<Master | undefined>;
   getMastersByCategory(categoryId: number): Promise<Master[]>;
   searchMasters(query: string): Promise<Master[]>;
+  updateMaster(id: number, patch: Partial<Master>): Promise<Master | undefined>;
 
   getRequests(): Promise<ServiceRequest[]>;
   getRequestById(id: number): Promise<ServiceRequest | undefined>;
@@ -418,6 +419,15 @@ export class MemStorage implements IStorage {
       m.description.toLowerCase().includes(q) ||
       (m.companyName?.toLowerCase().includes(q) ?? false)
     );
+  }
+
+  async updateMaster(id: number, patch: Partial<Master>): Promise<Master | undefined> {
+    const idx = this.masters.findIndex(m => m.id === id);
+    if (idx === -1) return undefined;
+    // Never allow identity fields to be overwritten via patch
+    const { id: _id, ...safe } = patch;
+    this.masters[idx] = { ...this.masters[idx], ...safe };
+    return this.masters[idx];
   }
 
   async getRequests(): Promise<ServiceRequest[]> {
