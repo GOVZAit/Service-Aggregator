@@ -83,6 +83,18 @@ export interface Master {
   showPortfolio?: boolean;
   showReviews?: boolean;
   showPrices?: boolean;
+  showCertificates?: boolean;
+  // Certificates & diplomas shown on the public profile
+  certificates?: Certificate[];
+}
+
+export interface Certificate {
+  id: number;
+  title: string;
+  issuer?: string;
+  year?: string;
+  /** Image of the document — URL or data-URL uploaded by the master */
+  image?: string;
 }
 
 export interface RequestUser {
@@ -141,6 +153,8 @@ export interface AuthUser {
   passwordHash: string;
   role: UserRole;
   createdAt: string;
+  /** Master profile this account manages (demo accounts are bound to master #1) */
+  masterId?: number;
 }
 
 export type PublicUser = Omit<AuthUser, 'passwordHash'>;
@@ -159,6 +173,14 @@ export const masterSettingsSchema = z.object({
   showPrices: z.boolean().optional(),
   hasCertificate: z.boolean().optional(),
   executorType: z.enum(['private', 'self_employed', 'company']).optional(),
+  showCertificates: z.boolean().optional(),
+  certificates: z.array(z.object({
+    id: z.number(),
+    title: z.string().min(1, 'Укажите название').max(120),
+    issuer: z.string().max(120).optional(),
+    year: z.string().max(10).optional(),
+    image: z.string().max(1_000_000).optional(), // URL or data-URL (~700 КБ файла)
+  }).strict()).max(20).optional(),
 }).strict();
 
 export type MasterSettingsInput = z.infer<typeof masterSettingsSchema>;

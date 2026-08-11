@@ -110,6 +110,10 @@ export async function registerRoutes(
     if (!user || user.role !== "master") {
       return res.status(403).json({ message: "Доступно только исполнителям" });
     }
+    // A master may only edit their own profile
+    if (user.masterId !== Number(req.params.id)) {
+      return res.status(403).json({ message: "Можно изменять только свой профиль" });
+    }
     const result = masterSettingsSchema.safeParse(req.body);
     if (!result.success) {
       return res.status(400).json({ message: result.error.issues[0].message });

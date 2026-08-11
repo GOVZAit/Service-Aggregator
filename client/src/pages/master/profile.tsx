@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { executorTypeLabels } from "@shared/schema";
-import type { CallMode, ExecutorType, Master, MasterSettingsInput } from "@shared/schema";
+import type { CallMode, Certificate, ExecutorType, Master, MasterSettingsInput } from "@shared/schema";
 
 const categoryOptions = [
   "Сантехника", "Электрика", "Уборка", "Ремонт", "Красота", "Авто", "Доставка", "Репетиторы"
@@ -82,9 +82,13 @@ export default function MasterProfilePage() {
     portfolio: masterData?.showPortfolio !== false,
     reviews: masterData?.showReviews !== false,
     prices: masterData?.showPrices !== false,
+    certificates: masterData?.showCertificates !== false,
   };
-  const toggleBlock = (key: "portfolio" | "reviews" | "prices") => {
-    const field = key === "portfolio" ? "showPortfolio" : key === "reviews" ? "showReviews" : "showPrices";
+  const toggleBlock = (key: "portfolio" | "reviews" | "prices" | "certificates") => {
+    const field =
+      key === "portfolio" ? "showPortfolio" :
+      key === "reviews" ? "showReviews" :
+      key === "certificates" ? "showCertificates" : "showPrices";
     settingsMutation.mutate({ [field]: !blockVisibility[key] });
   };
 
@@ -93,6 +97,63 @@ export default function MasterProfilePage() {
   const hasCertificate = masterData?.hasCertificate ?? false;
   const setExecutorType = (t: ExecutorType) => settingsMutation.mutate({ executorType: t });
   const setHasCertificate = (v: boolean) => settingsMutation.mutate({ hasCertificate: v });
+
+  // Certificates & diplomas
+  const certificates: Certificate[] = masterData?.certificates ?? [];
+  const [addingCert, setAddingCert] = useState(false);
+  const [certTitle, setCertTitle] = useState("");
+  const [certIssuer, setCertIssuer] = useState("");
+  const [certYear, setCertYear] = useState("");
+  const [certImage, setCertImage] = useState<string | null>(null);
+  const [certError, setCertError] = useState<string | null>(null);
+
+  const handleCertFile = (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 700_000) {
+      setCertError("Файл слишком большой — до 700 КБ");
+      return;
+    }
+    setCertError(null);
+    const reader = new FileReader();
+    reader.onload = () => setCertImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const resetCertForm = () => {
+    setAddingCert(false);
+    setCertTitle("");
+    setCertIssuer("");
+    setCertYear("");
+    setCertImage(null);
+    setCertError(null);
+  };
+
+  const saveCertificate = () => {
+    const title = certTitle.trim();
+    if (!title) {
+      setCertError("Укажите название документа");
+      return;
+    }
+    const nextId = certificates.reduce((m, c) => Math.max(m, c.id), 0) + 1;
+    const cert: Certificate = {
+      id: nextId,
+      title,
+      ...(certIssuer.trim() ? { issuer: certIssuer.trim() } : {}),
+      ...(certYear.trim() ? { year: certYear.trim() } : {}),
+      ...(certImage ? { image: certImage } : {}),
+    };
+    settingsMutation.mutate(
+      { certificates: [...certificates, cert] },
+      {
+        onSuccess: () => resetCertForm(),
+        onError: () => setCertError("Не удалось сохранить — попробуйте ещё раз"),
+      }
+    );
+  };
+
+  const removeCertificate = (id: number) => {
+    settingsMutation.mutate({ certificates: certificates.filter((c) => c.id !== id) });
+  };
   const [workFrom, setWorkFrom] = useState("09:00");
   const [workTo, setWorkTo] = useState("18:00");
   const [showSchedule, setShowSchedule] = useState(false);
@@ -505,6 +566,127 @@ export default function MasterProfilePage() {
           </div>
         </section>
 
+        {/* Certificates & diplomas */}
+        <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-sm">Сертификаты и дипломы</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Показываются клиентам в вашем профиле</p>
+            </div>
+            {!addingCert && (
+              <button
+                onClick={() => setAddingCert(true)}
+                data-testid="button-add-certificate"
+                className="flex items-center gap-1 text-sm font-medium text-primary"
+              >
+                <Plus className="w-4 h-4" /> Добавить
+              </button>
+            )}
+          </div>
+          <div className="p-4 space-y-3">
+            {certificates.length === 0 && !addingCert && (
+              <p className="text-sm text-muted-foreground">
+                Добавьте дипломы и сертификаты — это повышает доверие клиентов.
+              </p>
+            )}
+            {certificates.map((cert) => (
+              <div
+                key={cert.id}
+                className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/30 p-2.5"
+                data-testid={`cabinet-certificate-${cert.id}`}
+              >
+                {cert.image ? (
+                  <img src={cert.image} alt={cert.title} className="w-12 h-12 rounded-lg object-cover bg-muted shrink-0" />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Award className="w-5 h-5 text-primary" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium leading-snug">{cert.title}</p>
+                  {(cert.issuer || cert.year) && (
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                      {[cert.issuer, cert.year].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => removeCertificate(cert.id)}
+                  data-testid={`button-remove-certificate-${cert.id}`}
+                  aria-label="Удалить документ"
+                  className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            {addingCert && (
+              <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-3 space-y-2.5">
+                <input
+                  value={certTitle}
+                  onChange={(e) => setCertTitle(e.target.value)}
+                  placeholder="Название, напр. «Диплом электромонтажника»"
+                  data-testid="input-cert-title"
+                  className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+                />
+                <div className="flex gap-2">
+                  <input
+                    value={certIssuer}
+                    onChange={(e) => setCertIssuer(e.target.value)}
+                    placeholder="Кем выдан (необязательно)"
+                    data-testid="input-cert-issuer"
+                    className="flex-1 min-w-0 bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                  <input
+                    value={certYear}
+                    onChange={(e) => setCertYear(e.target.value)}
+                    placeholder="Год"
+                    data-testid="input-cert-year"
+                    className="w-20 bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <label className="flex items-center gap-2.5 cursor-pointer rounded-xl border border-dashed border-border bg-background px-3 py-2.5">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    data-testid="input-cert-photo"
+                    onChange={(e) => handleCertFile(e.target.files?.[0])}
+                  />
+                  {certImage ? (
+                    <>
+                      <img src={certImage} alt="Фото документа" className="w-10 h-10 rounded-lg object-cover" />
+                      <span className="text-sm text-muted-foreground">Фото добавлено — нажмите, чтобы заменить</span>
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Фото документа (необязательно)</span>
+                    </>
+                  )}
+                </label>
+                {certError && <p className="text-xs text-destructive">{certError}</p>}
+                <div className="flex gap-2 pt-0.5">
+                  <button
+                    onClick={saveCertificate}
+                    data-testid="button-save-certificate"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-semibold"
+                  >
+                    <Check className="w-4 h-4" /> Сохранить
+                  </button>
+                  <button
+                    onClick={resetCertForm}
+                    data-testid="button-cancel-certificate"
+                    className="px-4 rounded-xl border border-border text-sm font-medium"
+                  >
+                    Отмена
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* Profile block visibility */}
         <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
           <div className="px-4 py-3 border-b border-border/60">
@@ -516,6 +698,7 @@ export default function MasterProfilePage() {
               { key: "prices" as const, label: "Услуги и цены" },
               { key: "portfolio" as const, label: "Портфолио" },
               { key: "reviews" as const, label: "Отзывы" },
+              { key: "certificates" as const, label: "Сертификаты и дипломы" },
             ]).map(({ key, label }) => (
               <button
                 key={key}

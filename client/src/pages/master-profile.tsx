@@ -336,6 +336,47 @@ export default function MasterProfilePage() {
             )}
           </div>
 
+          {/* Certificates & diplomas */}
+          {master.showCertificates !== false && (master.certificates?.length ?? 0) > 0 && (
+            <div className="mb-4" data-testid="section-certificates">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Сертификаты и дипломы
+              </p>
+              <div className="space-y-2">
+                {master.certificates!.map((cert) => (
+                  <div
+                    key={cert.id}
+                    className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/30 p-2.5"
+                    data-testid={`certificate-${cert.id}`}
+                  >
+                    {cert.image ? (
+                      <a href={cert.image} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                        <img
+                          src={cert.image}
+                          alt={cert.title}
+                          className="w-14 h-14 rounded-lg object-cover bg-muted"
+                          loading="lazy"
+                        />
+                      </a>
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center shrink-0">
+                        <Award className="w-6 h-6 text-blue-500" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium leading-snug">{cert.title}</p>
+                      {(cert.issuer || cert.year) && (
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                          {[cert.issuer, cert.year].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Portfolio preview strip — visible immediately, full grid in the tab below */}
           {portfolioVisible && (
             <div className="mb-4">

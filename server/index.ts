@@ -15,6 +15,7 @@ declare module "http" {
 
 app.use(
   express.json({
+    limit: "12mb", // certificate photos are sent as data-URLs (up to 10 × ~1 МБ)
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
@@ -63,7 +64,9 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        // Truncate to keep uploaded document images / PII out of the logs
+        const body = JSON.stringify(capturedJsonResponse);
+        logLine += ` :: ${body.length > 200 ? body.slice(0, 200) + "…" : body}`;
       }
 
       log(logLine);

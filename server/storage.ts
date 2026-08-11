@@ -38,6 +38,21 @@ const mastersData: Master[] = [
     hasCertificate: true,
     executorType: 'self_employed',
     showPortfolio: true,
+    certificates: [
+      {
+        id: 1,
+        title: 'Диплом «Монтаж и эксплуатация сантехнических систем»',
+        issuer: 'Грозненский технический колледж',
+        year: '2014',
+        image: 'https://images.unsplash.com/photo-1589330694653-ded6df03f754?w=600&h=400&fit=crop',
+      },
+      {
+        id: 2,
+        title: 'Сертификат «Установка газовых водонагревателей»',
+        issuer: 'Учебный центр «Профи»',
+        year: '2021',
+      },
+    ],
   },
   {
     id: 2,
@@ -505,6 +520,8 @@ export class MemStorage implements IStorage {
       passwordHash: data.passwordHash,
       role: data.role,
       createdAt: new Date().toISOString(),
+      // Demo MVP: master accounts manage the demo master profile #1
+      ...(data.role === 'master' ? { masterId: 1 } : {}),
     };
     this.users.set(user.id, user);
     return user;
