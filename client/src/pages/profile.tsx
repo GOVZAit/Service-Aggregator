@@ -81,7 +81,7 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background pb-24">
+       <div className="app-page bg-background">
         <main className="px-4 py-6 max-w-lg mx-auto space-y-4">
           <Skeleton className="h-48 rounded-2xl" />
           <Skeleton className="h-32 rounded-2xl" />
@@ -93,7 +93,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background pb-24">
+       <div className="app-page bg-background">
         <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-4 safe-area-pt">
           <div className="max-w-lg mx-auto flex items-center justify-between">
             <h1 className="text-2xl font-bold">Кабинет клиента</h1>
@@ -125,7 +125,7 @@ export default function ProfilePage() {
   const contact = user.email ?? user.phone ?? "Контакт не указан";
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-28">
+    <div className="app-page bg-background">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-4 safe-area-pt">
         <div className="max-w-lg lg:max-w-4xl mx-auto flex items-center justify-between">
           <div>
@@ -140,7 +140,7 @@ export default function ProfilePage() {
 
       <main className="px-4 py-5 max-w-lg lg:max-w-4xl mx-auto space-y-4">
         <Card className="p-5 flex items-center gap-4">
-          <Avatar className="w-16 h-16 bg-gradient-to-br from-primary to-violet-500 shrink-0">
+          <Avatar className="w-16 h-16 bg-primary shrink-0">
             <AvatarFallback className="bg-transparent text-white text-xl font-semibold">{getInitials(user.name)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
@@ -173,7 +173,7 @@ export default function ProfilePage() {
             {editingName ? (
               <div className="space-y-3">
                 <label className="text-xs font-medium text-muted-foreground">Имя</label>
-                <Input value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} data-testid="input-profile-name" />
+                 <Input className="h-12 rounded-xl" autoComplete="name" value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} data-testid="input-profile-name" />
                 <div className="flex gap-2">
                   <Button onClick={saveName} disabled={nameDraft.trim().length < 2} data-testid="button-save-profile"><Save className="w-4 h-4 mr-1.5" />Сохранить</Button>
                   <Button variant="outline" onClick={() => { setNameDraft(user.name); setEditingName(false); }}><X className="w-4 h-4 mr-1.5" />Отмена</Button>

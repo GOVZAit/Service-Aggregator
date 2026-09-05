@@ -12,16 +12,15 @@ export default function MasterBottomNavigation() {
   const [location] = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/60 safe-area-bottom">
-      <div className="flex items-center justify-around px-2 py-2 max-w-lg mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 safe-area-bottom shadow-[0_-10px_30px_hsl(var(--foreground)/0.05)] lg:bottom-5 lg:left-1/2 lg:right-auto lg:w-auto lg:-translate-x-1/2 lg:rounded-full lg:border">
+      <div className="flex items-center justify-around px-2 py-1.5 max-w-lg mx-auto">
         {tabs.map(({ href, label, icon: Icon }) => {
           const isActive = location === href || (href !== "/master" && location.startsWith(href));
           return (
-            <Link key={href} href={href}>
-              <button
+            <Link key={href} href={href}
                 data-testid={`nav-master-${label.toLowerCase()}`}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-xl transition-all",
+                  "pressable min-w-[76px] min-h-[52px] flex flex-col items-center justify-center gap-0.5 px-4 py-1.5 rounded-xl transition-all lg:flex-row",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
@@ -31,7 +30,6 @@ export default function MasterBottomNavigation() {
                 <span className={cn("text-[10px] font-medium", isActive && "font-semibold")}>
                   {label}
                 </span>
-              </button>
             </Link>
           );
         })}

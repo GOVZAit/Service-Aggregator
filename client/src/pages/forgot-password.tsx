@@ -21,6 +21,7 @@ export default function ForgotPasswordPage() {
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email }),
       });
       const data = await response.json();
@@ -35,9 +36,9 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 py-12">
+    <div className="min-h-[100dvh] bg-background px-4 py-[calc(2rem+env(safe-area-inset-top,0px))]">
       <main className="max-w-md mx-auto">
-        <button onClick={() => navigate("/auth")} className="flex items-center gap-2 text-sm text-muted-foreground mb-10">
+        <button onClick={() => navigate("/auth")} className="min-h-[44px] flex items-center gap-2 text-sm text-muted-foreground mb-10">
           <ArrowLeft className="w-4 h-4" />Назад ко входу
         </button>
         <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-5">
@@ -70,7 +71,7 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="name@mail.ru"
-                  className="pl-9"
+                  className="h-12 pl-10 rounded-xl"
                   required
                   data-testid="input-forgot-email"
                 />

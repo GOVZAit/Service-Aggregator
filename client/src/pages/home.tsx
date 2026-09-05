@@ -136,7 +136,7 @@ export default function HomePage() {
     : "АБ";
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-28">
+    <div className="app-page bg-background">
       {showWelcome && <WelcomeOnboarding onDone={dismissWelcome} />}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt">
         <div className="max-w-lg lg:max-w-6xl mx-auto px-4 lg:px-6 pt-3 pb-3">
@@ -155,7 +155,7 @@ export default function HomePage() {
                 </div>
               </div>
             </button>
-            <Avatar className="w-10 h-10 bg-gradient-to-br from-primary to-violet-500">
+            <Avatar className="w-10 h-10 bg-primary shadow-sm">
               <AvatarFallback className="bg-transparent text-white font-semibold text-sm">
                 {initials}
               </AvatarFallback>
@@ -222,14 +222,13 @@ export default function HomePage() {
                     onClick={() => setSelectedCategory((prev) => (prev === cat.id ? null : cat.id))}
                     data-testid={`category-chip-${cat.id}`}
                     className={cn(
-                      "flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-sm font-semibold whitespace-nowrap shrink-0 transition-all active:scale-95",
+                      "pressable min-h-[44px] flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-sm font-semibold whitespace-nowrap shrink-0 transition-all",
                       isSelected
                         ? "text-white shadow-md"
                         : "bg-muted/60 text-foreground hover:bg-muted"
                     )}
                     style={isSelected ? { backgroundColor: cat.color } : undefined}
                   >
-                    <span className="text-base leading-none">{cat.emoji}</span>
                     <span>{cat.name}</span>
                   </button>
                 );
@@ -250,7 +249,7 @@ export default function HomePage() {
 
         <div className="min-w-0">
         {/* Broadcast banner */}
-        <div className="mb-5 rounded-2xl bg-gradient-to-r from-primary/10 to-violet-500/10 border border-primary/20 px-4 py-3 flex items-center gap-3">
+        <div className="mb-5 rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
             <Zap className="w-5 h-5 text-primary" />
           </div>
@@ -261,7 +260,7 @@ export default function HomePage() {
           <button
             onClick={() => { setBroadcastCategory(selectedCategoryName ?? undefined); setShowBroadcast(true); }}
             data-testid="button-broadcast"
-            className="shrink-0 text-xs font-bold text-white bg-primary px-3 py-2 rounded-xl whitespace-nowrap"
+            className="pressable shrink-0 min-h-[44px] text-xs font-bold text-primary-foreground bg-primary px-3 py-2 rounded-xl whitespace-nowrap"
           >
             Найти
           </button>
@@ -294,7 +293,7 @@ export default function HomePage() {
                   aria-pressed={viewMode === "list"}
                   data-testid="masters-view-list"
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                    "min-h-[44px] px-3 py-2 rounded-lg text-xs font-semibold transition-all",
                     viewMode === "list" ? "bg-background shadow-sm" : "text-muted-foreground"
                   )}
                 >
@@ -305,7 +304,7 @@ export default function HomePage() {
                   aria-pressed={viewMode === "map"}
                   data-testid="masters-view-map"
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                    "min-h-[44px] px-3 py-2 rounded-lg text-xs font-semibold transition-all",
                     viewMode === "map" ? "bg-background shadow-sm" : "text-muted-foreground"
                   )}
                 >

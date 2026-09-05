@@ -39,11 +39,11 @@ export default function MasterDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-28">
+    <div className="app-page bg-background">
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/60 px-4 py-3 safe-area-pt">
         <div className="max-w-lg lg:max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">{initials}</div><div><p className="text-xs text-muted-foreground">Добро пожаловать</p><h1 className="font-semibold text-sm">{user?.name || "Исполнитель"}</h1></div></div>
-          <button onClick={() => onlineMutation.mutate(!isOnline)} disabled={onlineMutation.isPending} data-testid="button-online-toggle" className={cn("flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border transition-all", isOnline ? "border-green-300 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400" : "border-border bg-muted text-muted-foreground")}>
+          <button onClick={() => onlineMutation.mutate(!isOnline)} disabled={onlineMutation.isPending} aria-pressed={isOnline} data-testid="button-online-toggle" className={cn("pressable min-h-[44px] flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border transition-all", isOnline ? "border-green-300 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400" : "border-border bg-muted text-muted-foreground")}>
             {isOnline ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}{isOnline ? "Онлайн" : "Офлайн"}
           </button>
         </div>

@@ -24,6 +24,7 @@ export default function ResetPasswordPage() {
       const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ token, password }),
       });
       const data = await response.json();
@@ -37,9 +38,9 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 py-12">
+    <div className="min-h-[100dvh] bg-background px-4 py-[calc(2rem+env(safe-area-inset-top,0px))]">
       <main className="max-w-md mx-auto">
-        <button onClick={() => navigate("/auth")} className="flex items-center gap-2 text-sm text-muted-foreground mb-10">
+        <button onClick={() => navigate("/auth")} className="min-h-[44px] flex items-center gap-2 text-sm text-muted-foreground mb-10">
           <ArrowLeft className="w-4 h-4" />Назад ко входу
         </button>
         {success ? (
@@ -61,8 +62,8 @@ export default function ResetPasswordPage() {
             <h1 className="text-2xl font-bold">Новый пароль</h1>
             <p className="text-sm text-muted-foreground mt-2 mb-6">Придумайте новый пароль минимум из 6 символов.</p>
             <form onSubmit={submit} className="space-y-4">
-              <Input type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Новый пароль" required data-testid="input-reset-password" />
-              <Input type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Повторите новый пароль" required data-testid="input-reset-confirm" />
+               <Input className="h-12 rounded-xl" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Новый пароль" required data-testid="input-reset-password" />
+               <Input className="h-12 rounded-xl" type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Повторите новый пароль" required data-testid="input-reset-confirm" />
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full h-12" disabled={loading} data-testid="button-reset-submit">
                 {loading ? "Сохраняем..." : "Установить новый пароль"}

@@ -68,7 +68,7 @@ export default function MasterOnboardingPage() {
 
   if (step === "welcome") {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
+      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center px-6 text-center safe-area-pt safe-area-pb">
         <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center mb-6">
           <Briefcase className="w-12 h-12 text-primary" />
         </div>
@@ -114,7 +114,7 @@ export default function MasterOnboardingPage() {
 
   if (step === "done") {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
+      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center px-6 text-center safe-area-pt safe-area-pb">
         <div className="w-24 h-24 rounded-full bg-green-100 dark:bg-green-950/50 flex items-center justify-center mb-6">
           <CheckCircle2 className="w-12 h-12 text-green-500" />
         </div>
@@ -156,7 +156,7 @@ export default function MasterOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-[100dvh] bg-background flex flex-col safe-area-pt">
       {/* Progress */}
       <div className="px-5 pt-14 pb-4">
         <div className="flex items-center gap-2 mb-6">
@@ -267,7 +267,7 @@ export default function MasterOnboardingPage() {
               placeholder="Например: Опытный сантехник с 10-летним стажем. Работаю по всему Грозному, гарантия на все работы..."
               rows={6}
               data-testid="input-onboarding-description"
-              className="w-full px-4 py-3 rounded-2xl bg-muted border border-border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full px-4 py-3 rounded-2xl bg-muted border border-border text-base resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             <p className="text-xs text-muted-foreground mt-2">{description.length} / 300 символов</p>
 
@@ -283,7 +283,7 @@ export default function MasterOnboardingPage() {
         )}
       </div>
 
-      <div className="px-5 pb-10 space-y-3 shrink-0">
+      <div className="px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-3 shrink-0">
         <button
           onClick={() => {
             if (step === "category") setStep("details");
@@ -304,7 +304,7 @@ export default function MasterOnboardingPage() {
         {step === "description" && (
           <button
             onClick={() => completeOnboarding(false)}
-            className="w-full py-3 text-sm text-muted-foreground"
+            className="w-full min-h-[44px] py-3 text-sm text-muted-foreground"
             data-testid="button-skip-description"
           >
             Заполнить позже

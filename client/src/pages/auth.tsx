@@ -70,11 +70,11 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="px-4 pt-12 pb-6 max-w-lg mx-auto w-full">
+    <div className="min-h-[100dvh] bg-background flex flex-col">
+      <header className="px-4 pt-[calc(1.5rem+env(safe-area-inset-top,0px))] pb-6 max-w-lg mx-auto w-full">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-muted-foreground mb-8"
+          className="min-h-[44px] flex items-center gap-2 text-muted-foreground mb-8"
           data-testid="button-back-auth"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -82,7 +82,7 @@ export default function AuthPage() {
         </button>
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-1">995</h1>
+          <h1 className="display-face text-3xl font-bold tracking-tight mb-2">Служба 995</h1>
           <p className="text-muted-foreground text-sm">Сервисы и мастера Грозного</p>
         </div>
 
@@ -90,7 +90,7 @@ export default function AuthPage() {
           <button
             onClick={() => { setTab("login"); setError(""); }}
             data-testid="tab-login"
-            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all ${
+            className={`flex-1 min-h-[44px] rounded-xl py-2.5 text-sm font-semibold transition-all ${
               tab === "login"
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground"
@@ -101,7 +101,7 @@ export default function AuthPage() {
           <button
             onClick={() => { setTab("register"); setError(""); }}
             data-testid="tab-register"
-            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all ${
+            className={`flex-1 min-h-[44px] rounded-xl py-2.5 text-sm font-semibold transition-all ${
               tab === "register"
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground"
@@ -132,7 +132,7 @@ export default function AuthPage() {
                     <FormControl>
                       <div className="relative">
                         <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input {...field} inputMode="email" placeholder="+7 999 000-00-00 или name@mail.ru" className="pl-9" data-testid="input-login-identifier" />
+                <Input {...field} inputMode="email" autoComplete="username" placeholder="+7 999 000-00-00 или name@mail.ru" className="h-12 pl-10 rounded-xl" data-testid="input-login-identifier" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -153,10 +153,10 @@ export default function AuthPage() {
                           type={showPassword ? "text" : "password"}
                           autoComplete="current-password"
                           placeholder="Введите пароль"
-                          className="pl-9 pr-10"
+                          className="h-12 pl-10 pr-12 rounded-xl"
                           data-testid="input-login-password"
                         />
-                        <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        <button type="button" aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"} onClick={() => setShowPassword((v) => !v)} className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-muted-foreground">
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
@@ -168,7 +168,7 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => navigate("/forgot-password")}
-                className="block ml-auto text-sm font-medium text-primary"
+                className="min-h-[44px] flex items-center ml-auto text-sm font-medium text-primary"
                 data-testid="button-forgot-password"
               >
                 Забыли пароль?
@@ -240,7 +240,7 @@ export default function AuthPage() {
                     <FormControl>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input {...field} placeholder="Ваше имя" className="pl-9" data-testid="input-register-name" />
+                        <Input {...field} autoComplete="name" placeholder="Ваше имя" className="h-12 pl-10 rounded-xl" data-testid="input-register-name" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -256,7 +256,7 @@ export default function AuthPage() {
                     <FormControl>
                       <div className="relative">
                         <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input {...field} inputMode="email" placeholder="+7 999 000-00-00 или name@mail.ru" className="pl-9" data-testid="input-register-identifier" />
+                        <Input {...field} inputMode="email" autoComplete="username" placeholder="+7 999 000-00-00 или name@mail.ru" className="h-12 pl-10 rounded-xl" data-testid="input-register-identifier" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -277,10 +277,10 @@ export default function AuthPage() {
                           type={showPassword ? "text" : "password"}
                           autoComplete="new-password"
                           placeholder="Минимум 6 символов"
-                          className="pl-9 pr-10"
+                          className="h-12 pl-10 pr-12 rounded-xl"
                           data-testid="input-register-password"
                         />
-                        <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        <button type="button" aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"} onClick={() => setShowPassword((v) => !v)} className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-muted-foreground">
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
@@ -302,10 +302,10 @@ export default function AuthPage() {
                           {...field}
                           type={showConfirm ? "text" : "password"}
                           placeholder="Повторите пароль"
-                          className="pl-9 pr-10"
+                          className="h-12 pl-10 pr-12 rounded-xl"
                           data-testid="input-register-confirm"
                         />
-                        <button type="button" onClick={() => setShowConfirm((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        <button type="button" aria-label={showConfirm ? "Скрыть пароль" : "Показать пароль"} onClick={() => setShowConfirm((v) => !v)} className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-muted-foreground">
                           {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
