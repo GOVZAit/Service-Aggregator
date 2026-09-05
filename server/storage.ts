@@ -1,4 +1,7 @@
 import type { Master, ServiceRequest, Order, ChatMessage, AuthUser } from "@shared/schema";
+import { authUsers, masterSettings, persistedOrders } from "@shared/schema";
+import { desc, eq, or, sql } from "drizzle-orm";
+import { db } from "./db";
 
 const mastersData: Master[] = [
   {
@@ -436,53 +439,50 @@ interface PasswordResetRecord {
 
 export class MemStorage implements IStorage {
   private masters: Master[];
+
   private requests: ServiceRequest[];
-  private orders: Order[];
+
   private chatMessages: Map<number, ChatMessage[]>;
-  private users: Map<number, AuthUser>;
-  private nextUserId: number;
+
   private nextRequestId: number;
-  private nextOrderId: number;
+
   private passwordResets: PasswordResetRecord[];
 
   constructor() {
     this.masters = [...mastersData];
     this.requests = [...requestsData];
-    this.orders = [...ordersData];
     this.chatMessages = new Map();
-    this.users = new Map();
-    this.nextUserId = 1;
     this.nextRequestId = requestsData.length + 1;
-    this.nextOrderId = ordersData.length + 1;
     this.passwordResets = [];
   }
 
   async getMasters(): Promise<Master[]> {
-    return this.masters;
+    return Promise.all(this.masters.map((master) => this.withPersistedSettings(master)));
   }
 
   async getMasterById(id: number): Promise<Master | undefined> {
-    return this.masters.find(m => m.id === id);
+    const master = this.masters.find(m => m.id === id);
+    return master ? this.withPersistedSettings(master) : undefined;
   }
 
   async getMastersByCategory(categoryId: number): Promise<Master[]> {
-    return this.masters.filter(m => m.categoryId === categoryId);
+    return Promise.all(this.masters.filter(m => m.categoryId === categoryId).map((master) => this.withPersistedSettings(master)));
   }
 
   async searchMasters(query: string): Promise<Master[]> {
     const q = query.toLowerCase();
-    return this.masters.filter(m =>
+    const matches = this.masters.filter(m =>
       m.name.toLowerCase().includes(q) ||
       m.category.toLowerCase().includes(q) ||
       m.description.toLowerCase().includes(q) ||
       (m.companyName?.toLowerCase().includes(q) ?? false)
     );
+    return Promise.all(matches.map((master) => this.withPersistedSettings(master)));
   }
 
   async updateMaster(id: number, patch: Partial<Master>): Promise<Master | undefined> {
-    const idx = this.masters.findIndex(m => m.id === id);
-    if (idx === -1) return undefined;
-    // Never allow identity fields to be overwritten via patch
+    const master = this.masters.find(m => m.id === id);
+    if (!master) return undefined;
     const { id: _id, ...safe } = patch;
     const cityCenters: Record<string, { lat: number; lng: number }> = {
       'Грозный': { lat: 43.317, lng: 45.6992 },
@@ -493,13 +493,20 @@ export class MemStorage implements IStorage {
     };
     const center = safe.city ? cityCenters[safe.city] : undefined;
     const firstPrice = safe.services?.[0]?.price;
-    this.masters[idx] = {
-      ...this.masters[idx],
+    const [current] = await db.select().from(masterSettings)
+      .where(eq(masterSettings.masterId, id)).limit(1);
+    const persisted: Partial<Master> = {
+      ...(current?.settings ?? {}),
       ...safe,
       ...(center ?? {}),
       ...(firstPrice ? { price: `от ${firstPrice.replace(/^от\\s+/i, '')}` } : {}),
     };
-    return this.masters[idx];
+    await db.insert(masterSettings).values({ masterId: id, settings: persisted })
+      .onConflictDoUpdate({
+        target: masterSettings.masterId,
+        set: { settings: persisted, updatedAt: new Date() },
+      });
+    return { ...master, ...persisted };
   }
 
   async createMaster(data: { name: string; phone?: string }): Promise<Master> {
@@ -558,36 +565,52 @@ export class MemStorage implements IStorage {
   }
 
   async getOrders(filter?: { clientId?: number; masterId?: number }): Promise<Order[]> {
-    if (filter?.clientId !== undefined) return this.orders.filter((order) => order.clientId === filter.clientId);
-    if (filter?.masterId !== undefined) return this.orders.filter((order) => order.masterId === filter.masterId);
+    if (filter?.clientId !== undefined) {
+      const rows = await db.select({
+        id: persistedOrders.id, title: persistedOrders.title, masterId: persistedOrders.masterId,
+        clientId: persistedOrders.clientId, status: persistedOrders.status, date: persistedOrders.date,
+        price: persistedOrders.price, address: persistedOrders.address, comment: persistedOrders.comment,
+      }).from(persistedOrders).where(eq(persistedOrders.clientId, filter.clientId)).orderBy(desc(persistedOrders.id));
+      return rows.map(toOrder);
+    }
+    if (filter?.masterId !== undefined) {
+      const rows = await db.select({
+        id: persistedOrders.id, title: persistedOrders.title, masterId: persistedOrders.masterId,
+        clientId: persistedOrders.clientId, status: persistedOrders.status, date: persistedOrders.date,
+        price: persistedOrders.price, address: persistedOrders.address, comment: persistedOrders.comment,
+      }).from(persistedOrders).where(eq(persistedOrders.masterId, filter.masterId)).orderBy(desc(persistedOrders.id));
+      return rows.map(toOrder);
+    }
     return [];
   }
 
   async getOrderById(id: number): Promise<Order | undefined> {
-    return this.orders.find(o => o.id === id);
+    const [order] = await db.select({
+      id: persistedOrders.id, title: persistedOrders.title, masterId: persistedOrders.masterId,
+      clientId: persistedOrders.clientId, status: persistedOrders.status, date: persistedOrders.date,
+      price: persistedOrders.price, address: persistedOrders.address, comment: persistedOrders.comment,
+    }).from(persistedOrders).where(eq(persistedOrders.id, id)).limit(1);
+    return order ? toOrder(order) : undefined;
   }
 
   async createOrder(data: Omit<Order, 'id'>): Promise<Order> {
-    const order: Order = { id: this.nextOrderId++, ...data };
-    this.orders.push(order);
-    return order;
+    if (data.clientId === undefined) throw new Error("clientId is required");
+    const [order] = await db.insert(persistedOrders).values({
+      ...data,
+      clientId: data.clientId,
+    }).returning();
+    const { createdAt: _, ...result } = order;
+    return toOrder(result);
   }
 
   async updateOrder(id: number, patch: Pick<Order, 'status'>): Promise<Order | undefined> {
-    const index = this.orders.findIndex((order) => order.id === id);
-    if (index === -1) return undefined;
-    const previousStatus = this.orders[index].status;
-    this.orders[index] = { ...this.orders[index], ...patch };
-    if (previousStatus !== 'completed' && patch.status === 'completed') {
-      const masterIndex = this.masters.findIndex((master) => master.id === this.orders[index].masterId);
-      if (masterIndex !== -1) {
-        this.masters[masterIndex] = {
-          ...this.masters[masterIndex],
-          completedOrders: this.masters[masterIndex].completedOrders + 1,
-        };
-      }
-    }
-    return this.orders[index];
+    const [order] = await db.update(persistedOrders)
+      .set({ status: patch.status })
+      .where(eq(persistedOrders.id, id))
+      .returning();
+    if (!order) return undefined;
+    const { createdAt: _, ...result } = order;
+    return toOrder(result);
   }
 
   async getMessages(masterId: number): Promise<ChatMessage[]> {
@@ -602,50 +625,65 @@ export class MemStorage implements IStorage {
   }
 
   async createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: 'client' | 'master' }): Promise<AuthUser> {
-    const master = data.role === 'master'
-      ? await this.createMaster({ name: data.name, phone: data.phone })
-      : undefined;
-    const user: AuthUser = {
-      id: this.nextUserId++,
-      name: data.name,
-      ...(data.phone ? { phone: data.phone } : {}),
-      ...(data.email ? { email: data.email } : {}),
-      passwordHash: data.passwordHash,
-      sessionVersion: 1,
-      role: data.role,
-      createdAt: new Date().toISOString(),
-      ...(master ? { masterId: master.id } : {}),
+    const [user] = await db.insert(authUsers).values({
+      ...data,
+      masterId: data.role === "master" ? 1 : null,
+    }).returning();
+    return {
+      ...user,
+      phone: user.phone ?? undefined,
+      email: user.email ?? undefined,
+      masterId: user.masterId ?? undefined,
+      createdAt: user.createdAt.toISOString(),
     };
-    this.users.set(user.id, user);
-    return user;
   }
 
   async getUserByIdentifier(identifier: string): Promise<AuthUser | undefined> {
-    let found: AuthUser | undefined;
-    this.users.forEach((user) => {
-      if (user.phone === identifier || user.email === identifier) found = user;
-    });
-    return found;
+    const [user] = await db.select().from(authUsers)
+      .where(or(eq(authUsers.phone, identifier), eq(authUsers.email, identifier))).limit(1);
+    return user ? {
+      ...user,
+      phone: user.phone ?? undefined,
+      email: user.email ?? undefined,
+      masterId: user.masterId ?? undefined,
+      createdAt: user.createdAt.toISOString(),
+    } : undefined;
   }
 
   async getUserById(id: number): Promise<AuthUser | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(authUsers).where(eq(authUsers.id, id)).limit(1);
+    return user ? {
+      ...user,
+      phone: user.phone ?? undefined,
+      email: user.email ?? undefined,
+      masterId: user.masterId ?? undefined,
+      createdAt: user.createdAt.toISOString(),
+    } : undefined;
   }
 
   async updateUser(id: number, patch: { name: string }): Promise<AuthUser | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    const updated = { ...user, ...patch };
-    this.users.set(id, updated);
-    return updated;
+    const [user] = await db.update(authUsers).set(patch).where(eq(authUsers.id, id)).returning();
+    return user ? {
+      ...user,
+      phone: user.phone ?? undefined,
+      email: user.email ?? undefined,
+      masterId: user.masterId ?? undefined,
+      createdAt: user.createdAt.toISOString(),
+    } : undefined;
   }
 
   async updateUserPassword(id: number, passwordHash: string): Promise<AuthUser | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    const updated = { ...user, passwordHash, sessionVersion: user.sessionVersion + 1 };
-    this.users.set(id, updated);
-    return updated;
+    const [user] = await db.update(authUsers).set({
+      passwordHash,
+      sessionVersion: sql`${authUsers.sessionVersion} + 1`,
+    }).where(eq(authUsers.id, id)).returning();
+    return user ? {
+      ...user,
+      phone: user.phone ?? undefined,
+      email: user.email ?? undefined,
+      masterId: user.masterId ?? undefined,
+      createdAt: user.createdAt.toISOString(),
+    } : undefined;
   }
 
   async createPasswordReset(userId: number, tokenHash: string, expiresAt: number): Promise<void> {
@@ -657,12 +695,33 @@ export class MemStorage implements IStorage {
     const record = this.passwordResets.find((item) => item.tokenHash === tokenHash);
     if (!record || record.usedAt || record.expiresAt <= now) return undefined;
     record.usedAt = now;
-    return this.users.get(record.userId);
+    return this.getUserById(record.userId);
   }
 
   async revokePasswordResets(userId: number): Promise<void> {
     this.passwordResets = this.passwordResets.filter((record) => record.userId !== userId);
   }
+
+  private async withPersistedSettings(master: Master): Promise<Master> {
+    const [row] = await db.select().from(masterSettings).where(eq(masterSettings.masterId, master.id)).limit(1);
+    return row ? { ...master, ...row.settings } : master;
+  }
 }
 
 export const storage = new MemStorage();
+
+type PersistedOrderRow = typeof persistedOrders.$inferSelect;
+
+function toOrder(row: Omit<PersistedOrderRow, "createdAt">): Order {
+  return {
+    id: row.id,
+    title: row.title,
+    masterId: row.masterId,
+    clientId: row.clientId,
+    status: row.status,
+    date: row.date,
+    price: row.price,
+    ...(row.address !== null ? { address: row.address } : {}),
+    ...(row.comment !== null ? { comment: row.comment } : {}),
+  };
+}

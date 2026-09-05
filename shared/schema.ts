@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 export const categories = [
   { id: 1, name: 'Сантехника', iconName: 'Wrench', emoji: '🔧', color: '#007AFF' },
@@ -177,6 +178,21 @@ export interface AuthUser {
 
 export type PublicUser = Omit<AuthUser, 'passwordHash' | 'sessionVersion'>;
 
+export const authUsers = pgTable("auth_users", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  passwordHash: text("password_hash").notNull(),
+  sessionVersion: integer("session_version").default(1).notNull(),
+  role: text("role").$type<UserRole>().notNull(),
+  masterId: integer("master_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("auth_users_phone_unique").on(table.phone),
+  uniqueIndex("auth_users_email_unique").on(table.email),
+  uniqueIndex("auth_users_master_id_unique").on(table.masterId),
+]);
 export const registerSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   identifier: z.string().min(5, 'Введите номер телефона или email'),
@@ -275,3 +291,33 @@ export const insertRequestSchema = z.object({
 });
 
 export type InsertRequest = z.infer<typeof insertRequestSchema>;
+
+export const persistedOrders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  masterId: integer("master_id").notNull(),
+  clientId: integer("client_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  status: text("status").$type<OrderStatus>().notNull(),
+  date: text("date").notNull(),
+  price: text("price").notNull(),
+  address: text("address"),
+  comment: text("comment"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("orders_client_id_idx").on(table.clientId),
+  index("orders_master_id_idx").on(table.masterId),
+]);
+
+export const userSessions = pgTable("user_sessions", {
+  sid: varchar("sid").primaryKey(),
+  sess: jsonb("sess").$type<Record<string, unknown>>().notNull(),
+  expire: timestamp("expire", { precision: 6 }).notNull(),
+}, (table) => [
+  index("user_sessions_expire_idx").on(table.expire),
+]);
+
+export const masterSettings = pgTable("master_settings", {
+  masterId: integer("master_id").primaryKey(),
+  settings: jsonb("settings").$type<Partial<Master>>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});

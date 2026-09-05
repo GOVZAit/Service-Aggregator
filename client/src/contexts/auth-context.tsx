@@ -58,18 +58,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { user: data.user, emailDelivery: data.emailDelivery };
   }, []);
 
-  const updateProfile = useCallback(async (name: string) => {
-    const res = await fetch("/api/auth/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Не удалось сохранить");
-    setUser(data.user);
-    return data.user;
-  }, []);
-
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     await queryClient.cancelQueries();

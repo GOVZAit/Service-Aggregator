@@ -16,6 +16,9 @@ function normalizeIdentifier(value: string) {
   return digits;
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "23505";
+}
 function startAuthenticatedSession(req: Express.Request, userId: number, sessionVersion: number) {
   return new Promise<void>((resolve, reject) => {
     req.session.regenerate((error) => {
@@ -114,6 +117,11 @@ export async function registerRoutes(
       return res.status(400).json({ message: result.error.issues[0].message });
     }
     const { name, identifier: rawIdentifier, password, role } = result.data;
+    if (role === "master") {
+      return res.status(403).json({
+        message: "Регистрация исполнителей временно доступна только по подтверждённому приглашению",
+      });
+    }
     const isEmail = rawIdentifier.includes("@");
     const identifier = normalizeIdentifier(rawIdentifier);
     if (isEmail ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier) : identifier.replace(/\D/g, "").length < 10) {
@@ -126,12 +134,23 @@ export async function registerRoutes(
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await storage.createUser({
-      name,
-      ...(isEmail ? { email: identifier } : { phone: identifier }),
-      passwordHash,
-      role: role ?? 'client',
-    });
+    let user;
+    try {
+      user = await storage.createUser({
+        name,
+        ...(isEmail ? { email: identifier } : { phone: identifier }),
+        passwordHash,
+        role: role ?? 'client',
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        if (uniqueConstraint(error) === "auth_users_master_id_unique") {
+          return res.status(409).json({ message: "Этот профиль мастера уже привязан к аккаунту" });
+        }
+        return res.status(409).json({ message: "Этот телефон или email уже зарегистрирован" });
+      }
+      throw error;
+    }
 
     await startAuthenticatedSession(req, user.id, user.sessionVersion);
     const publicUser = toPublicUser(user);
@@ -390,4 +409,10 @@ export async function registerRoutes(
   });
 
   return httpServer;
+}
+
+function uniqueConstraint(error: unknown): string | undefined {
+  return typeof error === "object" && error !== null && "constraint" in error
+    ? String(error.constraint)
+    : undefined;
 }
