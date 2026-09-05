@@ -15,6 +15,7 @@ import ProfilePage from "@/pages/profile";
 import CityServicesPage from "@/pages/city-services";
 import ContactsPage from "@/pages/contacts";
 import DoctorsPage from "@/pages/doctors";
+import LostFoundPage from "@/pages/lost-found";
 import AuthPage from "@/pages/auth";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
@@ -79,6 +80,7 @@ function Router() {
         <Route path="/city" component={CityServicesPage} />
         <Route path="/doctors" component={DoctorsPage} />
         <Route path="/contacts" component={ContactsPage} />
+        <Route path="/lost-found" component={LostFoundPage} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
