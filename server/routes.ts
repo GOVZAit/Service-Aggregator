@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import { storage } from "./storage";
-import { emailDeliveryConfigured, sendPasswordResetEmail, sendWelcomeEmail } from "./email";
+import { emailDeliveryConfigured, passwordResetDeliveryConfigured, sendPasswordResetEmail, sendWelcomeEmail } from "./email";
 import { categories, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema } from "@shared/schema";
 import type { AuthUser } from "@shared/schema";
 
@@ -75,6 +75,16 @@ function queuePasswordResetEmail(user: AuthUser) {
   });
 }
 
+function queueWelcomeEmail(user: AuthUser) {
+  if (!user.email) return;
+  setImmediate(async () => {
+    const delivered = await sendWelcomeEmail({ to: user.email!, login: user.email! });
+    if (!delivered) {
+      console.error("Welcome email was not delivered", { userId: user.id });
+    }
+  });
+}
+
 async function destroyUserSessions(req: Express.Request, userId: number) {
   const store = req.sessionStore;
   const allSessions = store.all?.bind(store);
@@ -137,10 +147,13 @@ export async function registerRoutes(
 
     await startAuthenticatedSession(req, user.id, user.sessionVersion);
     const publicUser = toPublicUser(user);
-    const emailDelivery = user.email
-      ? await sendWelcomeEmail({ to: user.email, login: user.email })
-      : false;
-    res.status(201).json({ user: publicUser, emailDelivery: emailDelivery ? "sent" : "not_configured" });
+    if (user.email && emailDeliveryConfigured) queueWelcomeEmail(user);
+    const emailDelivery = !user.email
+      ? "unavailable_for_phone"
+      : emailDeliveryConfigured
+        ? "queued"
+        : "not_configured";
+    res.status(201).json({ user: publicUser, emailDelivery });
   });
 
   app.post("/api/auth/login", async (req, res) => {
@@ -175,10 +188,10 @@ export async function registerRoutes(
 
     const genericResponse = {
       message: "Если аккаунт с таким email существует, инструкция будет отправлена на почту.",
-      emailDelivery: emailDeliveryConfigured ? "available" as const : "not_configured" as const,
+      emailDelivery: passwordResetDeliveryConfigured ? "available" as const : "not_configured" as const,
     };
     const user = await storage.getUserByIdentifier(result.data.email);
-    if (user?.email) queuePasswordResetEmail(user);
+    if (user?.email && passwordResetDeliveryConfigured) queuePasswordResetEmail(user);
     res.json(genericResponse);
   });
 

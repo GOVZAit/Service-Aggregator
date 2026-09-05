@@ -6,9 +6,14 @@ interface AuthContextValue {
   user: PublicUser | null;
   isLoading: boolean;
   login: (identifier: string, password: string) => Promise<PublicUser>;
-  register: (name: string, identifier: string, password: string, role: UserRole) => Promise<PublicUser>;
+  register: (name: string, identifier: string, password: string, role: UserRole) => Promise<RegistrationResult>;
   updateProfile: (name: string) => Promise<PublicUser>;
   logout: () => Promise<void>;
+}
+
+export interface RegistrationResult {
+  user: PublicUser;
+  emailDelivery: "queued" | "not_configured" | "unavailable_for_phone";
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -39,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data.user;
   }, []);
 
-  const register = useCallback(async (name: string, identifier: string, password: string, role: UserRole): Promise<PublicUser> => {
+  const register = useCallback(async (name: string, identifier: string, password: string, role: UserRole): Promise<RegistrationResult> => {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await queryClient.cancelQueries();
     queryClient.removeQueries();
     setUser(data.user);
-    return data.user;
+    return { user: data.user, emailDelivery: data.emailDelivery };
   }, []);
 
   const updateProfile = useCallback(async (name: string) => {

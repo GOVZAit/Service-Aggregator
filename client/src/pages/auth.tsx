@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { registerSchema, loginSchema } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 const registerFormSchema = registerSchema
   .extend({ confirmPassword: z.string().min(1, "Повторите пароль") })
@@ -34,6 +35,7 @@ export default function AuthPage() {
   const [tab, setTab] = useState<Tab>(initialTab);
   const [, navigate] = useLocation();
   const { login, register } = useAuth();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
@@ -62,8 +64,14 @@ export default function AuthPage() {
   const onRegister = async (values: { name: string; identifier: string; password: string }) => {
     setError("");
     try {
-      const newUser = await register(values.name, values.identifier, values.password, selectedRole);
-      navigate(newUser.role === "master" ? "/master/onboarding" : "/profile");
+      const result = await register(values.name, values.identifier, values.password, selectedRole);
+      const description = result.emailDelivery === "queued"
+        ? "Письмо с логином отправляется на указанную почту. Пароля в письме нет."
+        : result.emailDelivery === "unavailable_for_phone"
+          ? "Аккаунт создан по телефону. Почтовое письмо для такой регистрации недоступно."
+          : "Аккаунт создан, но почтовая отправка пока не подключена.";
+      toast({ title: "Аккаунт создан", description });
+      navigate(result.user.role === "master" ? "/master/onboarding" : "/profile");
     } catch (e: any) {
       setError(e.message);
     }
@@ -327,7 +335,7 @@ export default function AuthPage() {
                   : "Создать аккаунт"}
               </Button>
               <p className="text-xs text-muted-foreground text-center">
-                Для аккаунта с email после подключения почтовой отправки придёт письмо с логином. Сам пароль в письмах не отправляется.
+                Если почтовая отправка подключена, для регистрации по email отправим логин. Для телефона письмо недоступно. Пароль в письмах не отправляется.
               </p>
             </form>
           </Form>
