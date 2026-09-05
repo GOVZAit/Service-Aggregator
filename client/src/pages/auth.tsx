@@ -165,6 +165,14 @@ export default function AuthPage() {
                   </FormItem>
                 )}
               />
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="block ml-auto text-sm font-medium text-primary"
+                data-testid="button-forgot-password"
+              >
+                Забыли пароль?
+              </button>
               <Button
                 type="submit"
                 className="w-full h-12 rounded-xl text-base font-semibold mt-2"
@@ -318,6 +326,9 @@ export default function AuthPage() {
                   ? "Зарегистрироваться как исполнитель"
                   : "Создать аккаунт"}
               </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Для аккаунта с email после подключения почтовой отправки придёт письмо с логином. Сам пароль в письмах не отправляется.
+              </p>
             </form>
           </Form>
         )}

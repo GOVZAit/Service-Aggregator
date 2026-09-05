@@ -158,13 +158,14 @@ export interface AuthUser {
   phone?: string;
   email?: string;
   passwordHash: string;
+  sessionVersion: number;
   role: UserRole;
   createdAt: string;
   /** Master profile this account manages (demo accounts are bound to master #1) */
   masterId?: number;
 }
 
-export type PublicUser = Omit<AuthUser, 'passwordHash'>;
+export type PublicUser = Omit<AuthUser, 'passwordHash' | 'sessionVersion'>;
 
 export const registerSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
@@ -215,8 +216,19 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Введите пароль'),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Введите корректный email').max(254),
+}).strict();
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(32).max(200),
+  password: z.string().min(6, 'Минимум 6 символов').max(128),
+}).strict();
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export const clientProfileSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа').max(80),

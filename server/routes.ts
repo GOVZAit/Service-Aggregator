@@ -1,8 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
+import { createHash, randomBytes } from "node:crypto";
 import { storage } from "./storage";
-import { categories, registerSchema, loginSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema } from "@shared/schema";
+import { emailDeliveryConfigured, sendPasswordResetEmail, sendWelcomeEmail } from "./email";
+import { categories, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema } from "@shared/schema";
+import type { AuthUser } from "@shared/schema";
 
 function normalizeIdentifier(value: string) {
   if (value.includes("@")) return value.trim().toLowerCase();
@@ -12,12 +15,83 @@ function normalizeIdentifier(value: string) {
   return digits;
 }
 
-function startAuthenticatedSession(req: Express.Request, userId: number) {
+function startAuthenticatedSession(req: Express.Request, userId: number, sessionVersion: number) {
   return new Promise<void>((resolve, reject) => {
     req.session.regenerate((error) => {
       if (error) return reject(error);
       req.session.userId = userId;
+      req.session.sessionVersion = sessionVersion;
       req.session.save((saveError) => saveError ? reject(saveError) : resolve());
+    });
+  });
+}
+
+async function getAuthenticatedUser(req: Express.Request) {
+  if (!req.session.userId || req.session.sessionVersion === undefined) return undefined;
+  const user = await storage.getUserById(req.session.userId);
+  if (!user || user.sessionVersion !== req.session.sessionVersion) return undefined;
+  return user;
+}
+
+function toPublicUser(user: Awaited<ReturnType<typeof storage.getUserById>> & {}) {
+  const { passwordHash: _passwordHash, sessionVersion: _sessionVersion, ...publicUser } = user;
+  return publicUser;
+}
+
+const resetRequestWindows = new Map<string, { count: number; resetsAt: number }>();
+const RESET_WINDOW_MS = 15 * 60 * 1000;
+const RESET_MAX_REQUESTS = 5;
+
+function passwordResetRateLimited(ip: string) {
+  const now = Date.now();
+  const current = resetRequestWindows.get(ip);
+  if (!current || current.resetsAt <= now) {
+    resetRequestWindows.set(ip, { count: 1, resetsAt: now + RESET_WINDOW_MS });
+    return false;
+  }
+  current.count += 1;
+  return current.count > RESET_MAX_REQUESTS;
+}
+
+function hashResetToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function queuePasswordResetEmail(user: AuthUser) {
+  setImmediate(async () => {
+    try {
+      const rawToken = randomBytes(32).toString("base64url");
+      await storage.createPasswordReset(user.id, hashResetToken(rawToken), Date.now() + 30 * 60 * 1000);
+      const delivered = await sendPasswordResetEmail({
+        to: user.email!,
+        login: user.email!,
+        resetPath: `/reset-password?token=${encodeURIComponent(rawToken)}`,
+      });
+      if (!delivered) await storage.revokePasswordResets(user.id);
+    } catch {
+      await storage.revokePasswordResets(user.id);
+      console.error("Password reset delivery job failed");
+    }
+  });
+}
+
+async function destroyUserSessions(req: Express.Request, userId: number) {
+  const store = req.sessionStore;
+  const allSessions = store.all?.bind(store);
+  if (!allSessions) return;
+  await new Promise<void>((resolve) => {
+    allSessions((error, sessions) => {
+      if (error || !sessions || Array.isArray(sessions)) return resolve();
+      const entries = Object.entries(sessions);
+      const matchingIds = entries
+        .filter(([, session]) => (session as { userId?: number } | undefined)?.userId === userId)
+        .map(([sessionId]) => sessionId);
+      if (matchingIds.length === 0) return resolve();
+      let remaining = matchingIds.length;
+      matchingIds.forEach((sessionId) => store.destroy(sessionId, () => {
+        remaining -= 1;
+        if (remaining === 0) resolve();
+      }));
     });
   });
 }
@@ -25,6 +99,7 @@ function startAuthenticatedSession(req: Express.Request, userId: number) {
 declare module "express-session" {
   interface SessionData {
     userId: number;
+    sessionVersion: number;
   }
 }
 
@@ -60,9 +135,12 @@ export async function registerRoutes(
       role: role ?? 'client',
     });
 
-    await startAuthenticatedSession(req, user.id);
-    const { passwordHash: _, ...publicUser } = user;
-    res.status(201).json({ user: publicUser });
+    await startAuthenticatedSession(req, user.id, user.sessionVersion);
+    const publicUser = toPublicUser(user);
+    const emailDelivery = user.email
+      ? await sendWelcomeEmail({ to: user.email, login: user.email })
+      : false;
+    res.status(201).json({ user: publicUser, emailDelivery: emailDelivery ? "sent" : "not_configured" });
   });
 
   app.post("/api/auth/login", async (req, res) => {
@@ -83,9 +161,38 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Неверный телефон, email или пароль" });
     }
 
-    await startAuthenticatedSession(req, user.id);
-    const { passwordHash: _, ...publicUser } = user;
+    await startAuthenticatedSession(req, user.id, user.sessionVersion);
+    const publicUser = toPublicUser(user);
     res.json({ user: publicUser });
+  });
+
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    const result = forgotPasswordSchema.safeParse(req.body);
+    if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
+    if (passwordResetRateLimited(req.ip || "unknown")) {
+      return res.status(429).json({ message: "Слишком много запросов. Попробуйте позже." });
+    }
+
+    const genericResponse = {
+      message: "Если аккаунт с таким email существует, инструкция будет отправлена на почту.",
+      emailDelivery: emailDeliveryConfigured ? "available" as const : "not_configured" as const,
+    };
+    const user = await storage.getUserByIdentifier(result.data.email);
+    if (user?.email) queuePasswordResetEmail(user);
+    res.json(genericResponse);
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    const result = resetPasswordSchema.safeParse(req.body);
+    if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
+    const user = await storage.consumePasswordReset(hashResetToken(result.data.token), Date.now());
+    if (!user) return res.status(400).json({ message: "Ссылка недействительна или срок её действия истёк" });
+
+    const passwordHash = await bcrypt.hash(result.data.password, 10);
+    await storage.updateUserPassword(user.id, passwordHash);
+    await storage.revokePasswordResets(user.id);
+    await destroyUserSessions(req, user.id);
+    res.json({ ok: true });
   });
 
   app.post("/api/auth/logout", (req, res) => {
@@ -95,24 +202,22 @@ export async function registerRoutes(
   });
 
   app.get("/api/auth/me", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Не авторизован" });
-    }
-    const user = await storage.getUserById(req.session.userId);
+    const user = await getAuthenticatedUser(req);
     if (!user) {
       return res.status(401).json({ message: "Не авторизован" });
     }
-    const { passwordHash: _, ...publicUser } = user;
+    const publicUser = toPublicUser(user);
     res.json({ user: publicUser });
   });
 
   app.patch("/api/auth/me", async (req, res) => {
-    if (!req.session.userId) return res.status(401).json({ message: "Не авторизован" });
+    const authenticatedUser = await getAuthenticatedUser(req);
+    if (!authenticatedUser) return res.status(401).json({ message: "Не авторизован" });
     const result = clientProfileSchema.safeParse(req.body);
     if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
-    const user = await storage.updateUser(req.session.userId, result.data);
+    const user = await storage.updateUser(authenticatedUser.id, result.data);
     if (!user) return res.status(404).json({ message: "Пользователь не найден" });
-    const { passwordHash: _, ...publicUser } = user;
+    const publicUser = toPublicUser(user);
     res.json({ user: publicUser });
   });
 
@@ -142,11 +247,9 @@ export async function registerRoutes(
   });
 
   app.patch("/api/masters/:id", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Не авторизован" });
-    }
-    const user = await storage.getUserById(req.session.userId);
-    if (!user || user.role !== "master") {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if (user.role !== "master") {
       return res.status(403).json({ message: "Доступно только исполнителям" });
     }
     // A master may only edit their own profile
@@ -188,8 +291,7 @@ export async function registerRoutes(
   // ── Orders ──────────────────────────────────────────────────────────────────
 
   app.get("/api/orders", async (req, res) => {
-    if (!req.session.userId) return res.status(401).json({ message: "Не авторизован" });
-    const user = await storage.getUserById(req.session.userId);
+    const user = await getAuthenticatedUser(req);
     if (!user) return res.status(401).json({ message: "Не авторизован" });
     const orders = await storage.getOrders(
       user.role === "client" ? { clientId: user.id } : { masterId: user.masterId ?? -1 },
@@ -209,9 +311,9 @@ export async function registerRoutes(
   });
 
   app.post("/api/orders", async (req, res) => {
-    if (!req.session.userId) return res.status(401).json({ message: "Войдите, чтобы оформить заказ" });
-    const user = await storage.getUserById(req.session.userId);
-    if (!user || user.role !== "client") return res.status(403).json({ message: "Заказ может оформить только клиент" });
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Войдите, чтобы оформить заказ" });
+    if (user.role !== "client") return res.status(403).json({ message: "Заказ может оформить только клиент" });
     const result = createOrderSchema.safeParse(req.body);
     if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
     const master = await storage.getMasterById(result.data.masterId);
@@ -232,8 +334,8 @@ export async function registerRoutes(
   });
 
   app.get("/api/orders/:id", async (req, res) => {
-    if (!req.session.userId) return res.status(401).json({ message: "Не авторизован" });
-    const user = await storage.getUserById(req.session.userId);
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
     const order = await storage.getOrderById(Number(req.params.id));
     if (!order) return res.status(404).json({ error: "Order not found" });
     const canRead = user?.role === "client"
@@ -246,9 +348,9 @@ export async function registerRoutes(
   });
 
   app.patch("/api/orders/:id", async (req, res) => {
-    if (!req.session.userId) return res.status(401).json({ message: "Не авторизован" });
-    const user = await storage.getUserById(req.session.userId);
-    if (!user || user.role !== "master" || !user.masterId) {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if (user.role !== "master" || !user.masterId) {
       return res.status(403).json({ message: "Доступно только исполнителю" });
     }
     const order = await storage.getOrderById(Number(req.params.id));

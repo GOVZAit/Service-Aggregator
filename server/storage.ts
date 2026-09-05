@@ -421,6 +421,17 @@ export interface IStorage {
   getUserByIdentifier(identifier: string): Promise<AuthUser | undefined>;
   getUserById(id: number): Promise<AuthUser | undefined>;
   updateUser(id: number, patch: { name: string }): Promise<AuthUser | undefined>;
+  updateUserPassword(id: number, passwordHash: string): Promise<AuthUser | undefined>;
+  createPasswordReset(userId: number, tokenHash: string, expiresAt: number): Promise<void>;
+  consumePasswordReset(tokenHash: string, now: number): Promise<AuthUser | undefined>;
+  revokePasswordResets(userId: number): Promise<void>;
+}
+
+interface PasswordResetRecord {
+  userId: number;
+  tokenHash: string;
+  expiresAt: number;
+  usedAt?: number;
 }
 
 export class MemStorage implements IStorage {
@@ -432,6 +443,7 @@ export class MemStorage implements IStorage {
   private nextUserId: number;
   private nextRequestId: number;
   private nextOrderId: number;
+  private passwordResets: PasswordResetRecord[];
 
   constructor() {
     this.masters = [...mastersData];
@@ -442,6 +454,7 @@ export class MemStorage implements IStorage {
     this.nextUserId = 1;
     this.nextRequestId = requestsData.length + 1;
     this.nextOrderId = ordersData.length + 1;
+    this.passwordResets = [];
   }
 
   async getMasters(): Promise<Master[]> {
@@ -598,6 +611,7 @@ export class MemStorage implements IStorage {
       ...(data.phone ? { phone: data.phone } : {}),
       ...(data.email ? { email: data.email } : {}),
       passwordHash: data.passwordHash,
+      sessionVersion: 1,
       role: data.role,
       createdAt: new Date().toISOString(),
       ...(master ? { masterId: master.id } : {}),
@@ -623,6 +637,30 @@ export class MemStorage implements IStorage {
     const updated = { ...user, ...patch };
     this.users.set(id, updated);
     return updated;
+  }
+
+  async updateUserPassword(id: number, passwordHash: string): Promise<AuthUser | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    const updated = { ...user, passwordHash, sessionVersion: user.sessionVersion + 1 };
+    this.users.set(id, updated);
+    return updated;
+  }
+
+  async createPasswordReset(userId: number, tokenHash: string, expiresAt: number): Promise<void> {
+    this.passwordResets = this.passwordResets.filter((record) => record.userId !== userId && record.expiresAt > Date.now());
+    this.passwordResets.push({ userId, tokenHash, expiresAt });
+  }
+
+  async consumePasswordReset(tokenHash: string, now: number): Promise<AuthUser | undefined> {
+    const record = this.passwordResets.find((item) => item.tokenHash === tokenHash);
+    if (!record || record.usedAt || record.expiresAt <= now) return undefined;
+    record.usedAt = now;
+    return this.users.get(record.userId);
+  }
+
+  async revokePasswordResets(userId: number): Promise<void> {
+    this.passwordResets = this.passwordResets.filter((record) => record.userId !== userId);
   }
 }
 

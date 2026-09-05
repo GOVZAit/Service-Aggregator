@@ -16,6 +16,8 @@ import CityServicesPage from "@/pages/city-services";
 import ContactsPage from "@/pages/contacts";
 import DoctorsPage from "@/pages/doctors";
 import AuthPage from "@/pages/auth";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
 import PreviewWhatsApp from "@/pages/preview-whatsapp";
 import NotFound from "@/pages/not-found";
 
@@ -27,6 +29,7 @@ import MasterOnboardingPage from "@/pages/master/onboarding";
 
 // Executor-only routes (executor interface)
 const EXECUTOR_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding"];
+const PUBLIC_AUTH_ROUTES = ["/auth", "/forgot-password", "/reset-password"];
 
 function isExecutorRoute(path: string) {
   return EXECUTOR_ROUTES.includes(path);
@@ -43,7 +46,7 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
 
     if (!user && onExecutorRoute) {
       navigate("/auth");
-    } else if (user?.role === "master" && !onExecutorRoute && location !== "/auth") {
+    } else if (user?.role === "master" && !onExecutorRoute && !PUBLIC_AUTH_ROUTES.includes(location)) {
       // Executor landed on a client page → go to executor dashboard
       navigate("/master");
     } else if (user?.role === "client" && onExecutorRoute) {
@@ -77,6 +80,8 @@ function Router() {
         <Route path="/doctors" component={DoctorsPage} />
         <Route path="/contacts" component={ContactsPage} />
         <Route path="/auth" component={AuthPage} />
+        <Route path="/forgot-password" component={ForgotPasswordPage} />
+        <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/preview/whatsapp" component={PreviewWhatsApp} />
 
         <Route component={NotFound} />
