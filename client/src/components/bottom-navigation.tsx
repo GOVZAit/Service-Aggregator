@@ -1,14 +1,13 @@
 import { useEffect, useRef } from "react";
-import { Home, Building2, Phone, User, Stethoscope, PackageSearch } from "lucide-react";
+import { Home, Phone, User, Stethoscope, LayoutGrid } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { id: 'home',     path: '/',        icon: Home,        label: 'Мастера' },
   { id: 'doctors',  path: '/doctors', icon: Stethoscope, label: 'Врачи' },
-  { id: 'city',     path: '/city',    icon: Building2,   label: 'Службы' },
-  { id: 'contacts', path: '/contacts',icon: Phone,       label: 'Контакты' },
-  { id: 'lost-found', path: '/lost-found', icon: PackageSearch, label: 'Потеряно/Найдено' },
+  { id: 'contacts', path: '/contacts', icon: Phone,       label: 'Контакты' },
+  { id: 'more',     path: '/more',     icon: LayoutGrid,  label: 'Ещё' },
 ] as const;
 
 export function BottomNavigation() {
@@ -41,10 +40,11 @@ export function BottomNavigation() {
           className="scrollbar-none flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto overscroll-x-contain py-1.5 pl-2 pr-1 lg:gap-1 lg:pl-3"
         >
           {tabs.map((tab) => {
-          const isActive =
-            location === tab.path ||
-            (tab.path === '/' && location === '') ||
-            (tab.path !== '/' && location.startsWith(tab.path));
+          const isActive = tab.id === "contacts"
+            ? location.startsWith("/contacts") || location.startsWith("/city")
+            : tab.id === "more"
+              ? location.startsWith("/more") || location.startsWith("/lost-found")
+              : location === tab.path || (tab.path === "/" && location === "");
           const Icon = tab.icon;
 
           return (
@@ -62,11 +62,7 @@ export function BottomNavigation() {
             >
               <Icon className="w-6 h-6 lg:w-5 lg:h-5" />
               <span className="text-center text-[11px] font-medium leading-tight lg:text-sm lg:whitespace-nowrap">
-                {tab.id === "lost-found" ? (
-                  <>
-                    Потеряно/<br className="lg:hidden" />Найдено
-                  </>
-                ) : tab.label}
+                {tab.label}
               </span>
             </Link>
           );

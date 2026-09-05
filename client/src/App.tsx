@@ -14,6 +14,8 @@ import OrdersPage from "@/pages/orders";
 import ProfilePage from "@/pages/profile";
 import CityServicesPage from "@/pages/city-services";
 import ContactsPage from "@/pages/contacts";
+import ContactsHubPage from "@/pages/contacts-hub";
+import MorePage from "@/pages/more";
 import DoctorsPage from "@/pages/doctors";
 import LostFoundPage from "@/pages/lost-found";
 import AuthPage from "@/pages/auth";
@@ -78,8 +80,11 @@ function Router() {
         <Route path="/orders" component={OrdersPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/city" component={CityServicesPage} />
+        <Route path="/contacts/services" component={CityServicesPage} />
+        <Route path="/contacts/useful" component={ContactsPage} />
         <Route path="/doctors" component={DoctorsPage} />
-        <Route path="/contacts" component={ContactsPage} />
+        <Route path="/contacts" component={ContactsHubPage} />
+        <Route path="/more" component={MorePage} />
         <Route path="/lost-found" component={LostFoundPage} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />
