@@ -9,7 +9,6 @@ const tabs = [
   { id: 'city',     path: '/city',    icon: Building2,   label: 'Службы' },
   { id: 'contacts', path: '/contacts',icon: Phone,       label: 'Контакты' },
   { id: 'lost-found', path: '/lost-found', icon: PackageSearch, label: 'Потеряно/Найдено' },
-  { id: 'profile',  path: '/profile', icon: User,        label: 'Профиль' },
 ] as const;
 
 export function BottomNavigation() {
@@ -36,11 +35,12 @@ export function BottomNavigation() {
       )}
       aria-label="Основные разделы"
     >
-      <div
-        ref={scrollerRef}
-        className="scrollbar-none flex items-center gap-0.5 overflow-x-auto overscroll-x-contain px-2 py-1.5 lg:gap-1 lg:px-3"
-      >
-        {tabs.map((tab) => {
+      <div className="flex items-stretch">
+        <div
+          ref={scrollerRef}
+          className="scrollbar-none flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto overscroll-x-contain py-1.5 pl-2 pr-1 lg:gap-1 lg:pl-3"
+        >
+          {tabs.map((tab) => {
           const isActive =
             location === tab.path ||
             (tab.path === '/' && location === '') ||
@@ -70,7 +70,25 @@ export function BottomNavigation() {
               </span>
             </Link>
           );
-        })}
+          })}
+        </div>
+        <Link
+          href="/profile"
+          data-testid="nav-profile"
+          aria-current={location.startsWith("/profile") ? "page" : undefined}
+          className={cn(
+            "pressable relative z-10 my-1.5 mr-2 flex min-h-[52px] min-w-[70px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl bg-background/95 px-2 py-1.5 transition-colors lg:mr-3 lg:flex-row lg:gap-2 lg:rounded-full lg:px-4",
+            "before:absolute before:-left-1 before:top-2 before:bottom-2 before:border-l before:border-border/70",
+            location.startsWith("/profile")
+              ? "text-primary lg:bg-primary/10"
+              : "text-muted-foreground lg:hover:bg-muted"
+          )}
+        >
+          <User className="h-6 w-6 lg:h-5 lg:w-5" />
+          <span className="text-center text-[11px] font-medium leading-tight lg:text-sm lg:whitespace-nowrap">
+            Профиль
+          </span>
+        </Link>
       </div>
     </nav>
   );
