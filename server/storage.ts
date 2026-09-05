@@ -1,5 +1,5 @@
-import type { Master, ServiceRequest, Order, ChatMessage, AuthUser } from "@shared/schema";
-import { authUsers, masterSettings, persistedOrders } from "@shared/schema";
+import type { Master, ServiceRequest, Order, ChatMessage, AuthUser, LostFoundListing, LostFoundListingInput, LostFoundStatus } from "@shared/schema";
+import { authUsers, lostFoundListings, masterSettings, persistedOrders } from "@shared/schema";
 import { desc, eq, or, sql } from "drizzle-orm";
 import { db } from "./db";
 
@@ -428,6 +428,11 @@ export interface IStorage {
   createPasswordReset(userId: number, tokenHash: string, expiresAt: number): Promise<void>;
   consumePasswordReset(tokenHash: string, now: number): Promise<AuthUser | undefined>;
   revokePasswordResets(userId: number): Promise<void>;
+
+  getLostFoundListings(): Promise<LostFoundListing[]>;
+  getLostFoundListingById(id: number): Promise<LostFoundListing | undefined>;
+  createLostFoundListing(authorId: number, data: LostFoundListingInput): Promise<LostFoundListing>;
+  updateLostFoundListing(id: number, data: Partial<LostFoundListingInput> & { status?: LostFoundStatus }): Promise<LostFoundListing | undefined>;
 }
 
 interface PasswordResetRecord {
@@ -702,6 +707,47 @@ export class MemStorage implements IStorage {
     this.passwordResets = this.passwordResets.filter((record) => record.userId !== userId);
   }
 
+  async getLostFoundListings(): Promise<LostFoundListing[]> {
+    const rows = await db.select({
+      listing: lostFoundListings,
+      authorName: authUsers.name,
+    }).from(lostFoundListings)
+      .innerJoin(authUsers, eq(lostFoundListings.authorId, authUsers.id))
+      .orderBy(desc(lostFoundListings.createdAt));
+    return rows.map(({ listing, authorName }) => toLostFoundListing(listing, authorName));
+  }
+
+  async getLostFoundListingById(id: number): Promise<LostFoundListing | undefined> {
+    const [row] = await db.select({
+      listing: lostFoundListings,
+      authorName: authUsers.name,
+    }).from(lostFoundListings)
+      .innerJoin(authUsers, eq(lostFoundListings.authorId, authUsers.id))
+      .where(eq(lostFoundListings.id, id)).limit(1);
+    return row ? toLostFoundListing(row.listing, row.authorName) : undefined;
+  }
+
+  async createLostFoundListing(authorId: number, data: LostFoundListingInput): Promise<LostFoundListing> {
+    const [listing] = await db.insert(lostFoundListings).values({
+      ...data,
+      image: data.image || null,
+      authorId,
+    }).returning();
+    const author = await this.getUserById(authorId);
+    return toLostFoundListing(listing, author?.name ?? "Пользователь");
+  }
+
+  async updateLostFoundListing(id: number, data: Partial<LostFoundListingInput> & { status?: LostFoundStatus }): Promise<LostFoundListing | undefined> {
+    const [listing] = await db.update(lostFoundListings).set({
+      ...data,
+      ...(data.image !== undefined ? { image: data.image || null } : {}),
+      updatedAt: new Date(),
+    }).where(eq(lostFoundListings.id, id)).returning();
+    if (!listing) return undefined;
+    const author = await this.getUserById(listing.authorId);
+    return toLostFoundListing(listing, author?.name ?? "Пользователь");
+  }
+
   private async withPersistedSettings(master: Master): Promise<Master> {
     const [row] = await db.select().from(masterSettings).where(eq(masterSettings.masterId, master.id)).limit(1);
     return row ? { ...master, ...row.settings } : master;
@@ -723,5 +769,17 @@ function toOrder(row: Omit<PersistedOrderRow, "createdAt">): Order {
     price: row.price,
     ...(row.address !== null ? { address: row.address } : {}),
     ...(row.comment !== null ? { comment: row.comment } : {}),
+  };
+}
+
+type LostFoundListingRow = typeof lostFoundListings.$inferSelect;
+
+function toLostFoundListing(row: LostFoundListingRow, authorName: string): LostFoundListing {
+  return {
+    ...row,
+    authorName,
+    image: row.image ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }

@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import { storage } from "./storage";
 import { emailDeliveryConfigured, sendWelcomeEmail } from "./email";
-import { categories, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema } from "@shared/schema";
+import { categories, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema, lostFoundListingInputSchema, updateLostFoundListingSchema } from "@shared/schema";
 import type { AuthUser } from "@shared/schema";
 import { deliverPasswordReset, isPasswordResetDeliveryConfigured, passwordResetRateLimited } from "./password-reset";
 
@@ -386,6 +386,39 @@ export async function registerRoutes(
       (order.status === "in_progress" && result.data.status === "completed");
     if (!allowed) return res.status(409).json({ message: "Недопустимое изменение статуса" });
     res.json(await storage.updateOrder(order.id, result.data));
+  });
+
+  // ── Lost & found ─────────────────────────────────────────────────────────────
+
+  app.get("/api/lost-found", async (_req, res) => {
+    res.json(await storage.getLostFoundListings());
+  });
+
+  app.get("/api/lost-found/:id", async (req, res) => {
+    const listing = await storage.getLostFoundListingById(Number(req.params.id));
+    if (!listing) return res.status(404).json({ message: "Объявление не найдено" });
+    res.json(listing);
+  });
+
+  app.post("/api/lost-found", async (req, res) => {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Войдите, чтобы опубликовать объявление" });
+    if (user.role !== "client") return res.status(403).json({ message: "Публикация доступна в профиле клиента" });
+    const result = lostFoundListingInputSchema.safeParse(req.body);
+    if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
+    res.status(201).json(await storage.createLostFoundListing(user.id, result.data));
+  });
+
+  app.patch("/api/lost-found/:id", async (req, res) => {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if (user.role !== "client") return res.status(403).json({ message: "Редактирование доступно в профиле клиента" });
+    const listing = await storage.getLostFoundListingById(Number(req.params.id));
+    if (!listing) return res.status(404).json({ message: "Объявление не найдено" });
+    if (listing.authorId !== user.id) return res.status(403).json({ message: "Можно изменять только своё объявление" });
+    const result = updateLostFoundListingSchema.safeParse(req.body);
+    if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
+    res.json(await storage.updateLostFoundListing(listing.id, result.data));
   });
 
   // ── Messages ─────────────────────────────────────────────────────────────────

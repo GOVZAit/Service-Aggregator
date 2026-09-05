@@ -178,6 +178,25 @@ export interface AuthUser {
 
 export type PublicUser = Omit<AuthUser, 'passwordHash' | 'sessionVersion'>;
 
+export type LostFoundType = 'lost' | 'found';
+export type LostFoundStatus = 'active' | 'closed';
+
+export interface LostFoundListing {
+  id: number;
+  authorId: number;
+  authorName: string;
+  type: LostFoundType;
+  title: string;
+  description: string;
+  location: string;
+  eventDate: string;
+  contact: string;
+  image?: string;
+  status: LostFoundStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const authUsers = pgTable("auth_users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -273,6 +292,32 @@ export const updateOrderStatusSchema = z.object({
   status: z.enum(['in_progress', 'completed', 'rejected']),
 }).strict();
 
+const lostFoundEventDateSchema = z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Укажите дату')
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }, 'Укажите корректную дату')
+  .refine((value) => value <= new Date().toISOString().slice(0, 10), 'Дата не может быть будущей');
+
+export const lostFoundListingInputSchema = z.object({
+  type: z.enum(['lost', 'found']),
+  title: z.string().trim().min(3, 'Заголовок должен содержать минимум 3 символа').max(120),
+  description: z.string().trim().min(10, 'Добавьте описание минимум из 10 символов').max(2000),
+  location: z.string().trim().min(3, 'Укажите место').max(250),
+  eventDate: lostFoundEventDateSchema,
+  contact: z.string().trim().min(3, 'Укажите способ связи').max(150),
+  image: z.string().max(1_500_000, 'Фото слишком большое')
+    .refine((value) => !value || /^data:image\/(jpeg|png|webp);base64,/i.test(value), 'Недопустимый формат фото')
+    .optional(),
+}).strict();
+
+export const updateLostFoundListingSchema = lostFoundListingInputSchema.partial().extend({
+  status: z.enum(['active', 'closed']).optional(),
+}).strict().refine((value) => Object.keys(value).length > 0, 'Нет изменений');
+
+export type LostFoundListingInput = z.infer<typeof lostFoundListingInputSchema>;
+
 // ── Messages / requests ───────────────────────────────────────────────────────
 
 export const insertMessageSchema = z.object({
@@ -321,3 +366,21 @@ export const masterSettings = pgTable("master_settings", {
   settings: jsonb("settings").$type<Partial<Master>>().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const lostFoundListings = pgTable("lost_found_listings", {
+  id: serial("id").primaryKey(),
+  authorId: integer("author_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  type: text("type").$type<LostFoundType>().notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  location: text("location").notNull(),
+  eventDate: text("event_date").notNull(),
+  contact: text("contact").notNull(),
+  image: text("image"),
+  status: text("status").$type<LostFoundStatus>().default("active").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("lost_found_type_status_idx").on(table.type, table.status),
+  index("lost_found_author_id_idx").on(table.authorId),
+]);

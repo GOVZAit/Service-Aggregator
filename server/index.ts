@@ -72,7 +72,7 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse && !path.startsWith("/api/auth")) {
+      if (capturedJsonResponse && !path.startsWith("/api/auth") && !path.startsWith("/api/lost-found")) {
         // Truncate to keep uploaded document images / PII out of the logs
         const body = JSON.stringify(capturedJsonResponse);
         logLine += ` :: ${body.length > 200 ? body.slice(0, 200) + "…" : body}`;
