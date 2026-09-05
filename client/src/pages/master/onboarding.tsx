@@ -76,7 +76,7 @@ export default function MasterOnboardingPage() {
           Добро пожаловать, {user?.name?.split(" ")[0] || "мастер"}!
         </h1>
         <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mb-8">
-          Давайте настроим ваш профиль исполнителя — это займёт меньше минуты. Мастера с заполненным профилем получают в 3× больше заявок.
+          Давайте настроим ваш профиль мастера — это займёт меньше минуты. Мастера с заполненным профилем получают в 3× больше заявок.
         </p>
 
         <div className="w-full space-y-3 mb-8">
@@ -132,7 +132,7 @@ export default function MasterOnboardingPage() {
           )}
           {executorType && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Тип исполнителя</span>
+              <span className="text-muted-foreground">Тип мастера</span>
               <span className="font-medium">{executorTypeLabels[executorType]}{hasCertificate ? " · сертификат" : ""}</span>
             </div>
           )}
@@ -213,7 +213,7 @@ export default function MasterOnboardingPage() {
 
         {step === "details" && (
           <>
-            <h2 className="text-xl font-bold mb-1">Кто вы как исполнитель?</h2>
+            <h2 className="text-xl font-bold mb-1">Как вы работаете?</h2>
             <p className="text-muted-foreground text-sm mb-5">Это увидят клиенты в вашем профиле</p>
             <div className="space-y-2 mb-6">
               {(Object.keys(executorTypeLabels) as ExecutorType[]).map((t) => (

@@ -171,7 +171,7 @@ export default function FilterSheet({ value, onChange, onClose, masters }: Filte
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Briefcase className="w-4 h-4 text-primary" />
-              <p className="text-sm font-semibold">Кто исполнитель</p>
+              <p className="text-sm font-semibold">Кто мастер</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {([
@@ -309,7 +309,7 @@ export function FilterPanel({ value, onChange }: FilterPanelProps) {
       <div>
         <div className="flex items-center gap-2 mb-3">
           <Briefcase className="w-4 h-4 text-primary" />
-          <p className="text-sm font-semibold">Кто исполнитель</p>
+          <p className="text-sm font-semibold">Кто мастер</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {([

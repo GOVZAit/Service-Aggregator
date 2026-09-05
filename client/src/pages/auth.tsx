@@ -232,7 +232,7 @@ export default function AuthPage() {
                   >
                     <Briefcase className={cn("w-6 h-6", selectedRole === "master" ? "text-primary" : "text-muted-foreground")} />
                     <div className="text-center">
-                      <p className={cn("text-sm font-semibold", selectedRole === "master" ? "text-primary" : "text-foreground")}>Исполнитель</p>
+                      <p className={cn("text-sm font-semibold", selectedRole === "master" ? "text-primary" : "text-foreground")}>Мастер</p>
                       <p className="text-xs text-muted-foreground">Выполняю заказы</p>
                     </div>
                   </button>
@@ -331,7 +331,7 @@ export default function AuthPage() {
                 {registerForm.formState.isSubmitting
                   ? "Регистрируем..."
                   : selectedRole === "master"
-                  ? "Зарегистрироваться как исполнитель"
+                  ? "Зарегистрироваться как мастер"
                   : "Создать аккаунт"}
               </Button>
               <p className="text-xs text-muted-foreground text-center">

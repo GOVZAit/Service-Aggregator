@@ -240,7 +240,7 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
               </div>
 
               <p className="text-xs text-muted-foreground text-center">
-                Заявка уйдёт сразу всем мастерам категории «{category}». Кто первый примет — тот исполнитель.
+                Заявка уйдёт сразу всем мастерам категории «{category}». Кто первый примет — тот мастер.
               </p>
 
               <div className="flex gap-2">
