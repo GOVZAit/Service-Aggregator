@@ -407,16 +407,18 @@ export interface IStorage {
   getRequestById(id: number): Promise<ServiceRequest | undefined>;
   createRequest(data: Omit<ServiceRequest, 'id' | 'postedAt' | 'responses' | 'user'> & { userName: string; userAvatar: string }): Promise<ServiceRequest>;
 
-  getOrders(): Promise<Order[]>;
+  getOrders(filter?: { clientId?: number; masterId?: number }): Promise<Order[]>;
   getOrderById(id: number): Promise<Order | undefined>;
+  createOrder(data: Omit<Order, 'id'>): Promise<Order>;
 
   getMessages(masterId: number): Promise<ChatMessage[]>;
   addMessage(masterId: number, message: ChatMessage): Promise<ChatMessage>;
 
   // Auth
-  createUser(data: { name: string; phone: string; passwordHash: string; role: 'client' | 'master' }): Promise<AuthUser>;
-  getUserByPhone(phone: string): Promise<AuthUser | undefined>;
+  createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: 'client' | 'master' }): Promise<AuthUser>;
+  getUserByIdentifier(identifier: string): Promise<AuthUser | undefined>;
   getUserById(id: number): Promise<AuthUser | undefined>;
+  updateUser(id: number, patch: { name: string }): Promise<AuthUser | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -427,6 +429,7 @@ export class MemStorage implements IStorage {
   private users: Map<number, AuthUser>;
   private nextUserId: number;
   private nextRequestId: number;
+  private nextOrderId: number;
 
   constructor() {
     this.masters = [...mastersData];
@@ -436,6 +439,7 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.nextUserId = 1;
     this.nextRequestId = requestsData.length + 1;
+    this.nextOrderId = ordersData.length + 1;
   }
 
   async getMasters(): Promise<Master[]> {
@@ -493,12 +497,20 @@ export class MemStorage implements IStorage {
     return request;
   }
 
-  async getOrders(): Promise<Order[]> {
-    return this.orders;
+  async getOrders(filter?: { clientId?: number; masterId?: number }): Promise<Order[]> {
+    if (filter?.clientId !== undefined) return this.orders.filter((order) => order.clientId === filter.clientId);
+    if (filter?.masterId !== undefined) return this.orders.filter((order) => order.masterId === filter.masterId);
+    return [];
   }
 
   async getOrderById(id: number): Promise<Order | undefined> {
     return this.orders.find(o => o.id === id);
+  }
+
+  async createOrder(data: Omit<Order, 'id'>): Promise<Order> {
+    const order: Order = { id: this.nextOrderId++, ...data };
+    this.orders.push(order);
+    return order;
   }
 
   async getMessages(masterId: number): Promise<ChatMessage[]> {
@@ -512,11 +524,12 @@ export class MemStorage implements IStorage {
     return message;
   }
 
-  async createUser(data: { name: string; phone: string; passwordHash: string; role: 'client' | 'master' }): Promise<AuthUser> {
+  async createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: 'client' | 'master' }): Promise<AuthUser> {
     const user: AuthUser = {
       id: this.nextUserId++,
       name: data.name,
-      phone: data.phone,
+      ...(data.phone ? { phone: data.phone } : {}),
+      ...(data.email ? { email: data.email } : {}),
       passwordHash: data.passwordHash,
       role: data.role,
       createdAt: new Date().toISOString(),
@@ -527,15 +540,23 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  async getUserByPhone(phone: string): Promise<AuthUser | undefined> {
+  async getUserByIdentifier(identifier: string): Promise<AuthUser | undefined> {
     for (const user of this.users.values()) {
-      if (user.phone === phone) return user;
+      if (user.phone === identifier || user.email === identifier) return user;
     }
     return undefined;
   }
 
   async getUserById(id: number): Promise<AuthUser | undefined> {
     return this.users.get(id);
+  }
+
+  async updateUser(id: number, patch: { name: string }): Promise<AuthUser | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    const updated = { ...user, ...patch };
+    this.users.set(id, updated);
+    return updated;
   }
 }
 

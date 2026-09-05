@@ -2,7 +2,25 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { categories, registerSchema, loginSchema, masterSettingsSchema } from "@shared/schema";
+import { categories, registerSchema, loginSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema } from "@shared/schema";
+
+function normalizeIdentifier(value: string) {
+  if (value.includes("@")) return value.trim().toLowerCase();
+  let digits = value.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("8")) digits = `7${digits.slice(1)}`;
+  if (digits.length === 10) digits = `7${digits}`;
+  return digits;
+}
+
+function startAuthenticatedSession(req: Express.Request, userId: number) {
+  return new Promise<void>((resolve, reject) => {
+    req.session.regenerate((error) => {
+      if (error) return reject(error);
+      req.session.userId = userId;
+      req.session.save((saveError) => saveError ? reject(saveError) : resolve());
+    });
+  });
+}
 
 declare module "express-session" {
   interface SessionData {
@@ -22,17 +40,27 @@ export async function registerRoutes(
     if (!result.success) {
       return res.status(400).json({ message: result.error.issues[0].message });
     }
-    const { name, phone, password, role } = result.data;
+    const { name, identifier: rawIdentifier, password, role } = result.data;
+    const isEmail = rawIdentifier.includes("@");
+    const identifier = normalizeIdentifier(rawIdentifier);
+    if (isEmail ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier) : identifier.replace(/\D/g, "").length < 10) {
+      return res.status(400).json({ message: isEmail ? "Введите корректный email" : "Введите корректный номер телефона" });
+    }
 
-    const existing = await storage.getUserByPhone(phone);
+    const existing = await storage.getUserByIdentifier(identifier);
     if (existing) {
-      return res.status(409).json({ message: "Этот номер уже зарегистрирован" });
+      return res.status(409).json({ message: "Этот телефон или email уже зарегистрирован" });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await storage.createUser({ name, phone, passwordHash, role: role ?? 'client' });
+    const user = await storage.createUser({
+      name,
+      ...(isEmail ? { email: identifier } : { phone: identifier }),
+      passwordHash,
+      role: role ?? 'client',
+    });
 
-    req.session.userId = user.id;
+    await startAuthenticatedSession(req, user.id);
     const { passwordHash: _, ...publicUser } = user;
     res.status(201).json({ user: publicUser });
   });
@@ -42,19 +70,20 @@ export async function registerRoutes(
     if (!result.success) {
       return res.status(400).json({ message: result.error.issues[0].message });
     }
-    const { phone, password } = result.data;
+    const { identifier: rawIdentifier, password } = result.data;
+    const identifier = normalizeIdentifier(rawIdentifier);
 
-    const user = await storage.getUserByPhone(phone);
+    const user = await storage.getUserByIdentifier(identifier);
     if (!user) {
-      return res.status(401).json({ message: "Неверный номер или пароль" });
+      return res.status(401).json({ message: "Неверный телефон, email или пароль" });
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      return res.status(401).json({ message: "Неверный номер или пароль" });
+      return res.status(401).json({ message: "Неверный телефон, email или пароль" });
     }
 
-    req.session.userId = user.id;
+    await startAuthenticatedSession(req, user.id);
     const { passwordHash: _, ...publicUser } = user;
     res.json({ user: publicUser });
   });
@@ -73,6 +102,16 @@ export async function registerRoutes(
     if (!user) {
       return res.status(401).json({ message: "Не авторизован" });
     }
+    const { passwordHash: _, ...publicUser } = user;
+    res.json({ user: publicUser });
+  });
+
+  app.patch("/api/auth/me", async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Не авторизован" });
+    const result = clientProfileSchema.safeParse(req.body);
+    if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
+    const user = await storage.updateUser(req.session.userId, result.data);
+    if (!user) return res.status(404).json({ message: "Пользователь не найден" });
     const { passwordHash: _, ...publicUser } = user;
     res.json({ user: publicUser });
   });
@@ -148,13 +187,49 @@ export async function registerRoutes(
 
   // ── Orders ──────────────────────────────────────────────────────────────────
 
-  app.get("/api/orders", async (_req, res) => {
-    res.json(await storage.getOrders());
+  app.get("/api/orders", async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Не авторизован" });
+    const user = await storage.getUserById(req.session.userId);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    res.json(await storage.getOrders(
+      user.role === "client" ? { clientId: user.id } : { masterId: user.masterId ?? -1 },
+    ));
+  });
+
+  app.post("/api/orders", async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Войдите, чтобы оформить заказ" });
+    const user = await storage.getUserById(req.session.userId);
+    if (!user || user.role !== "client") return res.status(403).json({ message: "Заказ может оформить только клиент" });
+    const result = createOrderSchema.safeParse(req.body);
+    if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
+    const master = await storage.getMasterById(result.data.masterId);
+    if (!master) return res.status(404).json({ message: "Мастер не найден" });
+    const service = master.services.find((item) => item.name === result.data.service);
+    if (!service) return res.status(400).json({ message: "Выберите услугу этого мастера" });
+    const order = await storage.createOrder({
+      title: service.name,
+      masterId: master.id,
+      clientId: user.id,
+      status: "pending",
+      date: result.data.scheduledAt,
+      price: service.price,
+      address: result.data.address,
+      comment: result.data.comment,
+    });
+    res.status(201).json(order);
   });
 
   app.get("/api/orders/:id", async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Не авторизован" });
+    const user = await storage.getUserById(req.session.userId);
     const order = await storage.getOrderById(Number(req.params.id));
     if (!order) return res.status(404).json({ error: "Order not found" });
+    const canRead = user?.role === "client"
+      ? order.clientId === user.id
+      : user?.role === "master" && order.masterId === user.masterId;
+    if (!canRead) {
+      return res.status(403).json({ message: "Нет доступа к этому заказу" });
+    }
     res.json(order);
   });
 

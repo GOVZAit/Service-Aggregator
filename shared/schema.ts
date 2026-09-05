@@ -123,6 +123,10 @@ export interface Order {
   status: OrderStatus;
   date: string;
   price: string;
+  /** Internal owner link for client-scoped order lists */
+  clientId?: number;
+  address?: string;
+  comment?: string;
 }
 
 export interface ChatMessage {
@@ -149,7 +153,8 @@ export type UserRole = 'client' | 'master';
 export interface AuthUser {
   id: number;
   name: string;
-  phone: string;
+  phone?: string;
+  email?: string;
   passwordHash: string;
   role: UserRole;
   createdAt: string;
@@ -161,7 +166,7 @@ export type PublicUser = Omit<AuthUser, 'passwordHash'>;
 
 export const registerSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
-  phone: z.string().min(6, 'Введите номер телефона'),
+  identifier: z.string().min(5, 'Введите номер телефона или email'),
   password: z.string().min(6, 'Минимум 6 символов'),
   role: z.enum(['client', 'master']).default('client'),
 });
@@ -186,12 +191,24 @@ export const masterSettingsSchema = z.object({
 export type MasterSettingsInput = z.infer<typeof masterSettingsSchema>;
 
 export const loginSchema = z.object({
-  phone: z.string().min(1, 'Введите номер телефона'),
+  identifier: z.string().min(1, 'Введите номер телефона или email'),
   password: z.string().min(1, 'Введите пароль'),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const clientProfileSchema = z.object({
+  name: z.string().min(2, 'Минимум 2 символа').max(80),
+}).strict();
+
+export const createOrderSchema = z.object({
+  masterId: z.number().int().positive(),
+  service: z.string().min(1, 'Выберите услугу').max(120),
+  scheduledAt: z.string().min(1, 'Выберите дату и время').max(40),
+  address: z.string().min(3, 'Укажите адрес').max(250),
+  comment: z.string().max(1000).optional(),
+}).strict();
 
 // ── Messages / requests ───────────────────────────────────────────────────────
 

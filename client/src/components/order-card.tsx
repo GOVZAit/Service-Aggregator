@@ -57,7 +57,7 @@ export function OrderCard({ order, master, onLeaveReview }: OrderCardProps) {
         <span className="font-bold">{order.price}</span>
       </div>
 
-      {order.status === 'completed' && (
+      {order.status === 'completed' && onLeaveReview && (
         <Button
           variant="outline"
           onClick={onLeaveReview}

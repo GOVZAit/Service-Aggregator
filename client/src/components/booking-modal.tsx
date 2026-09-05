@@ -2,6 +2,10 @@ import { useState } from "react";
 import { X, Calendar, MapPin, MessageSquare, CheckCircle2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Master } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/auth-context";
+import { useLocation } from "wouter";
 
 interface BookingModalProps {
   master: Master;
@@ -35,12 +39,38 @@ export function BookingModal({ master, onClose }: BookingModalProps) {
   const [address, setAddress] = useState("");
   const [comment, setComment] = useState("");
   const [showServices, setShowServices] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
 
   const canSubmit = selectedTime && address.trim();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return;
-    setStep("success");
+    if (!user) {
+      onClose();
+      navigate("/auth?tab=register");
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await apiRequest("POST", "/api/orders", {
+        masterId: master.id,
+        service: selectedService,
+        scheduledAt: `${dates[selectedDate].toLocaleDateString("ru-RU")}, ${selectedTime}`,
+        address: address.trim(),
+        comment: comment.trim() || undefined,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      setStep("success");
+    } catch {
+      setSubmitError("Не удалось отправить заявку. Попробуйте ещё раз.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -219,18 +249,19 @@ export function BookingModal({ master, onClose }: BookingModalProps) {
 
             {/* Submit */}
             <div className="px-5 py-4 border-t border-border/60 shrink-0">
+              {submitError && <p className="text-sm text-destructive text-center mb-2">{submitError}</p>}
               <button
                 onClick={handleSubmit}
-                disabled={!canSubmit}
+                disabled={!canSubmit || submitting}
                 data-testid="button-booking-submit"
                 className={cn(
                   "w-full h-12 rounded-xl font-semibold text-base transition-all",
-                  canSubmit
+                  canSubmit && !submitting
                     ? "bg-primary text-white active:scale-[0.98]"
                     : "bg-muted text-muted-foreground cursor-not-allowed"
                 )}
               >
-                Отправить заявку
+                {submitting ? "Отправляем..." : user ? "Отправить заявку" : "Войти и отправить"}
               </button>
             </div>
           </>

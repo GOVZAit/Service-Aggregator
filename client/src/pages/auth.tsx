@@ -3,7 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Phone, Lock, User, ArrowLeft, Briefcase, UserRound } from "lucide-react";
+import { Eye, EyeOff, AtSign, Lock, User, ArrowLeft, Briefcase, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,29 +41,29 @@ export default function AuthPage() {
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
-    defaultValues: { phone: "", password: "" },
+    defaultValues: { identifier: "", password: "" },
   });
 
   const registerForm = useForm({
     resolver: zodResolver(registerFormSchema),
-    defaultValues: { name: "", phone: "", password: "", confirmPassword: "", role: "client" as UserRole },
+    defaultValues: { name: "", identifier: "", password: "", confirmPassword: "", role: "client" as UserRole },
   });
 
-  const onLogin = async (values: { phone: string; password: string }) => {
+  const onLogin = async (values: { identifier: string; password: string }) => {
     setError("");
     try {
-      const loggedUser = await login(values.phone, values.password);
-      navigate(loggedUser.role === "master" ? "/master" : "/");
+      const loggedUser = await login(values.identifier, values.password);
+      navigate(loggedUser.role === "master" ? "/master" : "/profile");
     } catch (e: any) {
       setError(e.message);
     }
   };
 
-  const onRegister = async (values: { name: string; phone: string; password: string }) => {
+  const onRegister = async (values: { name: string; identifier: string; password: string }) => {
     setError("");
     try {
-      const newUser = await register(values.name, values.phone, values.password, selectedRole);
-      navigate(newUser.role === "master" ? "/master/onboarding" : "/");
+      const newUser = await register(values.name, values.identifier, values.password, selectedRole);
+      navigate(newUser.role === "master" ? "/master/onboarding" : "/profile");
     } catch (e: any) {
       setError(e.message);
     }
@@ -125,14 +125,14 @@ export default function AuthPage() {
             <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
               <FormField
                 control={loginForm.control}
-                name="phone"
+                name="identifier"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Номер телефона</FormLabel>
+                    <FormLabel>Телефон или email</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input {...field} placeholder="+7 (999) 000-00-00" className="pl-9" data-testid="input-login-phone" />
+                        <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input {...field} inputMode="email" placeholder="+7 999 000-00-00 или name@mail.ru" className="pl-9" data-testid="input-login-identifier" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -151,6 +151,7 @@ export default function AuthPage() {
                         <Input
                           {...field}
                           type={showPassword ? "text" : "password"}
+                          autoComplete="current-password"
                           placeholder="Введите пароль"
                           className="pl-9 pr-10"
                           data-testid="input-login-password"
@@ -240,14 +241,14 @@ export default function AuthPage() {
               />
               <FormField
                 control={registerForm.control}
-                name="phone"
+                name="identifier"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Номер телефона</FormLabel>
+                    <FormLabel>Телефон или email</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input {...field} placeholder="+7 (999) 000-00-00" className="pl-9" data-testid="input-register-phone" />
+                        <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input {...field} inputMode="email" placeholder="+7 999 000-00-00 или name@mail.ru" className="pl-9" data-testid="input-register-identifier" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -266,6 +267,7 @@ export default function AuthPage() {
                         <Input
                           {...field}
                           type={showPassword ? "text" : "password"}
+                          autoComplete="new-password"
                           placeholder="Минимум 6 символов"
                           className="pl-9 pr-10"
                           data-testid="input-register-password"
