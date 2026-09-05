@@ -118,16 +118,26 @@ export type OrderStatus = 'completed' | 'in_progress' | 'pending' | 'rejected';
 
 export interface Order {
   id: number;
+
   title: string;
+
   masterId: number;
+
   status: OrderStatus;
+
   date: string;
+
   price: string;
   /** Internal owner link for client-scoped order lists */
+
   clientId?: number;
+
   address?: string;
+
   comment?: string;
+
   clientName?: string;
+
   clientContact?: string;
 }
 
@@ -217,7 +227,7 @@ export const loginSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().trim().toLowerCase().email('Введите корректный email').max(254),
+  identifier: z.string().trim().min(5, 'Введите телефон или email').max(254),
 }).strict();
 
 export const resetPasswordSchema = z.object({
@@ -227,6 +237,7 @@ export const resetPasswordSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 

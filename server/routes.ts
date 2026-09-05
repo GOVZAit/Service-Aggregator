@@ -3,9 +3,10 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import { storage } from "./storage";
-import { emailDeliveryConfigured, passwordResetDeliveryConfigured, sendPasswordResetEmail, sendWelcomeEmail } from "./email";
+import { emailDeliveryConfigured, sendWelcomeEmail } from "./email";
 import { categories, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema } from "@shared/schema";
 import type { AuthUser } from "@shared/schema";
+import { deliverPasswordReset, isPasswordResetDeliveryConfigured, passwordResetRateLimited } from "./password-reset";
 
 function normalizeIdentifier(value: string) {
   if (value.includes("@")) return value.trim().toLowerCase();
@@ -38,35 +39,22 @@ function toPublicUser(user: Awaited<ReturnType<typeof storage.getUserById>> & {}
   return publicUser;
 }
 
-const resetRequestWindows = new Map<string, { count: number; resetsAt: number }>();
-const RESET_WINDOW_MS = 15 * 60 * 1000;
-const RESET_MAX_REQUESTS = 5;
-
-function passwordResetRateLimited(ip: string) {
-  const now = Date.now();
-  const current = resetRequestWindows.get(ip);
-  if (!current || current.resetsAt <= now) {
-    resetRequestWindows.set(ip, { count: 1, resetsAt: now + RESET_WINDOW_MS });
-    return false;
-  }
-  current.count += 1;
-  return current.count > RESET_MAX_REQUESTS;
-}
-
 function hashResetToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-function queuePasswordResetEmail(user: AuthUser) {
+function queuePasswordReset(user: AuthUser) {
   setImmediate(async () => {
     try {
       const rawToken = randomBytes(32).toString("base64url");
-      await storage.createPasswordReset(user.id, hashResetToken(rawToken), Date.now() + 30 * 60 * 1000);
-      const delivered = await sendPasswordResetEmail({
-        to: user.email!,
-        login: user.email!,
-        resetPath: `/reset-password?token=${encodeURIComponent(rawToken)}`,
-      });
+      const recipient = user.email ?? user.phone;
+      if (!recipient) return;
+      await storage.createPasswordReset(user.id, hashResetToken(rawToken), Date.now() + 10 * 60 * 1000);
+      const delivered = await deliverPasswordReset(
+        recipient,
+        `/reset-password?token=${encodeURIComponent(rawToken)}`,
+        Boolean(user.email),
+      );
       if (!delivered) await storage.revokePasswordResets(user.id);
     } catch {
       await storage.revokePasswordResets(user.id);
@@ -182,16 +170,19 @@ export async function registerRoutes(
   app.post("/api/auth/forgot-password", async (req, res) => {
     const result = forgotPasswordSchema.safeParse(req.body);
     if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
-    if (passwordResetRateLimited(req.ip || "unknown")) {
+    const identifier = normalizeIdentifier(result.data.identifier);
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    if (passwordResetRateLimited([`identifier:${identifier}`, `ip:${ip}`])) {
       return res.status(429).json({ message: "Слишком много запросов. Попробуйте позже." });
     }
 
+    const isEmail = identifier.includes("@");
     const genericResponse = {
-      message: "Если аккаунт с таким email существует, инструкция будет отправлена на почту.",
-      emailDelivery: passwordResetDeliveryConfigured ? "available" as const : "not_configured" as const,
+      message: "Если аккаунт существует, инструкция по восстановлению будет отправлена.",
+      delivery: isPasswordResetDeliveryConfigured(isEmail) ? "available" as const : "not_configured" as const,
     };
-    const user = await storage.getUserByIdentifier(result.data.email);
-    if (user?.email && passwordResetDeliveryConfigured) queuePasswordResetEmail(user);
+    const user = await storage.getUserByIdentifier(identifier);
+    if (user && isPasswordResetDeliveryConfigured(isEmail)) queuePasswordReset(user);
     res.json(genericResponse);
   });
 

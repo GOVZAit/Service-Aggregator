@@ -621,10 +621,11 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByIdentifier(identifier: string): Promise<AuthUser | undefined> {
-    for (const user of this.users.values()) {
-      if (user.phone === identifier || user.email === identifier) return user;
-    }
-    return undefined;
+    let found: AuthUser | undefined;
+    this.users.forEach((user) => {
+      if (user.phone === identifier || user.email === identifier) found = user;
+    });
+    return found;
   }
 
   async getUserById(id: number): Promise<AuthUser | undefined> {

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 
 export default function ForgotPasswordPage() {
   const [, navigate] = useLocation();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [message, setMessage] = useState("");
   const [deliveryUnavailable, setDeliveryUnavailable] = useState(false);
   const [error, setError] = useState("");
@@ -22,12 +22,12 @@ export default function ForgotPasswordPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ identifier }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Не удалось отправить запрос");
       setMessage(data.message);
-      setDeliveryUnavailable(data.emailDelivery === "not_configured");
+      setDeliveryUnavailable(data.delivery === "not_configured");
     } catch (requestError: any) {
       setError(requestError.message);
     } finally {
@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
         </div>
         <h1 className="text-2xl font-bold">Восстановление пароля</h1>
         <p className="text-sm text-muted-foreground mt-2 mb-6">
-          Укажите email аккаунта. Ссылка для установки нового пароля будет действовать 30 минут.
+          Укажите телефон или email аккаунта. Ссылка для установки нового пароля будет действовать 10 минут.
         </p>
 
         {message ? (
@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
             <p className="text-sm">{message}</p>
             {deliveryUnavailable && (
               <p className="text-sm text-amber-700 dark:text-amber-400">
-                Почтовая отправка пока не подключена, поэтому письмо ещё не может быть доставлено.
+                Доставка сообщений пока не подключена, поэтому инструкция ещё не может быть отправлена.
               </p>
             )}
             <Button variant="outline" className="w-full" onClick={() => navigate("/auth")}>Вернуться ко входу</Button>
@@ -62,24 +62,24 @@ export default function ForgotPasswordPage() {
         ) : (
           <form onSubmit={submit} className="space-y-4">
             <label className="block">
-              <span className="text-sm font-medium">Email</span>
+              <span className="text-sm font-medium">Телефон или email</span>
               <div className="relative mt-2">
                 <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="name@mail.ru"
+                  type="text"
+                  autoComplete="username"
+                  value={identifier}
+                  onChange={(event) => setIdentifier(event.target.value)}
+                  placeholder="+7 999 000-00-00 или name@mail.ru"
                   className="h-12 pl-10 rounded-xl"
                   required
-                  data-testid="input-forgot-email"
+                  data-testid="input-forgot-identifier"
                 />
               </div>
             </label>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full h-12" disabled={loading} data-testid="button-forgot-submit">
-              {loading ? "Отправляем..." : "Получить ссылку"}
+              {loading ? "Отправляем..." : "Получить инструкцию"}
             </Button>
           </form>
         )}
