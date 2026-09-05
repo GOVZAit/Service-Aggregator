@@ -11,7 +11,7 @@ interface MasterCardProps {
 }
 
 export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardProps) {
-  const previewPhotos = master.portfolio?.slice(0, 3) ?? [];
+  const previewPhotos = master.showPortfolio !== false ? (master.portfolio?.slice(0, 3) ?? []) : [];
 
   return (
     <Link href={`/master/${master.id}`}>
@@ -95,12 +95,14 @@ export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardP
                 }`}
               />
             </Button>
-            <span
-              className="text-sm font-bold text-primary whitespace-nowrap"
-              data-testid={`text-price-${master.id}`}
-            >
-              {master.price}
-            </span>
+            {master.showPrices !== false && (
+              <span
+                className="text-sm font-bold text-primary whitespace-nowrap"
+                data-testid={`text-price-${master.id}`}
+              >
+                {master.price}
+              </span>
+            )}
           </div>
         </div>
 

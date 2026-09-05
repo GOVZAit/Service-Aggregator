@@ -402,6 +402,7 @@ export interface IStorage {
   getMastersByCategory(categoryId: number): Promise<Master[]>;
   searchMasters(query: string): Promise<Master[]>;
   updateMaster(id: number, patch: Partial<Master>): Promise<Master | undefined>;
+  createMaster(data: { name: string; phone?: string }): Promise<Master>;
 
   getRequests(): Promise<ServiceRequest[]>;
   getRequestById(id: number): Promise<ServiceRequest | undefined>;
@@ -410,6 +411,7 @@ export interface IStorage {
   getOrders(filter?: { clientId?: number; masterId?: number }): Promise<Order[]>;
   getOrderById(id: number): Promise<Order | undefined>;
   createOrder(data: Omit<Order, 'id'>): Promise<Order>;
+  updateOrder(id: number, patch: Pick<Order, 'status'>): Promise<Order | undefined>;
 
   getMessages(masterId: number): Promise<ChatMessage[]>;
   addMessage(masterId: number, message: ChatMessage): Promise<ChatMessage>;
@@ -469,8 +471,53 @@ export class MemStorage implements IStorage {
     if (idx === -1) return undefined;
     // Never allow identity fields to be overwritten via patch
     const { id: _id, ...safe } = patch;
-    this.masters[idx] = { ...this.masters[idx], ...safe };
+    const cityCenters: Record<string, { lat: number; lng: number }> = {
+      'Грозный': { lat: 43.317, lng: 45.6992 },
+      'Гудермес': { lat: 43.352, lng: 46.1032 },
+      'Аргун': { lat: 43.2921, lng: 45.8878 },
+      'Урус-Мартан': { lat: 43.1225, lng: 45.5366 },
+      'Шали': { lat: 43.148, lng: 45.9019 },
+    };
+    const center = safe.city ? cityCenters[safe.city] : undefined;
+    const firstPrice = safe.services?.[0]?.price;
+    this.masters[idx] = {
+      ...this.masters[idx],
+      ...safe,
+      ...(center ?? {}),
+      ...(firstPrice ? { price: `от ${firstPrice.replace(/^от\\s+/i, '')}` } : {}),
+    };
     return this.masters[idx];
+  }
+
+  async createMaster(data: { name: string; phone?: string }): Promise<Master> {
+    const id = Math.max(0, ...this.masters.map((master) => master.id)) + 1;
+    const master: Master = {
+      id,
+      name: data.name,
+      category: 'Сантехника',
+      categoryId: 1,
+      rating: 0,
+      reviews: 0,
+      price: 'Цена по договорённости',
+      avatar: '',
+      verified: false,
+      distance: '',
+      responseTime: '~30 мин',
+      completedOrders: 0,
+      description: 'Новый исполнитель службы 995',
+      portfolio: [],
+      services: [],
+      phone: data.phone,
+      callMode: 'always',
+      workingHours: { from: '09:00', to: '18:00' },
+      isOnline: false,
+      city: 'Грозный',
+      lat: 43.317,
+      lng: 45.6992,
+      executorType: 'private',
+    };
+    this.masters.push(master);
+    return master;
   }
 
   async getRequests(): Promise<ServiceRequest[]> {
@@ -513,6 +560,23 @@ export class MemStorage implements IStorage {
     return order;
   }
 
+  async updateOrder(id: number, patch: Pick<Order, 'status'>): Promise<Order | undefined> {
+    const index = this.orders.findIndex((order) => order.id === id);
+    if (index === -1) return undefined;
+    const previousStatus = this.orders[index].status;
+    this.orders[index] = { ...this.orders[index], ...patch };
+    if (previousStatus !== 'completed' && patch.status === 'completed') {
+      const masterIndex = this.masters.findIndex((master) => master.id === this.orders[index].masterId);
+      if (masterIndex !== -1) {
+        this.masters[masterIndex] = {
+          ...this.masters[masterIndex],
+          completedOrders: this.masters[masterIndex].completedOrders + 1,
+        };
+      }
+    }
+    return this.orders[index];
+  }
+
   async getMessages(masterId: number): Promise<ChatMessage[]> {
     return this.chatMessages.get(masterId) || [];
   }
@@ -525,6 +589,9 @@ export class MemStorage implements IStorage {
   }
 
   async createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: 'client' | 'master' }): Promise<AuthUser> {
+    const master = data.role === 'master'
+      ? await this.createMaster({ name: data.name, phone: data.phone })
+      : undefined;
     const user: AuthUser = {
       id: this.nextUserId++,
       name: data.name,
@@ -533,8 +600,7 @@ export class MemStorage implements IStorage {
       passwordHash: data.passwordHash,
       role: data.role,
       createdAt: new Date().toISOString(),
-      // Demo MVP: master accounts manage the demo master profile #1
-      ...(data.role === 'master' ? { masterId: 1 } : {}),
+      ...(master ? { masterId: master.id } : {}),
     };
     this.users.set(user.id, user);
     return user;

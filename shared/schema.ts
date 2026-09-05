@@ -114,7 +114,7 @@ export interface ServiceRequest {
   user: RequestUser;
 }
 
-export type OrderStatus = 'completed' | 'in_progress' | 'pending';
+export type OrderStatus = 'completed' | 'in_progress' | 'pending' | 'rejected';
 
 export interface Order {
   id: number;
@@ -127,6 +127,8 @@ export interface Order {
   clientId?: number;
   address?: string;
   comment?: string;
+  clientName?: string;
+  clientContact?: string;
 }
 
 export interface ChatMessage {
@@ -173,6 +175,24 @@ export const registerSchema = z.object({
 
 // Settings a master may update on their own profile
 export const masterSettingsSchema = z.object({
+  avatar: z.string().max(1_000_000).optional(),
+  description: z.string().min(10, 'Добавьте описание').max(1000).optional(),
+  category: z.string().min(1).max(80).optional(),
+  categoryId: z.number().int().positive().optional(),
+  companyName: z.string().max(80).optional(),
+  city: z.enum(['Грозный', 'Гудермес', 'Аргун', 'Урус-Мартан', 'Шали']).optional(),
+  phone: z.string().max(30).optional(),
+  callMode: z.enum(['always', 'schedule', 'online_only', 'disabled']).optional(),
+  workingHours: z.object({
+    from: z.string().regex(/^\d{2}:\d{2}$/),
+    to: z.string().regex(/^\d{2}:\d{2}$/),
+  }).strict().optional(),
+  isOnline: z.boolean().optional(),
+  services: z.array(z.object({
+    name: z.string().min(1).max(120),
+    price: z.string().min(1).max(40),
+  }).strict()).max(30).optional(),
+  portfolio: z.array(z.string().max(1_000_000)).max(12).optional(),
   showPortfolio: z.boolean().optional(),
   showReviews: z.boolean().optional(),
   showPrices: z.boolean().optional(),
@@ -185,7 +205,7 @@ export const masterSettingsSchema = z.object({
     issuer: z.string().max(120).optional(),
     year: z.string().max(10).optional(),
     image: z.string().max(1_000_000).optional(), // URL or data-URL (~700 КБ файла)
-  }).strict()).max(20).optional(),
+  }).strict()).max(10).optional(),
 }).strict();
 
 export type MasterSettingsInput = z.infer<typeof masterSettingsSchema>;
@@ -208,6 +228,10 @@ export const createOrderSchema = z.object({
   scheduledAt: z.string().min(1, 'Выберите дату и время').max(40),
   address: z.string().min(3, 'Укажите адрес').max(250),
   comment: z.string().max(1000).optional(),
+}).strict();
+
+export const updateOrderStatusSchema = z.object({
+  status: z.enum(['in_progress', 'completed', 'rejected']),
 }).strict();
 
 // ── Messages / requests ───────────────────────────────────────────────────────

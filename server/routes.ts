@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { categories, registerSchema, loginSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema } from "@shared/schema";
+import { categories, registerSchema, loginSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema } from "@shared/schema";
 
 function normalizeIdentifier(value: string) {
   if (value.includes("@")) return value.trim().toLowerCase();
@@ -191,9 +191,21 @@ export async function registerRoutes(
     if (!req.session.userId) return res.status(401).json({ message: "Не авторизован" });
     const user = await storage.getUserById(req.session.userId);
     if (!user) return res.status(401).json({ message: "Не авторизован" });
-    res.json(await storage.getOrders(
+    const orders = await storage.getOrders(
       user.role === "client" ? { clientId: user.id } : { masterId: user.masterId ?? -1 },
-    ));
+    );
+    if (user.role === "master") {
+      const enriched = await Promise.all(orders.map(async (order) => {
+        const client = order.clientId ? await storage.getUserById(order.clientId) : undefined;
+        return {
+          ...order,
+          clientName: client?.name ?? "Клиент",
+          clientContact: client?.phone ?? client?.email ?? "",
+        };
+      }));
+      return res.json(enriched);
+    }
+    res.json(orders);
   });
 
   app.post("/api/orders", async (req, res) => {
@@ -231,6 +243,24 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Нет доступа к этому заказу" });
     }
     res.json(order);
+  });
+
+  app.patch("/api/orders/:id", async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Не авторизован" });
+    const user = await storage.getUserById(req.session.userId);
+    if (!user || user.role !== "master" || !user.masterId) {
+      return res.status(403).json({ message: "Доступно только исполнителю" });
+    }
+    const order = await storage.getOrderById(Number(req.params.id));
+    if (!order) return res.status(404).json({ message: "Заказ не найден" });
+    if (order.masterId !== user.masterId) return res.status(403).json({ message: "Это не ваш заказ" });
+    const result = updateOrderStatusSchema.safeParse(req.body);
+    if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
+    const allowed =
+      (order.status === "pending" && ["in_progress", "rejected"].includes(result.data.status)) ||
+      (order.status === "in_progress" && result.data.status === "completed");
+    if (!allowed) return res.status(409).json({ message: "Недопустимое изменение статуса" });
+    res.json(await storage.updateOrder(order.id, result.data));
   });
 
   // ── Messages ─────────────────────────────────────────────────────────────────

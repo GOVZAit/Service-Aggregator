@@ -1,755 +1,131 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/auth-context";
 import MasterBottomNavigation from "@/components/master-bottom-navigation";
-import {
-  User, Phone, Briefcase, Star, Award, Edit3, LogOut,
-  Moon, Sun, Plus, Camera, Check, X, PhoneCall, PhoneOff,
-  Clock, Calendar, ChevronDown, ChevronUp, Building2
-} from "lucide-react";
+import { Award, Briefcase, Building2, Camera, Check, Clock, LogOut, Moon, Phone, Plus, Save, Sun, Trash2, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { executorTypeLabels } from "@shared/schema";
-import type { CallMode, Certificate, ExecutorType, Master, MasterSettingsInput } from "@shared/schema";
+import { categories, cities, executorTypeLabels } from "@shared/schema";
+import type { CallMode, Certificate, ExecutorType, Master, MasterSettingsInput, Service } from "@shared/schema";
 
-const categoryOptions = [
-  "Сантехника", "Электрика", "Уборка", "Ремонт", "Красота", "Авто", "Доставка", "Репетиторы"
+const callModes: { id: CallMode; label: string }[] = [
+  { id: "always", label: "Всегда доступен" },
+  { id: "schedule", label: "По расписанию" },
+  { id: "online_only", label: "Только когда онлайн" },
+  { id: "disabled", label: "Только чат" },
 ];
-
-const myServices = [
-  { id: 1, name: "Замена смесителя", price: "1 500 ₽" },
-  { id: 2, name: "Установка унитаза", price: "3 000 ₽" },
-  { id: 3, name: "Прочистка засора", price: "2 000 ₽" },
-  { id: 4, name: "Замена труб", price: "от 5 000 ₽" },
-];
-
-const portfolioPhotos = [
-  "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=200&h=200&fit=crop",
-  "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=200&h=200&fit=crop",
-  "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=200&h=200&fit=crop",
-];
-
-const CALL_MODE_OPTIONS: Array<{ id: CallMode; label: string; desc: string; icon: any }> = [
-  { id: "always", label: "Всегда доступен", desc: "Клиенты могут позвонить 24/7", icon: PhoneCall },
-  { id: "schedule", label: "По расписанию", desc: "Только в рабочие часы", icon: Clock },
-  { id: "online_only", label: "Только онлайн", desc: "Пока онлайн-статус включён", icon: Phone },
-  { id: "disabled", label: "Звонки отключены", desc: "Только чат и заявки", icon: PhoneOff },
-];
-
-const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
 
 export default function MasterProfilePage() {
   const { user, logout } = useAuth();
   const [, navigate] = useLocation();
-  const [isDark, setIsDark] = useState(
-    document.documentElement.classList.contains("dark")
-  );
-  const [editingDescription, setEditingDescription] = useState(false);
-  const [description, setDescription] = useState(
-    "Профессиональный сантехник с опытом 10 лет. Работаю по всему Грозному. Гарантия на все виды работ."
-  );
-  const [descDraft, setDescDraft] = useState(description);
-  const [selectedCategory, setSelectedCategory] = useState("Сантехника");
-
-  // Optional brand / company name
-  const [companyName, setCompanyName] = useState("");
-  const [editingCompany, setEditingCompany] = useState(false);
-  const [companyDraft, setCompanyDraft] = useState("");
-
-  // Availability settings
-  const [phone, setPhone] = useState(user?.phone ?? "");
-  const [editingPhone, setEditingPhone] = useState(false);
-  const [phoneDraft, setPhoneDraft] = useState(phone);
-  const [callMode, setCallMode] = useState<CallMode>("always");
-
-  // Profile settings persisted on the server (demo cabinet is bound to master #1)
-  const DEMO_MASTER_ID = 1;
   const queryClient = useQueryClient();
-  const { data: masterData } = useQuery<Master>({
-    queryKey: [`/api/masters/${DEMO_MASTER_ID}`],
-  });
-  const settingsMutation = useMutation({
-    mutationFn: (patch: MasterSettingsInput) =>
-      apiRequest("PATCH", `/api/masters/${DEMO_MASTER_ID}`, patch),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/masters/${DEMO_MASTER_ID}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/masters"] });
-    },
-  });
-
-  const blockVisibility = {
-    portfolio: masterData?.showPortfolio !== false,
-    reviews: masterData?.showReviews !== false,
-    prices: masterData?.showPrices !== false,
-    certificates: masterData?.showCertificates !== false,
-  };
-  const toggleBlock = (key: "portfolio" | "reviews" | "prices" | "certificates") => {
-    const field =
-      key === "portfolio" ? "showPortfolio" :
-      key === "reviews" ? "showReviews" :
-      key === "certificates" ? "showCertificates" : "showPrices";
-    settingsMutation.mutate({ [field]: !blockVisibility[key] });
-  };
-
-  // Executor type & certificate
-  const executorType: ExecutorType = masterData?.executorType ?? "private";
-  const hasCertificate = masterData?.hasCertificate ?? false;
-  const setExecutorType = (t: ExecutorType) => settingsMutation.mutate({ executorType: t });
-  const setHasCertificate = (v: boolean) => settingsMutation.mutate({ hasCertificate: v });
-
-  // Certificates & diplomas
-  const certificates: Certificate[] = masterData?.certificates ?? [];
-  const [addingCert, setAddingCert] = useState(false);
+  const masterId = user?.masterId;
+  const { data: master, isLoading } = useQuery<Master>({ queryKey: [`/api/masters/${masterId}`], enabled: !!masterId });
+  const [description, setDescription] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [category, setCategory] = useState("Сантехника");
+  const [city, setCity] = useState("Грозный");
+  const [callMode, setCallMode] = useState<CallMode>("always");
+  const [workFrom, setWorkFrom] = useState("09:00");
+  const [workTo, setWorkTo] = useState("18:00");
+  const [serviceName, setServiceName] = useState("");
+  const [servicePrice, setServicePrice] = useState("");
   const [certTitle, setCertTitle] = useState("");
   const [certIssuer, setCertIssuer] = useState("");
   const [certYear, setCertYear] = useState("");
-  const [certImage, setCertImage] = useState<string | null>(null);
-  const [certError, setCertError] = useState<string | null>(null);
+  const [certImage, setCertImage] = useState<string | undefined>();
+  const [message, setMessage] = useState("");
+  const [isDark, setIsDark] = useState(document.documentElement.classList.contains("dark"));
 
-  const handleCertFile = (file: File | undefined) => {
+  useEffect(() => {
+    if (!master) return;
+    setDescription(master.description);
+    setCompanyName(master.companyName ?? "");
+    setPhone(master.phone ?? "");
+    setCategory(master.category);
+    setCity(master.city ?? "Грозный");
+    setCallMode(master.callMode);
+    setWorkFrom(master.workingHours.from);
+    setWorkTo(master.workingHours.to);
+  }, [master]);
+
+  const mutation = useMutation({
+    mutationFn: (patch: MasterSettingsInput) => apiRequest("PATCH", `/api/masters/${masterId}`, patch),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [`/api/masters/${masterId}`] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/masters"] });
+      setMessage("Сохранено");
+      window.setTimeout(() => setMessage(""), 1800);
+    },
+    onError: () => setMessage("Не удалось сохранить"),
+  });
+
+  const saveMain = () => {
+    const selected = categories.find((item) => item.name === category);
+    mutation.mutate({ description: description.trim(), companyName: companyName.trim(), phone: phone.trim(), category, categoryId: selected?.id, city: city as any, callMode, workingHours: { from: workFrom, to: workTo } });
+  };
+  const addService = () => {
+    if (!serviceName.trim() || !servicePrice.trim() || !master) return;
+    mutation.mutate({ services: [...master.services, { name: serviceName.trim(), price: servicePrice.trim() }] }, { onSuccess: () => { setServiceName(""); setServicePrice(""); } });
+  };
+  const removeService = (index: number) => master && mutation.mutate({ services: master.services.filter((_, i) => i !== index) });
+  const addCertificate = () => {
+    if (!certTitle.trim() || !master) return;
+    const certificate: Certificate = { id: Date.now(), title: certTitle.trim(), ...(certIssuer.trim() ? { issuer: certIssuer.trim() } : {}), ...(certYear.trim() ? { year: certYear.trim() } : {}), ...(certImage ? { image: certImage } : {}) };
+    mutation.mutate({ certificates: [...(master.certificates ?? []), certificate], hasCertificate: true }, { onSuccess: () => { setCertTitle(""); setCertIssuer(""); setCertYear(""); setCertImage(undefined); } });
+  };
+  const removeCertificate = (id: number) => {
+    const certificates = (master?.certificates ?? []).filter((item) => item.id !== id);
+    mutation.mutate({ certificates, hasCertificate: certificates.length > 0 });
+  };
+  const readImage = (file: File | undefined, target: "avatar" | "portfolio") => {
+    if (!file || !master) return;
+    if (file.size > 700_000) { setMessage("Фото должно быть меньше 700 КБ"); return; }
+    const reader = new FileReader();
+    reader.onload = () => mutation.mutate(target === "avatar" ? { avatar: reader.result as string } : { portfolio: [...master.portfolio, reader.result as string] });
+    reader.readAsDataURL(file);
+  };
+  const readCertificateImage = (file: File | undefined) => {
     if (!file) return;
-    if (file.size > 700_000) {
-      setCertError("Файл слишком большой — до 700 КБ");
-      return;
-    }
-    setCertError(null);
+    if (file.size > 700_000) { setMessage("Фото должно быть меньше 700 КБ"); return; }
     const reader = new FileReader();
     reader.onload = () => setCertImage(reader.result as string);
     reader.readAsDataURL(file);
   };
+  const toggleTheme = () => { const dark = !isDark; setIsDark(dark); document.documentElement.classList.toggle("dark", dark); localStorage.setItem("theme", dark ? "dark" : "light"); };
 
-  const resetCertForm = () => {
-    setAddingCert(false);
-    setCertTitle("");
-    setCertIssuer("");
-    setCertYear("");
-    setCertImage(null);
-    setCertError(null);
-  };
+  if (isLoading || !master) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Загрузка профиля…</div>;
+  const initials = master.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const hours = Array.from({ length: 24 }, (_, index) => `${String(index).padStart(2, "0")}:00`);
+  const visibility = [
+    ["showPrices", "Услуги и цены", master.showPrices !== false],
+    ["showPortfolio", "Портфолио", master.showPortfolio !== false],
+    ["showReviews", "Отзывы", master.showReviews !== false],
+    ["showCertificates", "Сертификаты", master.showCertificates !== false],
+  ] as const;
 
-  const saveCertificate = () => {
-    const title = certTitle.trim();
-    if (!title) {
-      setCertError("Укажите название документа");
-      return;
-    }
-    const nextId = certificates.reduce((m, c) => Math.max(m, c.id), 0) + 1;
-    const cert: Certificate = {
-      id: nextId,
-      title,
-      ...(certIssuer.trim() ? { issuer: certIssuer.trim() } : {}),
-      ...(certYear.trim() ? { year: certYear.trim() } : {}),
-      ...(certImage ? { image: certImage } : {}),
-    };
-    settingsMutation.mutate(
-      { certificates: [...certificates, cert] },
-      {
-        onSuccess: () => resetCertForm(),
-        onError: () => setCertError("Не удалось сохранить — попробуйте ещё раз"),
-      }
-    );
-  };
+  return <div className="min-h-screen bg-background pb-24 lg:pb-28">
+    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b px-4 py-3 safe-area-pt"><div className="max-w-lg lg:max-w-4xl mx-auto flex justify-between items-center"><div><h1 className="text-xl font-bold">Профиль исполнителя</h1><p className="text-xs text-muted-foreground">Изменения видны клиентам</p></div>{message && <span className={cn("text-xs font-medium", message === "Сохранено" ? "text-green-600" : "text-destructive")}>{message}</span>}</div></header>
+    <main className="max-w-lg lg:max-w-4xl mx-auto px-4 py-4 space-y-4">
+      <section className="rounded-2xl bg-card border p-4 flex items-center gap-4"><div className="relative">{master.avatar ? <img src={master.avatar} alt={master.name} className="w-20 h-20 rounded-2xl object-cover" /> : <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">{initials}</div>}<label className="absolute -right-1 -bottom-1 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center cursor-pointer"><Camera className="w-4 h-4" /><input type="file" accept="image/*" className="hidden" onChange={(event) => readImage(event.target.files?.[0], "avatar")} /></label></div><div><h2 className="font-bold text-lg">{master.name}</h2><p className="text-sm text-muted-foreground">{master.category} · {master.city}</p><p className="text-xs mt-1">★ {master.rating} · {master.completedOrders} выполнено</p></div></section>
 
-  const removeCertificate = (id: number) => {
-    settingsMutation.mutate({ certificates: certificates.filter((c) => c.id !== id) });
-  };
-  const [workFrom, setWorkFrom] = useState("09:00");
-  const [workTo, setWorkTo] = useState("18:00");
-  const [showSchedule, setShowSchedule] = useState(false);
+      <section className="rounded-2xl bg-card border p-4 space-y-3"><h3 className="font-semibold flex items-center gap-2"><User className="w-4 h-4 text-primary" />Основная информация</h3><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={1000} placeholder="Расскажите об опыте и гарантиях" className="w-full rounded-xl bg-muted border px-3 py-2 text-sm resize-none" data-testid="input-description" /><div className="grid sm:grid-cols-2 gap-2"><div className="relative"><Building2 className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" /><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Компания или бренд" className="pl-9" /></div><div className="relative"><Phone className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" /><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Телефон для клиентов" className="pl-9" /></div></div><div className="grid grid-cols-2 gap-2"><select value={category} onChange={(e) => setCategory(e.target.value)} className="h-10 rounded-xl border bg-background px-3 text-sm">{categories.map((item) => <option key={item.id}>{item.name}</option>)}</select><select value={city} onChange={(e) => setCity(e.target.value)} className="h-10 rounded-xl border bg-background px-3 text-sm">{cities.filter((item) => item !== "Все города").map((item) => <option key={item}>{item}</option>)}</select></div><div><p className="text-xs font-medium text-muted-foreground mb-2">Приём звонков</p><div className="grid grid-cols-2 gap-2">{callModes.map((mode) => <button key={mode.id} onClick={() => setCallMode(mode.id)} className={cn("rounded-xl border px-3 py-2 text-xs font-medium", callMode === mode.id && "border-primary bg-primary/5 text-primary")}>{mode.label}</button>)}</div></div>{callMode === "schedule" && <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /><select value={workFrom} onChange={(e) => setWorkFrom(e.target.value)} className="h-9 rounded-lg border bg-background px-2">{hours.map((hour) => <option key={hour}>{hour}</option>)}</select><span>—</span><select value={workTo} onChange={(e) => setWorkTo(e.target.value)} className="h-9 rounded-lg border bg-background px-2">{hours.map((hour) => <option key={hour}>{hour}</option>)}</select></div>}<Button onClick={saveMain} disabled={mutation.isPending || description.trim().length < 10} className="w-full"><Save className="w-4 h-4 mr-2" />Сохранить профиль</Button></section>
 
-  const initials = user?.name
-    ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-    : "МС";
+      <section className="rounded-2xl bg-card border overflow-hidden"><div className="p-4 border-b"><h3 className="font-semibold flex items-center gap-2"><Briefcase className="w-4 h-4 text-primary" />Услуги и цены</h3></div><div className="divide-y">{master.services.map((service, index) => <div key={`${service.name}-${index}`} className="p-3 flex items-center gap-3"><div className="flex-1"><p className="text-sm font-medium">{service.name}</p><p className="text-xs text-muted-foreground">{service.price}</p></div><button onClick={() => removeService(index)} aria-label="Удалить услугу" className="w-8 h-8 text-destructive"><Trash2 className="w-4 h-4" /></button></div>)}{master.services.length === 0 && <p className="p-4 text-sm text-muted-foreground">Добавьте хотя бы одну услугу, чтобы клиенты могли записаться.</p>}</div><div className="p-3 border-t flex gap-2"><Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="Название услуги" /><Input value={servicePrice} onChange={(e) => setServicePrice(e.target.value)} placeholder="Цена" className="w-28" /><Button size="icon" onClick={addService} disabled={!serviceName.trim() || !servicePrice.trim()}><Plus className="w-4 h-4" /></Button></div></section>
 
-  const toggleTheme = () => {
-    const html = document.documentElement;
-    if (isDark) {
-      html.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    } else {
-      html.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    }
-    setIsDark(!isDark);
-  };
+      <section className="rounded-2xl bg-card border p-4"><div className="flex items-center justify-between mb-3"><h3 className="font-semibold">Портфолио</h3><label className="text-xs text-primary font-medium cursor-pointer"><Plus className="inline w-4 h-4" /> Добавить фото<input type="file" accept="image/*" className="hidden" onChange={(e) => readImage(e.target.files?.[0], "portfolio")} /></label></div><div className="grid grid-cols-3 gap-2">{master.portfolio.map((image, index) => <div key={index} className="relative aspect-square"><img src={image} alt={`Работа ${index + 1}`} className="w-full h-full rounded-xl object-cover" /><button onClick={() => mutation.mutate({ portfolio: master.portfolio.filter((_, i) => i !== index) })} className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button></div>)}{master.portfolio.length === 0 && <p className="col-span-3 text-sm text-muted-foreground">Фотографий пока нет</p>}</div></section>
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/");
-  };
+      <section className="rounded-2xl bg-card border p-4 space-y-3"><h3 className="font-semibold">Тип исполнителя</h3><div className="flex flex-wrap gap-2">{(Object.keys(executorTypeLabels) as ExecutorType[]).map((type) => <button key={type} onClick={() => mutation.mutate({ executorType: type })} className={cn("rounded-xl border px-3 py-2 text-sm", master.executorType === type && "border-primary bg-primary/5 text-primary")}>{executorTypeLabels[type]}</button>)}</div></section>
 
-  return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/60 px-4 py-3">
-        <div className="max-w-lg mx-auto">
-          <h1 className="text-xl font-bold">Профиль исполнителя</h1>
-        </div>
-      </header>
+      <section className="rounded-2xl bg-card border overflow-hidden"><div className="p-4 border-b"><h3 className="font-semibold flex items-center gap-2"><Award className="w-4 h-4 text-primary" />Сертификаты и дипломы</h3></div><div className="divide-y">{(master.certificates ?? []).map((cert) => <div key={cert.id} className="p-3 flex items-center gap-3">{cert.image ? <img src={cert.image} alt={cert.title} className="w-12 h-12 rounded-lg object-cover" /> : <Award className="w-5 h-5 text-primary" />}<div className="flex-1"><p className="text-sm font-medium">{cert.title}</p><p className="text-xs text-muted-foreground">{[cert.issuer, cert.year].filter(Boolean).join(" · ")}</p></div><button onClick={() => removeCertificate(cert.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></button></div>)}</div><div className="p-3 border-t grid gap-2"><Input value={certTitle} onChange={(e) => setCertTitle(e.target.value)} placeholder="Название документа" /><div className="flex gap-2"><Input value={certIssuer} onChange={(e) => setCertIssuer(e.target.value)} placeholder="Кем выдан" /><Input value={certYear} onChange={(e) => setCertYear(e.target.value)} placeholder="Год" className="w-24" /></div><div className="flex gap-2"><label className="flex-1 h-10 rounded-xl border border-dashed flex items-center justify-center gap-2 text-xs text-muted-foreground cursor-pointer"><Camera className="w-4 h-4" />{certImage ? "Фото добавлено" : "Добавить фото документа"}<input type="file" accept="image/*" className="hidden" onChange={(event) => readCertificateImage(event.target.files?.[0])} /></label><Button onClick={addCertificate} disabled={!certTitle.trim() || (master.certificates?.length ?? 0) >= 10}><Plus className="w-4 h-4 mr-1" />Добавить</Button></div></div></section>
 
-      <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* Avatar + name + rating */}
-        <section className="rounded-2xl bg-card border border-border/60 p-5">
-          <div className="flex items-start gap-4">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
-                {initials}
-              </div>
-              <button
-                data-testid="button-change-avatar"
-                className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary rounded-full flex items-center justify-center text-white shadow"
-              >
-                <Camera className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <div className="flex-1">
-              <h2 className="font-bold text-lg leading-tight">{user?.name || "Мастер"}</h2>
-              <p className="text-muted-foreground text-sm mt-0.5">{user?.phone || ""}</p>
-              <div className="flex items-center gap-3 mt-2">
-                <div className="flex items-center gap-1 text-sm font-semibold">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span>4.9</span>
-                </div>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Award className="w-4 h-4" />
-                  <span>432 выполнено</span>
-                </div>
-              </div>
-            </div>
-          </div>
+      <section className="rounded-2xl bg-card border overflow-hidden"><div className="p-4 border-b"><h3 className="font-semibold">Видимость публичного профиля</h3></div>{visibility.map(([field, label, enabled]) => <button key={field} onClick={() => mutation.mutate({ [field]: !enabled })} className="w-full p-4 border-b last:border-0 flex justify-between"><span className="text-sm">{label}</span><span className={cn("w-11 h-6 rounded-full p-1", enabled ? "bg-primary" : "bg-muted")}><span className={cn("block w-4 h-4 rounded-full bg-white transition-transform", enabled && "translate-x-5")} /></span></button>)}</section>
 
-          {/* Description */}
-          <div className="mt-4 pt-4 border-t border-border/60">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">О себе</p>
-              {!editingDescription && (
-                <button
-                  onClick={() => { setDescDraft(description); setEditingDescription(true); }}
-                  data-testid="button-edit-description"
-                  className="flex items-center gap-1 text-xs text-primary font-medium"
-                >
-                  <Edit3 className="w-3 h-3" />
-                  Изменить
-                </button>
-              )}
-            </div>
-            {editingDescription ? (
-              <div className="space-y-2">
-                <textarea
-                  value={descDraft}
-                  onChange={(e) => setDescDraft(e.target.value)}
-                  rows={3}
-                  data-testid="input-description"
-                  className="w-full text-sm text-foreground bg-muted border border-border rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setEditingDescription(false)}
-                    data-testid="button-cancel-description"
-                    className="flex-1 flex items-center justify-center gap-1 text-sm text-muted-foreground border border-border rounded-xl py-2"
-                  >
-                    <X className="w-4 h-4" />Отмена
-                  </button>
-                  <button
-                    onClick={() => { setDescription(descDraft); setEditingDescription(false); }}
-                    data-testid="button-save-description"
-                    className="flex-[2] flex items-center justify-center gap-1 text-sm text-white bg-primary rounded-xl py-2"
-                  >
-                    <Check className="w-4 h-4" />Сохранить
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-foreground/80 leading-relaxed">{description}</p>
-            )}
-          </div>
-        </section>
-
-        {/* Brand / company name (optional) */}
-        <section className="rounded-2xl bg-card border border-border/60 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-primary" />
-              <h3 className="font-semibold text-sm">Название компании / бренда</h3>
-            </div>
-            {!editingCompany && (
-              <button
-                onClick={() => { setCompanyDraft(companyName); setEditingCompany(true); }}
-                data-testid="button-edit-company"
-                className="flex items-center gap-1 text-xs text-primary font-medium"
-              >
-                <Edit3 className="w-3 h-3" />
-                Изменить
-              </button>
-            )}
-          </div>
-
-          {editingCompany ? (
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={companyDraft}
-                onChange={(e) => setCompanyDraft(e.target.value)}
-                placeholder="Например: Чистый Дом"
-                maxLength={50}
-                data-testid="input-company"
-                className="w-full text-sm text-foreground bg-muted border border-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Необязательно. Укажите, если работаете под брендом или представляете компанию.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setEditingCompany(false)}
-                  data-testid="button-cancel-company"
-                  className="flex-1 flex items-center justify-center gap-1 text-sm text-muted-foreground border border-border rounded-xl py-2"
-                >
-                  <X className="w-4 h-4" />Отмена
-                </button>
-                <button
-                  onClick={() => { setCompanyName(companyDraft.trim()); setEditingCompany(false); }}
-                  data-testid="button-save-company"
-                  className="flex-[2] flex items-center justify-center gap-1 text-sm text-white bg-primary rounded-xl py-2"
-                >
-                  <Check className="w-4 h-4" />Сохранить
-                </button>
-              </div>
-            </div>
-          ) : companyName ? (
-            <p className="text-sm font-medium text-foreground" data-testid="text-company-display">{companyName}</p>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Не указано. Если хотите представлять компанию или бренд — добавьте название.
-            </p>
-          )}
-        </section>
-
-        {/* Category */}
-        <section className="rounded-2xl bg-card border border-border/60 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Briefcase className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold text-sm">Категория услуг</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {categoryOptions.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                data-testid={`button-category-${cat}`}
-                className={cn(
-                  "text-xs font-medium px-3 py-1.5 rounded-full border transition-all",
-                  selectedCategory === cat
-                    ? "bg-primary text-white border-primary"
-                    : "bg-card text-muted-foreground border-border hover:border-primary/40"
-                )}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Availability & Call Settings ─────────────────────────── */}
-        <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
-            <PhoneCall className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold text-sm">Доступность для звонков</h3>
-          </div>
-
-          {/* Phone number */}
-          <div className="px-4 py-3 border-b border-border/60">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Номер телефона</p>
-              {!editingPhone && (
-                <button
-                  onClick={() => { setPhoneDraft(phone); setEditingPhone(true); }}
-                  data-testid="button-edit-phone"
-                  className="text-xs text-primary font-medium"
-                >
-                  Изменить
-                </button>
-              )}
-            </div>
-            {editingPhone ? (
-              <div className="flex gap-2 mt-1">
-                <input
-                  value={phoneDraft}
-                  onChange={(e) => setPhoneDraft(e.target.value)}
-                  placeholder="+7 (928) 000-00-00"
-                  data-testid="input-phone"
-                  className="flex-1 text-sm bg-muted border border-border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <button
-                  onClick={() => setEditingPhone(false)}
-                  className="px-3 py-2 rounded-xl border border-border text-xs text-muted-foreground"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => { setPhone(phoneDraft); setEditingPhone(false); }}
-                  data-testid="button-save-phone"
-                  className="px-3 py-2 rounded-xl bg-primary text-white text-xs"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <p className="text-sm font-medium mt-1">{phone || <span className="text-muted-foreground">Не указан</span>}</p>
-            )}
-          </div>
-
-          {/* Call mode */}
-          <div className="px-4 py-3 space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Режим звонков</p>
-            {CALL_MODE_OPTIONS.map((opt) => {
-              const Icon = opt.icon;
-              const isSelected = callMode === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => {
-                    setCallMode(opt.id);
-                    if (opt.id === "schedule") setShowSchedule(true);
-                  }}
-                  data-testid={`call-mode-${opt.id}`}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-left transition-all",
-                    isSelected
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-muted/30 hover:border-primary/40"
-                  )}
-                >
-                  <div className={cn(
-                    "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-                    isSelected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                  )}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1">
-                    <p className={cn("text-sm font-semibold", isSelected ? "text-primary" : "text-foreground")}>{opt.label}</p>
-                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                  </div>
-                  {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Working hours (shown when schedule mode) */}
-          {callMode === "schedule" && (
-            <div className="px-4 pb-4">
-              <button
-                onClick={() => setShowSchedule((v) => !v)}
-                className="w-full flex items-center justify-between text-sm font-semibold text-primary border border-primary/30 rounded-xl px-4 py-2.5 mb-3"
-                data-testid="button-toggle-schedule"
-              >
-                <span className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Рабочие часы: {workFrom} — {workTo}
-                </span>
-                {showSchedule ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-
-              {showSchedule && (
-                <div className="flex items-center gap-3 bg-muted/50 rounded-xl px-4 py-3">
-                  <div className="flex-1 space-y-1">
-                    <p className="text-xs text-muted-foreground font-medium">Начало</p>
-                    <select
-                      value={workFrom}
-                      onChange={(e) => setWorkFrom(e.target.value)}
-                      data-testid="select-work-from"
-                      className="w-full bg-background border border-border rounded-lg px-2 py-1.5 text-sm font-semibold outline-none"
-                    >
-                      {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{h}</option>)}
-                    </select>
-                  </div>
-                  <div className="text-muted-foreground font-bold mt-4">—</div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-xs text-muted-foreground font-medium">Конец</p>
-                    <select
-                      value={workTo}
-                      onChange={(e) => setWorkTo(e.target.value)}
-                      data-testid="select-work-to"
-                      className="w-full bg-background border border-border rounded-lg px-2 py-1.5 text-sm font-semibold outline-none"
-                    >
-                      {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{h}</option>)}
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* My services */}
-        <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
-            <h3 className="font-semibold text-sm">Мои услуги</h3>
-            <button data-testid="button-add-service" className="flex items-center gap-1 text-xs text-primary font-medium">
-              <Plus className="w-3.5 h-3.5" />Добавить
-            </button>
-          </div>
-          <div className="divide-y divide-border/60">
-            {myServices.map((svc) => (
-              <div key={svc.id} data-testid={`row-service-${svc.id}`} className="px-4 py-3 flex items-center justify-between">
-                <span className="text-sm text-foreground">{svc.name}</span>
-                <span className="text-sm font-semibold text-foreground">{svc.price}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Portfolio */}
-        <section className="rounded-2xl bg-card border border-border/60 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-sm">Портфолио</h3>
-            <button data-testid="button-add-photo" className="flex items-center gap-1 text-xs text-primary font-medium">
-              <Plus className="w-3.5 h-3.5" />Добавить фото
-            </button>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {portfolioPhotos.map((url, i) => (
-              <div key={i} data-testid={`img-portfolio-${i}`} className="aspect-square rounded-xl overflow-hidden bg-muted">
-                <img src={url} alt="" className="w-full h-full object-cover" />
-              </div>
-            ))}
-            <button
-              data-testid="button-add-portfolio-photo"
-              className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-primary/40 transition-colors"
-            >
-              <Plus className="w-6 h-6" />
-            </button>
-          </div>
-        </section>
-
-        {/* Executor type & certificate */}
-        <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/60">
-            <h3 className="font-semibold text-sm">Тип исполнителя</h3>
-          </div>
-          <div className="p-4 space-y-3">
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(executorTypeLabels) as ExecutorType[]).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setExecutorType(t)}
-                  data-testid={`button-executor-${t}`}
-                  className={cn(
-                    "px-3.5 py-2 rounded-xl border-2 text-sm font-medium transition-all",
-                    executorType === t ? "border-primary bg-primary/5 text-primary" : "border-border bg-card"
-                  )}
-                >
-                  {executorTypeLabels[t]}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setHasCertificate(!hasCertificate)}
-              data-testid="toggle-certificate"
-              aria-pressed={hasCertificate}
-              className="w-full flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <Award className={cn("w-4 h-4", hasCertificate ? "text-primary" : "text-muted-foreground")} />
-                <span className="text-sm">Есть сертификат / диплом</span>
-              </div>
-              <div className={cn("w-12 h-6 rounded-full transition-all relative", hasCertificate ? "bg-primary" : "bg-muted")}>
-                <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all", hasCertificate ? "right-1" : "left-1")} />
-              </div>
-            </button>
-            {hasCertificate && (
-              <p className="text-xs text-muted-foreground">
-                Отправьте фото документа в поддержку — после проверки в профиле появится значок «Сертификат подтверждён».
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* Certificates & diplomas */}
-        <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-sm">Сертификаты и дипломы</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Показываются клиентам в вашем профиле</p>
-            </div>
-            {!addingCert && (
-              <button
-                onClick={() => setAddingCert(true)}
-                data-testid="button-add-certificate"
-                className="flex items-center gap-1 text-sm font-medium text-primary"
-              >
-                <Plus className="w-4 h-4" /> Добавить
-              </button>
-            )}
-          </div>
-          <div className="p-4 space-y-3">
-            {certificates.length === 0 && !addingCert && (
-              <p className="text-sm text-muted-foreground">
-                Добавьте дипломы и сертификаты — это повышает доверие клиентов.
-              </p>
-            )}
-            {certificates.map((cert) => (
-              <div
-                key={cert.id}
-                className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/30 p-2.5"
-                data-testid={`cabinet-certificate-${cert.id}`}
-              >
-                {cert.image ? (
-                  <img src={cert.image} alt={cert.title} className="w-12 h-12 rounded-lg object-cover bg-muted shrink-0" />
-                ) : (
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Award className="w-5 h-5 text-primary" />
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium leading-snug">{cert.title}</p>
-                  {(cert.issuer || cert.year) && (
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {[cert.issuer, cert.year].filter(Boolean).join(" · ")}
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => removeCertificate(cert.id)}
-                  data-testid={`button-remove-certificate-${cert.id}`}
-                  aria-label="Удалить документ"
-                  className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-            {addingCert && (
-              <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-3 space-y-2.5">
-                <input
-                  value={certTitle}
-                  onChange={(e) => setCertTitle(e.target.value)}
-                  placeholder="Название, напр. «Диплом электромонтажника»"
-                  data-testid="input-cert-title"
-                  className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
-                />
-                <div className="flex gap-2">
-                  <input
-                    value={certIssuer}
-                    onChange={(e) => setCertIssuer(e.target.value)}
-                    placeholder="Кем выдан (необязательно)"
-                    data-testid="input-cert-issuer"
-                    className="flex-1 min-w-0 bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
-                  />
-                  <input
-                    value={certYear}
-                    onChange={(e) => setCertYear(e.target.value)}
-                    placeholder="Год"
-                    data-testid="input-cert-year"
-                    className="w-20 bg-background border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
-                  />
-                </div>
-                <label className="flex items-center gap-2.5 cursor-pointer rounded-xl border border-dashed border-border bg-background px-3 py-2.5">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    data-testid="input-cert-photo"
-                    onChange={(e) => handleCertFile(e.target.files?.[0])}
-                  />
-                  {certImage ? (
-                    <>
-                      <img src={certImage} alt="Фото документа" className="w-10 h-10 rounded-lg object-cover" />
-                      <span className="text-sm text-muted-foreground">Фото добавлено — нажмите, чтобы заменить</span>
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Фото документа (необязательно)</span>
-                    </>
-                  )}
-                </label>
-                {certError && <p className="text-xs text-destructive">{certError}</p>}
-                <div className="flex gap-2 pt-0.5">
-                  <button
-                    onClick={saveCertificate}
-                    data-testid="button-save-certificate"
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-semibold"
-                  >
-                    <Check className="w-4 h-4" /> Сохранить
-                  </button>
-                  <button
-                    onClick={resetCertForm}
-                    data-testid="button-cancel-certificate"
-                    className="px-4 rounded-xl border border-border text-sm font-medium"
-                  >
-                    Отмена
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Profile block visibility */}
-        <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/60">
-            <h3 className="font-semibold text-sm">Видимость блоков профиля</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Что клиенты видят в вашем профиле</p>
-          </div>
-          <div className="divide-y divide-border/60">
-            {([
-              { key: "prices" as const, label: "Услуги и цены" },
-              { key: "portfolio" as const, label: "Портфолио" },
-              { key: "reviews" as const, label: "Отзывы" },
-              { key: "certificates" as const, label: "Сертификаты и дипломы" },
-            ]).map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => toggleBlock(key)}
-                data-testid={`toggle-block-${key}`}
-                aria-pressed={blockVisibility[key]}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
-              >
-                <span className="text-sm">{label}</span>
-                <div className={cn("w-12 h-6 rounded-full transition-all relative", blockVisibility[key] ? "bg-primary" : "bg-muted")}>
-                  <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all", blockVisibility[key] ? "right-1" : "left-1")} />
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Settings */}
-        <section className="rounded-2xl bg-card border border-border/60 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/60">
-            <h3 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">Настройки</h3>
-          </div>
-          <button
-            onClick={toggleTheme}
-            data-testid="button-theme-toggle"
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              {isDark ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
-              <span className="text-sm">Тёмная тема</span>
-            </div>
-            <span className="text-xs font-medium text-muted-foreground">{isDark ? "Включена" : "Выключена"}</span>
-          </button>
-          <div className="px-4 py-3 border-t border-border/60 flex items-center gap-3 text-xs text-muted-foreground">
-            <User className="w-4 h-4" />
-            <span>Исполнитель · Служба 995</span>
-          </div>
-        </section>
-
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          data-testid="button-master-logout"
-          className="w-full rounded-2xl border border-red-200 dark:border-red-900 py-4 flex items-center justify-center gap-2 text-red-500 font-semibold text-sm hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          Выйти из аккаунта
-        </button>
-      </main>
-
-      <MasterBottomNavigation />
-    </div>
-  );
+      <div className="grid grid-cols-2 gap-2"><Button variant="outline" onClick={toggleTheme}>{isDark ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}{isDark ? "Светлая тема" : "Тёмная тема"}</Button><Button variant="ghost" className="text-destructive" onClick={async () => { await logout(); navigate("/"); }}><LogOut className="w-4 h-4 mr-2" />Выйти</Button></div>
+    </main><MasterBottomNavigation />
+  </div>;
 }

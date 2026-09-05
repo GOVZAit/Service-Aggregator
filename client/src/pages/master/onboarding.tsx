@@ -8,7 +8,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { executorTypeLabels } from "@shared/schema";
-import type { ExecutorType } from "@shared/schema";
+import type { ExecutorType, MasterSettingsInput } from "@shared/schema";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 type Step = "welcome" | "category" | "details" | "description" | "done";
 
@@ -38,6 +40,29 @@ export default function MasterOnboardingPage() {
   const [description, setDescription] = useState("");
   const [executorType, setExecutorType] = useState<ExecutorType | null>(null);
   const [hasCertificate, setHasCertificate] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const queryClient = useQueryClient();
+  const saveProfile = useMutation({
+    mutationFn: (patch: MasterSettingsInput) => apiRequest("PATCH", `/api/masters/${user?.masterId}`, patch),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [`/api/masters/${user?.masterId}`] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/masters"] });
+      setStep("done");
+    },
+    onError: () => setSaveError("Не удалось сохранить профиль. Попробуйте ещё раз."),
+  });
+
+  const completeOnboarding = (includeDescription = true) => {
+    if (!selectedCategory || !executorType) return;
+    const categoryId = categories.findIndex((item) => item.name === selectedCategory) + 1;
+    saveProfile.mutate({
+      category: selectedCategory,
+      categoryId,
+      executorType,
+      hasCertificate,
+      ...(includeDescription && description.trim() ? { description: description.trim() } : {}),
+    });
+  };
 
   const stepIndex = steps.findIndex((s) => s.key === step);
 
@@ -238,6 +263,7 @@ export default function MasterOnboardingPage() {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              maxLength={300}
               placeholder="Например: Опытный сантехник с 10-летним стажем. Работаю по всему Грозному, гарантия на все работы..."
               rows={6}
               data-testid="input-onboarding-description"
@@ -262,7 +288,7 @@ export default function MasterOnboardingPage() {
           onClick={() => {
             if (step === "category") setStep("details");
             else if (step === "details") setStep("description");
-            else if (step === "description") setStep("done");
+            else if (step === "description") completeOnboarding(true);
           }}
           disabled={(step === "category" && !selectedCategory) || (step === "details" && !executorType)}
           data-testid="button-onboarding-next"
@@ -273,17 +299,18 @@ export default function MasterOnboardingPage() {
               : "bg-muted text-muted-foreground cursor-not-allowed"
           )}
         >
-          {step === "description" ? "Завершить настройку" : "Далее"}
+          {step === "description" && saveProfile.isPending ? "Сохраняем..." : step === "description" ? "Завершить настройку" : "Далее"}
         </button>
         {step === "description" && (
           <button
-            onClick={() => setStep("done")}
+            onClick={() => completeOnboarding(false)}
             className="w-full py-3 text-sm text-muted-foreground"
             data-testid="button-skip-description"
           >
             Заполнить позже
           </button>
         )}
+        {saveError && <p className="text-sm text-destructive text-center">{saveError}</p>}
       </div>
     </div>
   );

@@ -41,7 +41,9 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
 
     const onExecutorRoute = isExecutorRoute(location);
 
-    if (user?.role === "master" && !onExecutorRoute && location !== "/auth") {
+    if (!user && onExecutorRoute) {
+      navigate("/auth");
+    } else if (user?.role === "master" && !onExecutorRoute && location !== "/auth") {
       // Executor landed on a client page → go to executor dashboard
       navigate("/master");
     } else if (user?.role === "client" && onExecutorRoute) {
@@ -50,6 +52,7 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, location, navigate]);
 
+  if (isLoading || (!user && isExecutorRoute(location))) return null;
   return <>{children}</>;
 }
 

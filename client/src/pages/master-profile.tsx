@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { BookingModal } from "@/components/booking-modal";
 import { apiRequest } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
 import { executorTypeLabels } from "@shared/schema";
 import type { Master, ChatMessage } from "@shared/schema";
 
@@ -328,10 +329,10 @@ export default function MasterProfilePage() {
                 {executorTypeLabels[master.executorType]}
               </span>
             )}
-            {master.hasCertificate && (
+            {master.showCertificates !== false && master.hasCertificate && (
               <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-full px-2.5 py-1" data-testid="badge-certificate">
                 <Award className="w-3 h-3" />
-                Сертификат подтверждён
+                Есть сертификат
               </span>
             )}
           </div>
@@ -407,7 +408,7 @@ export default function MasterProfilePage() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className={cn("grid gap-3 text-center", master.showPrices !== false ? "grid-cols-3" : "grid-cols-2")}>
             <div className="bg-primary/10 rounded-xl py-3 px-2">
               <p className="text-xl font-bold text-primary">{master.completedOrders}</p>
               <p className="text-xs text-muted-foreground">заказов</p>
@@ -416,10 +417,12 @@ export default function MasterProfilePage() {
               <p className="text-xl font-bold text-green-600 dark:text-green-400">{master.rating}</p>
               <p className="text-xs text-muted-foreground">рейтинг</p>
             </div>
-            <div className="bg-amber-500/10 rounded-xl py-3 px-2">
-              <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{master.price}</p>
-              <p className="text-xs text-muted-foreground">цена</p>
-            </div>
+            {master.showPrices !== false && (
+              <div className="bg-amber-500/10 rounded-xl py-3 px-2">
+                <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{master.price}</p>
+                <p className="text-xs text-muted-foreground">цена</p>
+              </div>
+            )}
           </div>
 
           {master.verified && (

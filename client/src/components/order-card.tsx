@@ -14,6 +14,7 @@ const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "s
   completed: { label: 'Выполнен', variant: 'default' },
   in_progress: { label: 'В работе', variant: 'secondary' },
   pending: { label: 'Ожидает', variant: 'outline' },
+  rejected: { label: 'Отклонён', variant: 'outline' },
 };
 
 export function OrderCard({ order, master, onLeaveReview }: OrderCardProps) {
