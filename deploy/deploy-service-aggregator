@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly revision="${1:-}"
+readonly archive="${2:-}"
+readonly app_root="/home/serviceagg"
+readonly releases_dir="${app_root}/releases"
+readonly release_dir="${releases_dir}/${revision}"
+readonly current_link="${app_root}/current"
+
+if [[ ! "${revision}" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "Invalid Git revision" >&2
+  exit 2
+fi
+
+case "${archive}" in
+  /home/serviceagg-deploy/incoming/*.tar.gz) ;;
+  *)
+    echo "Archive must be inside /home/serviceagg-deploy/incoming" >&2
+    exit 2
+    ;;
+esac
+
+if [[ ! -f "${archive}" || -L "${archive}" ]]; then
+  echo "Release archive not found" >&2
+  exit 2
+fi
+
+install -d -o serviceagg -g serviceagg -m 0750 "${releases_dir}"
+
+if [[ -e "${release_dir}" ]]; then
+  echo "Release ${revision} already exists" >&2
+  exit 2
+fi
+
+install -d -o serviceagg -g serviceagg -m 0750 "${release_dir}"
+tar -xzf "${archive}" -C "${release_dir}"
+chown -R serviceagg:serviceagg "${release_dir}"
+
+sudo -u serviceagg -H sh -c "cd '${release_dir}' && npm ci && npm run build"
+
+previous_target=""
+if [[ -L "${current_link}" ]]; then
+  previous_target="$(readlink -f "${current_link}")"
+fi
+
+rm -f -- "${app_root}/current.next"
+ln -s "${release_dir}" "${app_root}/current.next"
+mv -Tf "${app_root}/current.next" "${current_link}"
+
+if ! systemctl restart service-aggregator.service || \
+   ! curl --fail --silent --show-error --retry 10 --retry-delay 1 \
+      --output /dev/null http://127.0.0.1:8081/; then
+  if [[ -n "${previous_target}" && -d "${previous_target}" ]]; then
+    rm -f -- "${app_root}/current.rollback"
+    ln -s "${previous_target}" "${app_root}/current.rollback"
+    mv -Tf "${app_root}/current.rollback" "${current_link}"
+    systemctl restart service-aggregator.service
+  fi
+  echo "Deployment failed; previous release restored" >&2
+  exit 1
+fi
+
+rm -f -- "${archive}"
+
+find "${releases_dir}" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
+  | sort -nr \
+  | tail -n +6 \
+  | cut -d' ' -f2- \
+  | while IFS= read -r old_release; do
+      [[ "${old_release}" == "$(readlink -f "${current_link}")" ]] || rm -rf -- "${old_release}"
+    done
+
+echo "Deployed ${revision}"

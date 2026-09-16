@@ -1,0 +1,22 @@
+[Unit]
+Description=Service Aggregator web application
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=serviceagg
+Group=serviceagg
+WorkingDirectory=/home/serviceagg/current
+EnvironmentFile=/etc/service-aggregator/app.env
+ExecStart=/usr/bin/node --enable-source-maps dist/index.cjs
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/serviceagg
+
+[Install]
+WantedBy=multi-user.target
