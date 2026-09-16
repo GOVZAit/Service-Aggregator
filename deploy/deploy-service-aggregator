@@ -50,6 +50,7 @@ mv -Tf "${app_root}/current.next" "${current_link}"
 
 if ! systemctl restart service-aggregator.service || \
    ! curl --fail --silent --show-error --retry 10 --retry-delay 1 \
+      --retry-connrefused \
       --output /dev/null http://127.0.0.1:8081/; then
   if [[ -n "${previous_target}" && -d "${previous_target}" ]]; then
     rm -f -- "${app_root}/current.rollback"
