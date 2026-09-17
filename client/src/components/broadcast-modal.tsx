@@ -46,29 +46,33 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
   const [location, setLocation] = useState("");
 
   const createMutation = useMutation({
-    mutationFn: async (data: InsertRequest & { userName: string; userAvatar: string }) => {
-      return apiRequest("POST", "/api/requests", data);
-    },
+    mutationFn: async (data: InsertRequest) => apiRequest("POST", "/api/requests", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
       setStep("done");
     },
-    onError: () => {
-      toast({ title: "Ошибка", description: "Не удалось отправить заявку", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({
+        title: error.message.includes("401") ? "Нужно войти" : "Ошибка",
+        description: error.message.includes("401")
+          ? "Войдите в профиль клиента, чтобы отправить заявку мастерам."
+          : "Не удалось отправить заявку. Попробуйте ещё раз.",
+        variant: "destructive",
+      });
     },
   });
 
   const handleSubmit = () => {
+    if (!user) {
+      toast({
+        title: "Нужно войти",
+        description: "Войдите в профиль клиента, чтобы отправить заявку мастерам.",
+        variant: "destructive",
+      });
+      return;
+    }
     const title = `${category}: ${description.slice(0, 40)}${description.length > 40 ? "..." : ""}`;
-    createMutation.mutate({
-      title,
-      category,
-      description,
-      budget,
-      location,
-      userName: user?.name ?? "Клиент",
-      userAvatar: "",
-    });
+    createMutation.mutate({ title, category, description, budget, location });
   };
 
   const canGoNext = () => {
@@ -83,7 +87,6 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/50 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-background rounded-t-3xl max-h-[90vh] overflow-y-auto safe-area-pb">
-        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-border" />
         </div>
@@ -102,7 +105,6 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
           </div>
         )}
 
-        {/* Progress */}
         {step !== "done" && (
           <div className="flex items-center justify-center gap-2 py-3" aria-label={`Шаг ${stepIndex[step] + 1} из 3`}>
             <span className="text-xs font-medium text-muted-foreground">Шаг {stepIndex[step] + 1} из 3</span>
@@ -119,12 +121,11 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
         )}
 
         <div className="px-5 pb-8">
-          {/* Step 1: Category */}
           {step === "category" && (
             <div className="space-y-4">
               <div>
                 <h3 className="font-semibold text-lg">Какая услуга нужна?</h3>
-                <p className="text-sm text-muted-foreground mt-0.5">Заявка уйдёт всем мастерам этой категории</p>
+                <p className="text-sm text-muted-foreground mt-0.5">Подходящие мастера смогут предложить цену и написать вам</p>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {categoryOptions.map((cat) => (
@@ -155,7 +156,6 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
             </div>
           )}
 
-          {/* Step 2: Details */}
           {step === "details" && (
             <div className="space-y-4">
               <div>
@@ -213,12 +213,11 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
             </div>
           )}
 
-          {/* Step 3: Location */}
           {step === "location" && (
             <div className="space-y-4">
               <div>
                 <h3 className="font-semibold text-lg">Где выполнить работу?</h3>
-                <p className="text-sm text-muted-foreground mt-0.5">Мастера получат ваш адрес после принятия заявки</p>
+                <p className="text-sm text-muted-foreground mt-0.5">Точный адрес откроется только мастеру, которого вы выберете</p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Адрес</label>
@@ -231,7 +230,6 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
                 />
               </div>
 
-              {/* Summary */}
               <div className="rounded-2xl bg-muted/50 border border-border/60 p-4 space-y-1.5 text-sm">
                 <p className="font-semibold text-foreground">Сводка заявки</p>
                 <p className="text-muted-foreground">📂 {category}</p>
@@ -240,7 +238,7 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
               </div>
 
               <p className="text-xs text-muted-foreground text-center">
-                Заявка уйдёт сразу всем мастерам категории «{category}». Кто первый примет — тот мастер.
+                Мастера категории «{category}» смогут отправить вам цену и комментарий. Вы сами выберете подходящий отклик.
               </p>
 
               <div className="flex gap-2">
@@ -265,7 +263,6 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
             </div>
           )}
 
-          {/* Done */}
           {step === "done" && (
             <div className="py-8 flex flex-col items-center gap-5 text-center">
               <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-950/50 flex items-center justify-center">
@@ -274,12 +271,12 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
               <div>
                 <h3 className="text-xl font-bold">Заявка отправлена!</h3>
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                  Все мастера категории «{category}» уже видят вашу заявку.<br />
-                  Кто первый примет — сразу свяжется с вами.
+                  Подходящие мастера уже могут увидеть задачу и предложить цену.<br />
+                  Выберите исполнителя после получения откликов.
                 </p>
               </div>
               <div className="rounded-2xl bg-primary/5 border border-primary/20 px-5 py-3 text-sm text-muted-foreground">
-                Следите за откликами во вкладке <span className="font-semibold text-foreground">«Заявки»</span>
+                Следите за предложениями в разделе <span className="font-semibold text-foreground">«Мои заявки»</span>
               </div>
               <button
                 onClick={onClose}

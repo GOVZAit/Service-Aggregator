@@ -1,6 +1,8 @@
 import type { Master, ServiceRequest, Order } from "@shared/schema";
 
-export const mastersData: Master[] = [
+type LegacyMasterFixture = Omit<Master, "callMode" | "workingHours" | "isOnline">;
+
+export const mastersData: LegacyMasterFixture[] = [
   {
     id: 1,
     name: 'Алексей Петров',
