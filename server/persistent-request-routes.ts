@@ -99,6 +99,7 @@ function toRequestView(
   name: string,
   count: number,
   hasResponded?: boolean,
+  exposeLocation = true,
 ): ServiceRequestView {
   return {
     id: row.id,
@@ -106,7 +107,7 @@ function toRequestView(
     category: row.category,
     description: row.description,
     budget: row.budget,
-    location: row.location,
+    location: exposeLocation ? row.location : "Адрес откроется после выбора мастера",
     status: row.status,
     postedAt: relativeTime(row.createdAt),
     createdAt: row.createdAt.toISOString(),
@@ -171,6 +172,7 @@ export async function registerPersistentRequestRoutes(app: Express) {
       names.get(row.clientId) ?? "Клиент",
       counts.get(row.id) ?? 0,
       user.role === "master" ? responded.has(row.id) : undefined,
+      user.role !== "master",
     )));
   });
 
@@ -194,7 +196,8 @@ export async function registerPersistentRequestRoutes(app: Express) {
 
     const counts = await responseCounts([id]);
     const names = await clientNames([request.clientId]);
-    res.json(toRequestView(request, names.get(request.clientId) ?? "Клиент", counts.get(id) ?? 0));
+    const exposeLocation = user.role === "client" || request.selectedMasterId === user.masterId;
+    res.json(toRequestView(request, names.get(request.clientId) ?? "Клиент", counts.get(id) ?? 0, undefined, exposeLocation));
   });
 
   app.post("/api/requests", async (req, res) => {
