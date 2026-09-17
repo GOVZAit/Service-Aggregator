@@ -21,7 +21,7 @@ interface CategoryCardProps {
 
 export function CategoryCard({ category, isSelected, onSelect }: CategoryCardProps) {
   const Icon = iconMap[category.iconName] || Wrench;
-  
+
   return (
     <button
       onClick={onSelect}
@@ -29,14 +29,14 @@ export function CategoryCard({ category, isSelected, onSelect }: CategoryCardPro
       className={cn(
         "flex flex-col items-center justify-center p-4 rounded-xl bg-card transition-all duration-200",
         "hover-elevate active-elevate-2",
-        isSelected && "ring-2"
       )}
       style={{
-        ringColor: isSelected ? category.color : undefined,
+        outline: isSelected ? `2px solid ${category.color}` : undefined,
+        outlineOffset: isSelected ? 2 : undefined,
         borderColor: isSelected ? category.color : undefined,
       }}
     >
-      <div 
+      <div
         className="w-10 h-10 rounded-full flex items-center justify-center mb-2"
         style={{ backgroundColor: `${category.color}15` }}
       >
