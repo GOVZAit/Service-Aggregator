@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import { registerPersistentRequestRoutes } from "./persistent-request-routes";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -86,6 +87,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Persistent request routes are registered first so they replace the legacy in-memory
+  // /api/requests handlers while the rest of the application continues using registerRoutes.
+  await registerPersistentRequestRoutes(app);
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
