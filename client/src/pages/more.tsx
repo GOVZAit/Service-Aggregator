@@ -1,8 +1,20 @@
-import { ChevronRight, LayoutGrid, PackageSearch } from "lucide-react";
+import { ChevronRight, ClipboardList, LayoutGrid, PackageSearch, ReceiptText } from "lucide-react";
 import { Link } from "wouter";
 import { BottomNavigation } from "@/components/bottom-navigation";
 
 const sections = [
+  {
+    href: "/requests",
+    icon: ClipboardList,
+    title: "Мои заявки",
+    description: "Создавайте заявки, смотрите предложения мастеров и выбирайте исполнителя",
+  },
+  {
+    href: "/orders",
+    icon: ReceiptText,
+    title: "Мои заказы",
+    description: "Следите за выбранными мастерами и статусом текущих заказов",
+  },
   {
     href: "/lost-found",
     icon: PackageSearch,
@@ -18,11 +30,11 @@ export default function MorePage() {
         <div className="mx-auto max-w-4xl">
           <p className="text-xs text-muted-foreground">Служба 995</p>
           <h1 className="mt-1 text-2xl font-bold">Ещё</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Дополнительные полезные разделы</p>
+          <p className="mt-1 text-sm text-muted-foreground">Ваши заявки, заказы и дополнительные полезные разделы</p>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl space-y-3 px-4 py-5">
+      <main className="mx-auto grid max-w-4xl gap-3 px-4 py-5 md:grid-cols-2">
         {sections.map(({ href, icon: Icon, title, description }) => (
           <Link
             key={title}
@@ -40,10 +52,10 @@ export default function MorePage() {
           </Link>
         ))}
 
-        <div className="rounded-2xl border border-dashed border-border p-5 text-center">
+        <div className="rounded-2xl border border-dashed border-border p-5 text-center md:col-span-2">
           <LayoutGrid className="mx-auto h-6 w-6 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">
-            Здесь будут появляться новые разделы
+            Здесь будут появляться новые городские сервисы
           </p>
         </div>
       </main>
