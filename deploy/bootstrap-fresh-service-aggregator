@@ -13,9 +13,8 @@ if [[ -z "$deploy_public_key" || "$deploy_public_key" != ssh-* ]]; then
 fi
 
 export DEBIAN_FRONTEND=noninteractive
-
 apt-get update
-apt-get install -y ca-certificates curl nginx postgresql postgresql-client sudo openssl nodejs npm certbot python3-certbot-nginx
+apt-get install -y ca-certificates curl nginx postgresql postgresql-client sudo openssl certbot python3-certbot-nginx
 
 node_major="$(node -p 'Number(process.versions.node.split(".")[0])' 2>/dev/null || echo 0)"
 if (( node_major < 20 )); then
@@ -37,10 +36,11 @@ chmod 0600 /home/serviceagg-deploy/.ssh/authorized_keys
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 install -o root -g root -m 0755 "$script_dir/deploy-service-aggregator" /usr/local/sbin/deploy-service-aggregator
+install -o root -g root -m 0755 "$script_dir/issue-govza-certificate" /usr/local/sbin/issue-govza-certificate
 install -o root -g root -m 0644 "$script_dir/service-aggregator.service" /etc/systemd/system/service-aggregator.service
 
 cat > /etc/sudoers.d/serviceagg-deploy <<'EOF'
-serviceagg-deploy ALL=(root) NOPASSWD: /usr/local/sbin/deploy-service-aggregator
+serviceagg-deploy ALL=(root) NOPASSWD: /usr/local/sbin/deploy-service-aggregator, /usr/local/sbin/issue-govza-certificate
 EOF
 chmod 0440 /etc/sudoers.d/serviceagg-deploy
 visudo -cf /etc/sudoers.d/serviceagg-deploy >/dev/null
