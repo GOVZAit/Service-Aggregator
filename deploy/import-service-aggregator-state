@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ $EUID -ne 0 ]]; then
+  echo "Run as root" >&2
+  exit 1
+fi
+
+archive="${1:-}"
+if [[ -z "$archive" || ! -f "$archive" ]]; then
+  echo "Usage: $0 /path/to/service-aggregator-migration.tar.gz" >&2
+  exit 2
+fi
+
+workdir="$(mktemp -d)"
+trap 'rm -rf "$workdir"' EXIT
+tar -xzf "$archive" -C "$workdir"
+
+for required in app.env database.dump; do
+  [[ -f "$workdir/$required" ]] || { echo "Archive is missing $required" >&2; exit 2; }
+done
+
+install -d -o root -g root -m 0750 /etc/service-aggregator
+install -o root -g root -m 0600 "$workdir/app.env" /etc/service-aggregator/app.env
+
+python3 - /etc/service-aggregator/app.env <<'PY'
+import sys
+path=sys.argv[1]
+updates={
+    "NODE_ENV":"production",
+    "PORT":"8081",
+    "PUBLIC_APP_URL":"https://govza.pro",
+}
+with open(path,encoding="utf-8") as f:
+    lines=f.read().splitlines()
+seen=set()
+out=[]
+for line in lines:
+    if "=" in line and not line.lstrip().startswith("#"):
+        key=line.split("=",1)[0].strip()
+        if key in updates:
+            out.append(f"{key}={updates[key]}")
+            seen.add(key)
+            continue
+    out.append(line)
+for key,val in updates.items():
+    if key not in seen:
+        out.append(f"{key}={val}")
+with open(path,"w",encoding="utf-8") as f:
+    f.write("\n".join(out)+"\n")
+PY
+
+eval "$(python3 - /etc/service-aggregator/app.env <<'PY'
+import shlex, sys
+from urllib.parse import urlparse, unquote
+path=sys.argv[1]
+raw=None
+with open(path,encoding="utf-8") as f:
+    for line in f:
+        s=line.strip()
+        if s.startswith("DATABASE_URL="):
+            raw=s.split("=",1)[1].strip()
+            if len(raw)>=2 and raw[0]==raw[-1] and raw[0] in "'\"":
+                raw=raw[1:-1]
+            break
+if not raw:
+    raise SystemExit("DATABASE_URL missing")
+u=urlparse(raw)
+if u.scheme not in ("postgres","postgresql"):
+    raise SystemExit("DATABASE_URL must use postgres/postgresql")
+if u.hostname not in ("localhost","127.0.0.1","::1"):
+    raise SystemExit("Migration expects a local PostgreSQL DATABASE_URL")
+pairs={
+ "DB_USER":unquote(u.username or ""),
+ "DB_PASS":unquote(u.password or ""),
+ "DB_NAME":(u.path or "").lstrip("/"),
+}
+for k,v in pairs.items():
+    if not v:
+        raise SystemExit(f"{k} is empty")
+    print(f"{k}={shlex.quote(v)}")
+PY
+)"
+
+systemctl enable --now postgresql >/dev/null
+
+sudo -u postgres psql --set=ON_ERROR_STOP=1 --set=db_user="$DB_USER" --set=db_pass="$DB_PASS" <<'SQL'
+SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'db_user', :'db_pass')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'db_user') \gexec
+SELECT format('ALTER ROLE %I WITH LOGIN PASSWORD %L', :'db_user', :'db_pass') \gexec
+SQL
+
+sudo -u postgres psql --set=ON_ERROR_STOP=1 --set=db_user="$DB_USER" --set=db_name="$DB_NAME" <<'SQL'
+SELECT format('CREATE DATABASE %I OWNER %I', :'db_name', :'db_user')
+WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name') \gexec
+SELECT format('ALTER DATABASE %I OWNER TO %I', :'db_name', :'db_user') \gexec
+SQL
+
+database_url="$(python3 - /etc/service-aggregator/app.env <<'PY'
+import sys
+for line in open(sys.argv[1],encoding="utf-8"):
+    s=line.strip()
+    if s.startswith("DATABASE_URL="):
+        v=s.split("=",1)[1].strip()
+        if len(v)>=2 and v[0]==v[-1] and v[0] in "'\"":
+            v=v[1:-1]
+        print(v)
+        break
+PY
+)"
+
+pg_restore --clean --if-exists --no-owner --no-acl --dbname="$database_url" "$workdir/database.dump"
+chmod 0600 /etc/service-aggregator/app.env
+
+echo "State import complete"
