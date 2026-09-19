@@ -1,0 +1,71 @@
+name: Provision fresh Service Aggregator VPS
+
+on:
+  push:
+    branches:
+      - ops/fresh-new-vps
+
+permissions:
+  contents: read
+
+concurrency:
+  group: service-aggregator-fresh-vps
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      NEW_HOST: 194.67.92.216
+
+    steps:
+      - name: Check out provisioning branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 0600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$NEW_HOST" > ~/.ssh/known_hosts
+
+      - name: Verify temporary root access
+        run: ssh -o BatchMode=yes root@"$NEW_HOST" 'id -u | grep -qx 0'
+
+      - name: Bootstrap clean server
+        run: |
+          deploy_public_key="$(ssh-keygen -y -f ~/.ssh/id_ed25519)"
+          ssh root@"$NEW_HOST" 'rm -rf /root/service-aggregator-bootstrap && install -d -m 0700 /root/service-aggregator-bootstrap'
+          scp \
+            deploy/deploy-service-aggregator \
+            deploy/service-aggregator.service \
+            deploy/bootstrap-fresh-service-aggregator \
+            deploy/issue-govza-certificate \
+            root@"$NEW_HOST":/root/service-aggregator-bootstrap/
+          ssh root@"$NEW_HOST" "chmod 0700 /root/service-aggregator-bootstrap/bootstrap-fresh-service-aggregator /root/service-aggregator-bootstrap/issue-govza-certificate && /root/service-aggregator-bootstrap/bootstrap-fresh-service-aggregator '$deploy_public_key'"
+
+      - name: Deploy current main
+        run: |
+          git fetch origin main
+          main_sha="$(git rev-parse origin/main)"
+          git archive --format=tar.gz --output=release.tar.gz "$main_sha"
+          scp release.tar.gz root@"$NEW_HOST":"/home/serviceagg-deploy/incoming/$main_sha.tar.gz"
+          ssh root@"$NEW_HOST" "/usr/local/sbin/deploy-service-aggregator '$main_sha' '/home/serviceagg-deploy/incoming/$main_sha.tar.gz'"
+
+      - name: Initialize database schema
+        run: |
+          ssh root@"$NEW_HOST" 'set -a; . /etc/service-aggregator/app.env; set +a; cd /home/serviceagg/current; sudo -u serviceagg env DATABASE_URL="$DATABASE_URL" npm run db:push; systemctl restart service-aggregator.service'
+
+      - name: Verify new server
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-delay 2 \
+            -H 'Host: govza.pro' \
+            --output /dev/null \
+            "http://$NEW_HOST/"
+          ssh root@"$NEW_HOST" 'systemctl is-active --quiet service-aggregator.service && systemctl is-active --quiet nginx && systemctl is-active --quiet postgresql'
+          echo "Fresh Service Aggregator is ready on the new VPS. DNS is unchanged."
