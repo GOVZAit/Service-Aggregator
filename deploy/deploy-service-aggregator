@@ -42,6 +42,12 @@ chown -R serviceagg:serviceagg "${release_dir}"
 
 sudo -u serviceagg -H sh -c "cd '${release_dir}' && npm ci && npm run build"
 
+set -a
+# shellcheck disable=SC1091
+. /etc/service-aggregator/app.env
+set +a
+sudo -u serviceagg -H env DATABASE_URL="${DATABASE_URL}" sh -c "cd '${release_dir}' && npm run db:push"
+
 previous_target=""
 if [[ -L "${current_link}" ]]; then
   previous_target="$(readlink -f "${current_link}")"
@@ -87,6 +93,7 @@ if [[ -f "${nginx_source}" ]]; then
   fi
 
   rm -f "${nginx_backup}"
+  rm -f /etc/nginx/sites-enabled/default
   systemctl reload nginx
 fi
 
