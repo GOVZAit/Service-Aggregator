@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ $EUID -ne 0 ]]; then
+  echo "Run as root" >&2
+  exit 1
+fi
+
+systemctl disable --now service-aggregator.service 2>/dev/null || true
+rm -f /etc/nginx/sites-enabled/service-aggregator.conf
+nginx -t
+systemctl reload nginx
+echo "Old Service Aggregator instance stopped. Database and files were intentionally preserved for rollback."
