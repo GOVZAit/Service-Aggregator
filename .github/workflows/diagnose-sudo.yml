@@ -30,3 +30,19 @@ jobs:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           ssh "$DEPLOY_USER@$DEPLOY_HOST" 'sudo -n -l || true'
+
+      - name: Inspect installed deploy helper
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" '
+            set -e
+            ls -l /usr/local/sbin/deploy-service-aggregator
+            sha256sum /usr/local/sbin/deploy-service-aggregator
+            if grep -q "nginx-service-aggregator.conf" /usr/local/sbin/deploy-service-aggregator; then
+              echo NGINX_LOGIC_PRESENT
+            else
+              echo NGINX_LOGIC_ABSENT
+            fi
+          '
