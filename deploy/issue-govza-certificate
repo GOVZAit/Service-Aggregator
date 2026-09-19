@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ $EUID -ne 0 ]]; then
+  echo "Run as root" >&2
+  exit 1
+fi
+
+nginx -t
+systemctl reload nginx
+
+certbot --nginx   --non-interactive   --agree-tos   --register-unsafely-without-email   --redirect   --keep-until-expiring   -d govza.pro   -d www.govza.pro
+
+nginx -t
+systemctl reload nginx
+certbot certificates
