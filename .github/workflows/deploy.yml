@@ -63,21 +63,3 @@ jobs:
           ssh "$DEPLOY_USER@$DEPLOY_HOST" \
             "sudo /usr/local/sbin/deploy-service-aggregator '$GITHUB_SHA' '/home/serviceagg-deploy/incoming/$GITHUB_SHA.tar.gz'"
 
-      - name: Configure govza.pro TLS
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-        run: |
-          scp deploy/nginx-service-aggregator.conf \
-            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/service-aggregator-nginx.conf"
-          ssh "$DEPLOY_USER@$DEPLOY_HOST" 'set -e
-            sudo install -m 0644 /tmp/service-aggregator-nginx.conf /etc/nginx/conf.d/service-aggregator.conf
-            sudo nginx -t
-            sudo systemctl reload nginx
-            if ! command -v certbot >/dev/null 2>&1; then
-              sudo apt-get update
-              sudo apt-get install -y certbot python3-certbot-nginx
-            fi
-            sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email --redirect -d govza.pro -d www.govza.pro
-            sudo nginx -t
-            sudo systemctl reload nginx'
