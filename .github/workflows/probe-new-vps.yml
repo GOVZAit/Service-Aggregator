@@ -1,0 +1,30 @@
+name: Probe new VPS
+
+on:
+  push:
+    branches:
+      - ops/probe-new-vps
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure existing deploy key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 0600 ~/.ssh/id_ed25519
+          ssh-keyscan -T 10 -H 194.67.92.216 > ~/.ssh/known_hosts
+      - name: Probe root key access
+        run: |
+          set +e
+          ssh -o BatchMode=yes -o PasswordAuthentication=no root@194.67.92.216 'id -u; uname -a'
+          rc=$?
+          echo "ROOT_KEY_RC=$rc"
+          exit 0
