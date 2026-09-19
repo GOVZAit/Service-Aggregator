@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ $EUID -ne 0 ]]; then
+  echo "Run as root" >&2
+  exit 1
+fi
+
+readonly env_file="/etc/service-aggregator/app.env"
+readonly output="${1:-/root/service-aggregator-migration.tar.gz}"
+
+if [[ ! -f "$env_file" ]]; then
+  echo "Missing $env_file" >&2
+  exit 1
+fi
+
+workdir="$(mktemp -d)"
+trap 'rm -rf "$workdir"' EXIT
+
+install -m 0600 "$env_file" "$workdir/app.env"
+
+database_url="$(python3 - "$env_file" <<'PY'
+import sys
+path=sys.argv[1]
+value=None
+with open(path, encoding="utf-8") as f:
+    for raw in f:
+        line=raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k,v=line.split("=",1)
+        if k.strip()=="DATABASE_URL":
+            value=v.strip()
+            if len(value)>=2 and value[0]==value[-1] and value[0] in "'\"":
+                value=value[1:-1]
+            break
+if not value:
+    raise SystemExit("DATABASE_URL is missing")
+print(value)
+PY
+)"
+
+pg_dump --format=custom --no-owner --no-acl --file="$workdir/database.dump" "$database_url"
+
+{
+  echo "created_utc=$(date -u +%FT%TZ)"
+  echo "source_host=$(hostname -f 2>/dev/null || hostname)"
+  echo "postgres_version=$(pg_dump --version | head -n1)"
+} > "$workdir/metadata.txt"
+
+tar -C "$workdir" -czf "$output" app.env database.dump metadata.txt
+chmod 0600 "$output"
+echo "$output"
