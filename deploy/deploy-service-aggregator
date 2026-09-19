@@ -7,6 +7,9 @@ readonly app_root="/home/serviceagg"
 readonly releases_dir="${app_root}/releases"
 readonly release_dir="${releases_dir}/${revision}"
 readonly current_link="${app_root}/current"
+readonly nginx_source="${release_dir}/deploy/nginx-service-aggregator.conf"
+readonly nginx_site="/etc/nginx/sites-available/service-aggregator.conf"
+readonly nginx_enabled="/etc/nginx/sites-enabled/service-aggregator.conf"
 
 if [[ ! "${revision}" =~ ^[0-9a-f]{40}$ ]]; then
   echo "Invalid Git revision" >&2
@@ -60,6 +63,31 @@ if ! systemctl restart service-aggregator.service || \
   fi
   echo "Deployment failed; previous release restored" >&2
   exit 1
+fi
+
+if [[ -f "${nginx_source}" ]]; then
+  nginx_backup=""
+  if [[ -f "${nginx_site}" ]]; then
+    nginx_backup="$(mktemp)"
+    cp -a "${nginx_site}" "${nginx_backup}"
+  fi
+
+  install -o root -g root -m 0644 "${nginx_source}" "${nginx_site}"
+  ln -sfn "${nginx_site}" "${nginx_enabled}"
+
+  if ! nginx -t; then
+    if [[ -n "${nginx_backup}" ]]; then
+      cp -a "${nginx_backup}" "${nginx_site}"
+    else
+      rm -f "${nginx_site}" "${nginx_enabled}"
+    fi
+    rm -f "${nginx_backup}"
+    echo "Nginx configuration failed validation; previous site config restored" >&2
+    exit 1
+  fi
+
+  rm -f "${nginx_backup}"
+  systemctl reload nginx
 fi
 
 rm -f -- "${archive}"
