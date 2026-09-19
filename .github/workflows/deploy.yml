@@ -62,3 +62,17 @@ jobs:
         run: |
           ssh "$DEPLOY_USER@$DEPLOY_HOST" \
             "sudo /usr/local/sbin/deploy-service-aggregator '$GITHUB_SHA' '/home/serviceagg-deploy/incoming/$GITHUB_SHA.tar.gz'"
+
+      - name: Apply nginx site configuration
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" 'set -e
+            site=/etc/nginx/sites-available/service-aggregator.conf
+            enabled=/etc/nginx/sites-enabled/service-aggregator.conf
+            sudo -n install -o root -g root -m 0644 /home/serviceagg/current/deploy/nginx-service-aggregator.conf "$site"
+            sudo -n ln -sfn "$site" "$enabled"
+            sudo -n nginx -t
+            sudo -n systemctl reload nginx
+          '
