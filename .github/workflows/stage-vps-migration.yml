@@ -1,0 +1,73 @@
+name: Stage Service Aggregator VPS migration
+
+on:
+  push:
+    branches:
+      - ops/vps-migration-20260919
+
+permissions:
+  contents: read
+
+concurrency:
+  group: service-aggregator-vps-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      OLD_HOST: 134.0.113.202
+      NEW_HOST: 194.67.92.216
+    steps:
+      - name: Check out migration branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 0600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$OLD_HOST" "$NEW_HOST" > ~/.ssh/known_hosts
+
+      - name: Verify temporary root access
+        run: |
+          ssh -o BatchMode=yes root@"$OLD_HOST" 'id -u | grep -qx 0'
+          ssh -o BatchMode=yes root@"$NEW_HOST" 'id -u | grep -qx 0'
+
+      - name: Export old server state
+        run: |
+          chmod +x deploy/export-service-aggregator-state
+          scp deploy/export-service-aggregator-state root@"$OLD_HOST":/tmp/export-service-aggregator-state
+          ssh root@"$OLD_HOST" 'chmod 0700 /tmp/export-service-aggregator-state && /tmp/export-service-aggregator-state /root/service-aggregator-migration.tar.gz'
+          scp root@"$OLD_HOST":/root/service-aggregator-migration.tar.gz ./service-aggregator-migration.tar.gz
+          chmod 0600 ./service-aggregator-migration.tar.gz
+
+      - name: Bootstrap new server
+        run: |
+          deploy_public_key="$(ssh-keygen -y -f ~/.ssh/id_ed25519)"
+          ssh root@"$NEW_HOST" 'rm -rf /root/service-aggregator-bootstrap && install -d -m 0700 /root/service-aggregator-bootstrap'
+          scp             deploy/deploy-service-aggregator             deploy/service-aggregator.service             deploy/nginx-service-aggregator.conf             deploy/bootstrap-service-aggregator-server             deploy/import-service-aggregator-state             root@"$NEW_HOST":/root/service-aggregator-bootstrap/
+          ssh root@"$NEW_HOST" "chmod 0700 /root/service-aggregator-bootstrap/bootstrap-service-aggregator-server /root/service-aggregator-bootstrap/import-service-aggregator-state && /root/service-aggregator-bootstrap/bootstrap-service-aggregator-server '$deploy_public_key'"
+
+      - name: Restore application state
+        run: |
+          scp ./service-aggregator-migration.tar.gz root@"$NEW_HOST":/root/service-aggregator-migration.tar.gz
+          ssh root@"$NEW_HOST" '/root/service-aggregator-bootstrap/import-service-aggregator-state /root/service-aggregator-migration.tar.gz'
+
+      - name: Deploy current main revision to new server
+        run: |
+          git fetch origin main
+          main_sha="$(git rev-parse origin/main)"
+          git archive --format=tar.gz --output=release.tar.gz "$main_sha"
+          scp release.tar.gz root@"$NEW_HOST":"/home/serviceagg-deploy/incoming/$main_sha.tar.gz"
+          ssh root@"$NEW_HOST" "/usr/local/sbin/deploy-service-aggregator '$main_sha' '/home/serviceagg-deploy/incoming/$main_sha.tar.gz'"
+
+      - name: Verify new server before DNS cutover
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-delay 2             -H 'Host: govza.pro'             --output /dev/null             "http://$NEW_HOST/"
+          echo "New server passed HTTP verification. DNS has not been changed by this workflow."
