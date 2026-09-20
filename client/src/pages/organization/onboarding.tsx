@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
+import { PushNotificationCard } from "@/components/push-notification-card";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { organizationKindLabels, type OrganizationKind } from "@shared/provider-schema";
@@ -122,6 +123,8 @@ export default function OrganizationOnboardingPage() {
             placeholder="Чем занимается организация, какие услуги оказывает, где работает…"
           />
         </section>
+
+        <PushNotificationCard />
 
         <Button
           className="h-12 w-full rounded-xl"
