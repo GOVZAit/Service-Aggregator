@@ -346,7 +346,7 @@ export async function recordProviderActivity(user: Pick<AuthUser, "id" | "role" 
 export async function seedProviderActivity() {
   await pool.query(`
     INSERT INTO provider_activity (user_id, last_active_at, updated_at)
-    SELECT id, created_at, now()
+    SELECT id, now(), now()
     FROM auth_users
     WHERE role IN ('master', 'organization')
     ON CONFLICT (user_id) DO NOTHING
