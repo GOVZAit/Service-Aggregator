@@ -92,7 +92,7 @@ export default function HomePage() {
     }
 
     if (selectedCategory) {
-      result = result.filter((m) => m.categoryId === selectedCategory);
+      result = result.filter((m) => (m.categoryIds ?? [m.categoryId]).includes(selectedCategory));
     }
 
     if (debouncedSearch.trim()) {
