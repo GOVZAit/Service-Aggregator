@@ -1,12 +1,14 @@
 import type { Express } from "express";
 import { storage } from "./storage";
 import {
+  createManualProvider,
   importProvider,
   isProviderVisible,
   setProviderVisibility,
   updatePersistentProvider,
 } from "./provider-service";
 import {
+  manualProviderCreateSchema,
   providerImportSchema,
   providerProfilePatchSchema,
 } from "@shared/provider-schema";
@@ -68,6 +70,15 @@ export async function registerProviderRoutes(app: Express) {
     if (typeof visible !== "boolean") return res.status(400).json({ message: "visible должен быть boolean" });
     await setProviderVisibility(user.masterId, visible, "manual");
     res.json({ visible });
+  });
+
+  app.post("/api/internal/providers/manual", async (req, res) => {
+    if (!validImportKey(req)) {
+      return res.status(process.env.IMPORT_API_KEY ? 403 : 503).json({ message: "Internal API недоступен" });
+    }
+    const parsed = manualProviderCreateSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+    res.status(201).json(await createManualProvider(parsed.data));
   });
 
   app.post("/api/internal/providers/import", async (req, res) => {
