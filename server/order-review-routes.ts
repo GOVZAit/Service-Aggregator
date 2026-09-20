@@ -71,6 +71,17 @@ function average(values: number[]) {
 export async function registerOrderReviewRoutes(app: Express) {
   await ensureOrderReviewTable();
 
+  app.get("/api/order-reviews/mine", async (req, res) => {
+    const user = await authenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if (user.role !== "client") return res.json({ orderIds: [] });
+
+    const rows = await db.select({ orderId: orderReviews.orderId })
+      .from(orderReviews)
+      .where(eq(orderReviews.clientId, user.id));
+    res.json({ orderIds: rows.map((row) => row.orderId) });
+  });
+
   app.get("/api/masters/:id/reviews", async (req, res) => {
     const masterId = Number(req.params.id);
     if (!Number.isInteger(masterId) || masterId <= 0) {
