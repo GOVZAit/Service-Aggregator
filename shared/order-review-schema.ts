@@ -1,0 +1,60 @@
+import { z } from "zod";
+import { index, integer, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { authUsers, persistedOrders } from "./schema";
+
+export const orderReviews = pgTable("order_reviews", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull().references(() => persistedOrders.id, { onDelete: "cascade" }),
+  clientId: integer("client_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  masterId: integer("master_id").notNull(),
+  rating: integer("rating").notNull(),
+  quality: integer("quality").notNull(),
+  punctuality: integer("punctuality").notNull(),
+  priceMatch: integer("price_match").notNull(),
+  courtesy: integer("courtesy").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("order_reviews_order_unique").on(table.orderId),
+  index("order_reviews_master_id_idx").on(table.masterId),
+  index("order_reviews_client_id_idx").on(table.clientId),
+]);
+
+const score = z.number().int().min(1).max(5);
+
+export const createOrderReviewSchema = z.object({
+  rating: score,
+  quality: score,
+  punctuality: score,
+  priceMatch: score,
+  courtesy: score,
+  comment: z.string().trim().max(2000, "Отзыв слишком длинный").optional(),
+}).strict();
+
+export type CreateOrderReviewInput = z.infer<typeof createOrderReviewSchema>;
+
+export interface OrderReviewView {
+  id: number;
+  orderId: number;
+  masterId: number;
+  clientName: string;
+  service: string;
+  rating: number;
+  quality: number;
+  punctuality: number;
+  priceMatch: number;
+  courtesy: number;
+  comment: string;
+  createdAt: string;
+  verifiedOrder: true;
+}
+
+export interface MasterReviewSummary {
+  count: number;
+  average: number;
+  quality: number;
+  punctuality: number;
+  priceMatch: number;
+  courtesy: number;
+  reviews: OrderReviewView[];
+}
