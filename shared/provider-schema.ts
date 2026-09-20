@@ -40,6 +40,7 @@ export interface ProviderProfileData {
   workingHours?: { from: string; to: string };
   isOnline?: boolean;
   hasCertificate?: boolean;
+  executorType?: "private" | "self_employed" | "company";
   showPortfolio?: boolean;
   showReviews?: boolean;
   showPrices?: boolean;
@@ -109,6 +110,7 @@ export const providerProfilePatchSchema = z.object({
   }).strict().optional(),
   isOnline: z.boolean().optional(),
   hasCertificate: z.boolean().optional(),
+  executorType: z.enum(["private", "self_employed", "company"]).optional(),
   showPortfolio: z.boolean().optional(),
   showReviews: z.boolean().optional(),
   showPrices: z.boolean().optional(),
