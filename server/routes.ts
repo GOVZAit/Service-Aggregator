@@ -326,7 +326,7 @@ export async function registerRoutes(
     const orders = await storage.getOrders(
       user.role === "client" ? { clientId: user.id } : { masterId: user.masterId ?? -1 },
     );
-    if (user.role === "master") {
+    if (user.role === "master" || user.role === "organization") {
       const enriched = await Promise.all(orders.map(async (order) => {
         const client = order.clientId ? await storage.getUserById(order.clientId) : undefined;
         return {
