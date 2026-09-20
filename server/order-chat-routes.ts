@@ -29,17 +29,17 @@ async function authenticatedUser(req: Express.Request) {
 
 async function accessibleOrder(req: Express.Request, orderId: number) {
   const user = await authenticatedUser(req);
-  if (!user) return { status: 401 as const, message: "Не авторизован" };
+  if (!user) return { ok: false as const, status: 401, message: "Не авторизован" };
 
   const order = await storage.getOrderById(orderId);
-  if (!order) return { status: 404 as const, message: "Заказ не найден" };
+  if (!order) return { ok: false as const, status: 404, message: "Заказ не найден" };
 
   const allowed = user.role === "client"
     ? order.clientId === user.id
     : Boolean(user.masterId && order.masterId === user.masterId);
 
-  if (!allowed) return { status: 403 as const, message: "Нет доступа к чату этого заказа" };
-  return { user, order };
+  if (!allowed) return { ok: false as const, status: 403, message: "Нет доступа к чату этого заказа" };
+  return { ok: true as const, user, order };
 }
 
 async function messageView(
@@ -98,7 +98,7 @@ export async function registerOrderChatRoutes(app: Express) {
     }
 
     const access = await accessibleOrder(req, orderId);
-    if ("status" in access) return res.status(access.status).json({ message: access.message });
+    if (!access.ok) return res.status(access.status).json({ message: access.message });
 
     const { user, order } = access;
     await db.update(orderMessages)
@@ -131,7 +131,7 @@ export async function registerOrderChatRoutes(app: Express) {
     }
 
     const access = await accessibleOrder(req, orderId);
-    if ("status" in access) return res.status(access.status).json({ message: access.message });
+    if (!access.ok) return res.status(access.status).json({ message: access.message });
 
     const parsed = sendOrderMessageSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
