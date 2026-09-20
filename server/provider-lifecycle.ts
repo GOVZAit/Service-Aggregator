@@ -27,7 +27,7 @@ export async function runProviderInactivityCheck() {
       await sendPushToUser(candidate.user_id, {
         title: "GOVZA: профиль давно не обновлялся",
         body: "Вы не заходили около месяца. Откройте GOVZA, чтобы профиль оставался видимым клиентам.",
-        url: "/master/profile",
+        url: candidate.role === "organization" ? "/organization/profile" : "/master/profile",
         tag: "provider-inactivity-reminder",
       });
       await markInactivityReminder(candidate.user_id);
