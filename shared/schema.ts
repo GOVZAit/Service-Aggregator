@@ -75,8 +75,13 @@ export interface Master {
   lat?: number;
   lng?: number;
   topMaster?: boolean;
-  // Optional brand / company name the master represents
+  // Optional brand / company name the provider represents
   companyName?: string;
+  providerType?: 'master' | 'organization';
+  organizationKind?: 'service_company' | 'medical' | 'education' | 'auto_service' | 'beauty' | 'delivery' | 'public_service' | 'other';
+  categoryIds?: number[];
+  isVisible?: boolean;
+  dataSource?: 'seed' | 'manual' | 'import';
   // Trust & filtering
   hasCertificate?: boolean;
   executorType?: ExecutorType;
@@ -161,7 +166,7 @@ export interface User {
 
 // ── Auth types ────────────────────────────────────────────────────────────────
 
-export type UserRole = 'client' | 'master';
+export type UserRole = 'client' | 'master' | 'organization';
 
 export interface AuthUser {
   id: number;
@@ -172,7 +177,7 @@ export interface AuthUser {
   sessionVersion: number;
   role: UserRole;
   createdAt: string;
-  /** Master profile this account manages (demo accounts are bound to master #1) */
+  /** Provider profile managed by this account. Kept as masterId for backward-compatible order/request APIs. */
   masterId?: number;
 }
 
@@ -216,7 +221,7 @@ export const registerSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   identifier: z.string().min(5, 'Введите номер телефона или email'),
   password: z.string().min(6, 'Минимум 6 символов'),
-  role: z.enum(['client', 'master']).default('client'),
+  role: z.enum(['client', 'master', 'organization']).default('client'),
 });
 
 // Settings a master may update on their own profile
@@ -225,6 +230,8 @@ export const masterSettingsSchema = z.object({
   description: z.string().min(10, 'Добавьте описание').max(1000).optional(),
   category: z.string().min(1).max(80).optional(),
   categoryId: z.number().int().positive().optional(),
+  categoryIds: z.array(z.number().int().positive()).min(1).max(8).optional(),
+  organizationKind: z.enum(['service_company', 'medical', 'education', 'auto_service', 'beauty', 'delivery', 'public_service', 'other']).optional(),
   companyName: z.string().max(80).optional(),
   city: z.enum(['Грозный', 'Гудермес', 'Аргун', 'Урус-Мартан', 'Шали']).optional(),
   phone: z.string().max(30).optional(),
