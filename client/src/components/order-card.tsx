@@ -1,4 +1,4 @@
-import { Clock, Star } from "lucide-react";
+import { Clock, MessageCircle, Star } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ interface OrderCardProps {
   order: Order;
   master: Master | undefined;
   onLeaveReview?: () => void;
+  onOpenChat?: () => void;
 }
 
 const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "secondary" | "outline" }> = {
@@ -17,7 +18,7 @@ const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "s
   rejected: { label: 'Отклонён', variant: 'outline' },
 };
 
-export function OrderCard({ order, master, onLeaveReview }: OrderCardProps) {
+export function OrderCard({ order, master, onLeaveReview, onOpenChat }: OrderCardProps) {
   const status = statusConfig[order.status];
 
   return (
@@ -57,6 +58,18 @@ export function OrderCard({ order, master, onLeaveReview }: OrderCardProps) {
         </span>
         <span className="font-bold">{order.price}</span>
       </div>
+
+      {onOpenChat && order.status !== 'rejected' && (
+        <Button
+          variant="outline"
+          onClick={onOpenChat}
+          className="w-full mt-4"
+          data-testid={`button-chat-${order.id}`}
+        >
+          <MessageCircle className="w-4 h-4 mr-2" />
+          Написать мастеру
+        </Button>
+      )}
 
       {order.status === 'completed' && onLeaveReview && (
         <Button

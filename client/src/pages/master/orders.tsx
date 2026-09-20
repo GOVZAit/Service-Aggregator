@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import MasterBottomNavigation from "@/components/master-bottom-navigation";
 import {
   CheckCircle2,
@@ -141,6 +142,7 @@ export default function MasterOrdersPage() {
   const [section, setSection] = useState<Section>("market");
   const [activeTab, setActiveTab] = useState<OrderTab>("new");
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   const { data: requests = [], isLoading: requestsLoading, isError: requestsError } = useQuery<ServiceRequestView[]>({
     queryKey: ["/api/requests"],
@@ -269,6 +271,17 @@ export default function MasterOrdersPage() {
                     {order.clientContact.includes("@") ? <Mail className="h-4 w-4" /> : <PhoneCall className="h-4 w-4" />}
                     {order.clientContact}
                   </a>
+                )}
+
+                {order.status !== "rejected" && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/master/orders/${order.id}/chat`)}
+                    className="h-11 w-full rounded-xl border border-primary/30 text-sm font-semibold text-primary"
+                    data-testid={`master-order-chat-${order.id}`}
+                  >
+                    <MessageSquare className="mr-1.5 inline h-4 w-4" />Написать клиенту
+                  </button>
                 )}
 
                 {order.status === "pending" && (

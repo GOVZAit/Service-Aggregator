@@ -17,6 +17,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { executorTypeLabels } from "@shared/schema";
 import type { Master, ChatMessage } from "@shared/schema";
+import type { MasterReviewSummary } from "@shared/order-review-schema";
 
 // ── Call availability logic ───────────────────────────────────────────────────
 
@@ -105,6 +106,11 @@ export default function MasterProfilePage() {
     queryKey: [`/api/masters/${masterId}`],
   });
 
+  const { data: reviewSummary } = useQuery<MasterReviewSummary>({
+    queryKey: [`/api/masters/${masterId}/reviews`],
+    enabled: Number.isInteger(masterId) && masterId > 0,
+  });
+
   const { data: messages = [], isLoading: messagesLoading } = useQuery<ChatMessage[]>({
     queryKey: [`/api/messages/${masterId}`],
     enabled: showChat,
@@ -178,7 +184,17 @@ export default function MasterProfilePage() {
     );
   }
 
-  const reviews = reviewsByMasterId[masterId] ?? defaultReviews;
+  const verifiedReviews = reviewSummary?.reviews.map((review) => ({
+    name: review.clientName,
+    avatar: "",
+    rating: review.rating,
+    text: review.comment || "Оценка оставлена после завершённого заказа GOVZA.",
+    date: new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(review.createdAt)),
+    service: review.service,
+  })) ?? [];
+  const reviews = verifiedReviews.length > 0 ? verifiedReviews : (reviewsByMasterId[masterId] ?? defaultReviews);
+  const displayRating = reviewSummary && reviewSummary.count > 0 ? reviewSummary.average : master.rating;
+  const displayReviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : master.reviews;
   const callState = getCallState(master);
   const portfolioVisible = master.showPortfolio !== false && master.portfolio.length > 0;
   const reviewsVisible = master.showReviews !== false;
@@ -309,7 +325,7 @@ export default function MasterProfilePage() {
                   <span className="truncate">{master.companyName}</span>
                 </div>
               )}
-              <RatingStars rating={master.rating} reviews={master.reviews} />
+              <RatingStars rating={displayRating} reviews={displayReviewCount} />
               <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                 <MapPin className="w-3 h-3" />
                 <span>{master.distance}</span>
@@ -414,7 +430,7 @@ export default function MasterProfilePage() {
               <p className="text-xs text-muted-foreground">заказов</p>
             </div>
             <div className="bg-green-500/10 rounded-xl py-3 px-2">
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">{master.rating}</p>
+              <p className="text-xl font-bold text-green-600 dark:text-green-400">{displayRating}</p>
               <p className="text-xs text-muted-foreground">рейтинг</p>
             </div>
             {master.showPrices !== false && (
@@ -428,7 +444,7 @@ export default function MasterProfilePage() {
           {master.verified && (
             <div className="mt-4 flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-xl px-3 py-2">
               <BadgeCheck className="w-4 h-4 shrink-0" />
-              <span>Личность и профессиональные навыки проверены командой Служба 995</span>
+              <span>Личность и профессиональные навыки проверены командой GOVZA</span>
             </div>
           )}
         </div>
@@ -476,9 +492,9 @@ export default function MasterProfilePage() {
           <TabsContent value="reviews" className="mt-4 space-y-3">
             <div className="rounded-xl bg-muted p-4 flex items-center gap-4">
               <div className="text-center">
-                <p className="text-4xl font-bold">{master.rating}</p>
-                <StarRow rating={Math.round(master.rating)} />
-                <p className="text-xs text-muted-foreground mt-1">{master.reviews} отзывов</p>
+                <p className="text-4xl font-bold">{displayRating}</p>
+                <StarRow rating={Math.round(displayRating)} />
+                <p className="text-xs text-muted-foreground mt-1">{displayReviewCount} отзывов</p>
               </div>
               <div className="flex-1 space-y-1">
                 {[5, 4, 3, 2, 1].map((stars) => {
@@ -495,6 +511,22 @@ export default function MasterProfilePage() {
                 })}
               </div>
             </div>
+
+            {reviewSummary && reviewSummary.count > 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["Качество", reviewSummary.quality],
+                  ["Сроки", reviewSummary.punctuality],
+                  ["Цена", reviewSummary.priceMatch],
+                  ["Вежливость", reviewSummary.courtesy],
+                ].map(([label, value]) => (
+                  <div key={String(label)} className="rounded-xl border border-border/60 bg-card p-3">
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                    <p className="mt-1 font-bold">{value} / 5</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {reviews.map((review, idx) => (
               <div key={idx} data-testid={`review-${idx}`} className="rounded-xl bg-card border border-border/60 p-4 space-y-2">
