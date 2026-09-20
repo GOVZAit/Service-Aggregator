@@ -13,33 +13,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  provision:
+  bootstrap:
     runs-on: ubuntu-latest
-    environment: production
     env:
       NEW_HOST: 194.67.92.216
-      DEPLOY_USER: serviceagg-deploy
-
     steps:
       - name: Check out provisioning branch
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Install bootstrap SSH client
         run: sudo apt-get update && sudo apt-get install -y sshpass
 
-      - name: Configure deploy key and host verification
-        env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      - name: Configure host verification
         run: |
-          test -n "$DEPLOY_SSH_KEY"
           install -d -m 0700 ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 0600 ~/.ssh/id_ed25519
           ssh-keyscan -H "$NEW_HOST" > ~/.ssh/known_hosts
 
-      - name: Verify temporary root password access
+      - name: Verify root password secret
         env:
           SSHPASS: ${{ secrets.NEW_VPS_ROOT_PASSWORD }}
         run: |
@@ -49,11 +39,11 @@ jobs:
 
       - name: Bootstrap clean server
         env:
-          SSHPASS: ${{ secrets.NEW_VPS_ROOT_PASSWORD || secrets.VPS_ROOT_PASSWORD || secrets.ROOT_PASSWORD || secrets.NEW_SERVER_PASSWORD }}
+          SSHPASS: ${{ secrets.NEW_VPS_ROOT_PASSWORD }}
         run: |
-          deploy_public_key="$(ssh-keygen -y -f ~/.ssh/id_ed25519)"
+          deploy_public_key='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMdvKI0Sg1VLj2NjpOg7zZNxyH8KP8YEjoTODeo5r3jK github-actions-service-aggregator'
           sshpass -e ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no \
-            root@"$NEW_HOST" 'install -d -m 0700 /root/service-aggregator-bootstrap'
+            root@"$NEW_HOST" 'rm -rf /root/service-aggregator-bootstrap && install -d -m 0700 /root/service-aggregator-bootstrap'
           sshpass -e scp -o PreferredAuthentications=password -o PubkeyAuthentication=no \
             deploy/deploy-service-aggregator \
             deploy/service-aggregator.service \
@@ -63,7 +53,30 @@ jobs:
           sshpass -e ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no \
             root@"$NEW_HOST" "chmod 0700 /root/service-aggregator-bootstrap/bootstrap-fresh-service-aggregator /root/service-aggregator-bootstrap/issue-govza-certificate && /root/service-aggregator-bootstrap/bootstrap-fresh-service-aggregator '$deploy_public_key'"
 
-      - name: Deploy current main through restricted deploy user
+  deploy:
+    needs: bootstrap
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      NEW_HOST: 194.67.92.216
+      DEPLOY_USER: serviceagg-deploy
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure deploy SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          test -n "$DEPLOY_SSH_KEY"
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 0600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$NEW_HOST" > ~/.ssh/known_hosts
+
+      - name: Deploy current main
         run: |
           git fetch origin main
           main_sha="$(git rev-parse origin/main)"
@@ -72,10 +85,10 @@ jobs:
           ssh "$DEPLOY_USER@$NEW_HOST" \
             "sudo /usr/local/sbin/deploy-service-aggregator '$main_sha' '/home/serviceagg-deploy/incoming/$main_sha.tar.gz'"
 
-      - name: Verify new server before TLS
+      - name: Verify new server before DNS and TLS
         run: |
           curl --fail --silent --show-error --retry 15 --retry-delay 2 \
             -H 'Host: govza.pro' --output /dev/null "http://$NEW_HOST/"
           ssh "$DEPLOY_USER@$NEW_HOST" \
             'systemctl is-active --quiet service-aggregator.service && systemctl is-active --quiet nginx && systemctl is-active --quiet postgresql'
-
+          echo "Fresh Service Aggregator is running on the new VPS."
