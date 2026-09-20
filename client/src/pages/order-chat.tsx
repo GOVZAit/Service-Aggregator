@@ -35,7 +35,11 @@ export default function OrderChatPage() {
   const { toast } = useToast();
   const endRef = useRef<HTMLDivElement>(null);
 
-  const backPath = user?.role === "master" ? "/master/orders" : "/orders";
+  const backPath = user?.role === "master"
+    ? "/master/orders"
+    : user?.role === "organization"
+      ? "/organization/orders"
+      : "/orders";
 
   const { data: order, isLoading: orderLoading } = useQuery<Order>({
     queryKey: ["/api/orders", orderId],
