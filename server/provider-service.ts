@@ -371,6 +371,7 @@ export async function getInactiveProviderCandidates() {
   const result = await pool.query<{
     user_id: number;
     master_id: number | null;
+    role: "master" | "organization";
     last_active_at: Date;
     reminder_sent_at: Date | null;
     hidden_at: Date | null;
@@ -378,6 +379,7 @@ export async function getInactiveProviderCandidates() {
     SELECT
       a.user_id,
       u.master_id,
+      u.role,
       a.last_active_at,
       a.reminder_sent_at,
       a.hidden_at
