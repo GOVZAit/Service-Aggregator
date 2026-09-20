@@ -171,7 +171,7 @@ export async function registerPersistentRequestRoutes(app: Express) {
     const counts = await responseCounts(ids);
     const names = await clientNames(rows.map((row) => row.clientId));
     let responded = new Set<number>();
-    if (user.role === "master" && user.masterId && ids.length > 0) {
+    if (user.role !== "client" && user.masterId && ids.length > 0) {
       const ownResponses = await db.select({ requestId: requestResponses.requestId })
         .from(requestResponses)
         .where(and(inArray(requestResponses.requestId, ids), eq(requestResponses.masterId, user.masterId)));
@@ -182,8 +182,8 @@ export async function registerPersistentRequestRoutes(app: Express) {
       row,
       names.get(row.clientId) ?? "Клиент",
       counts.get(row.id) ?? 0,
-      user.role === "master" ? responded.has(row.id) : undefined,
-      user.role !== "master",
+      user.role !== "client" ? responded.has(row.id) : undefined,
+      user.role === "client",
     )));
   });
 
@@ -197,7 +197,7 @@ export async function registerPersistentRequestRoutes(app: Express) {
     if (user.role === "client" && request.clientId !== user.id) {
       return res.status(403).json({ message: "Нет доступа к этой заявке" });
     }
-    if (user.role === "master") {
+    if (user.role !== "client") {
       if (!user.masterId) return res.status(403).json({ message: "Профиль исполнителя не привязан" });
       const master = await storage.getMasterById(user.masterId);
       if (!master || !providerCategoryNames(master).includes(request.category)) {
