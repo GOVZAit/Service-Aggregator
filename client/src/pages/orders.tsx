@@ -30,7 +30,6 @@ function OrderSkeleton() {
 }
 
 export default function OrdersPage() {
-  const { toast } = useToast();
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
   const [, navigate] = useLocation();
 
