@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feat/govzamastera-brand
   workflow_dispatch:
 
 permissions:
@@ -40,7 +39,7 @@ jobs:
 
       - name: Configure SSH
         env:
-          DEPLOY_HOST: 194.67.92.216
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           install -d -m 0700 ~/.ssh
@@ -50,16 +49,16 @@ jobs:
 
       - name: Upload release
         env:
-          DEPLOY_HOST: 194.67.92.216
-          DEPLOY_USER: serviceagg-deploy
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           scp release.tar.gz \
             "$DEPLOY_USER@$DEPLOY_HOST:/home/serviceagg-deploy/incoming/$GITHUB_SHA.tar.gz"
 
       - name: Activate release
         env:
-          DEPLOY_HOST: 194.67.92.216
-          DEPLOY_USER: serviceagg-deploy
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           ssh "$DEPLOY_USER@$DEPLOY_HOST" \
             "sudo /usr/local/sbin/deploy-service-aggregator '$GITHUB_SHA' '/home/serviceagg-deploy/incoming/$GITHUB_SHA.tar.gz'"
