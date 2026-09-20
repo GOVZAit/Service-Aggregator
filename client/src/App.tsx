@@ -21,6 +21,7 @@ import LostFoundPage from "@/pages/lost-found";
 import AuthPage from "@/pages/auth";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
+import OrderChatPage from "@/pages/order-chat";
 import PreviewWhatsApp from "@/pages/preview-whatsapp";
 import NotFound from "@/pages/not-found";
 
@@ -35,7 +36,7 @@ const EXECUTOR_ROUTES = ["/master", "/master/orders", "/master/profile", "/maste
 const PUBLIC_AUTH_ROUTES = ["/auth", "/forgot-password", "/reset-password"];
 
 function isExecutorRoute(path: string) {
-  return EXECUTOR_ROUTES.includes(path);
+  return EXECUTOR_ROUTES.includes(path) || path.startsWith("/master/orders/");
 }
 
 function RoleGuard({ children }: { children: React.ReactNode }) {
@@ -69,6 +70,7 @@ function Router() {
         {/* Executor (master) routes — declared first so /master/orders and /master/profile
             are matched before the parameterized /master/:id client route */}
         <Route path="/master" component={MasterDashboardPage} />
+        <Route path="/master/orders/:id/chat" component={OrderChatPage} />
         <Route path="/master/orders" component={MasterOrdersPage} />
         <Route path="/master/profile" component={MasterProfileEditPage} />
         <Route path="/master/onboarding" component={MasterOnboardingPage} />
@@ -77,6 +79,7 @@ function Router() {
         <Route path="/" component={HomePage} />
         <Route path="/master/:id" component={MasterProfilePage} />
         <Route path="/requests" component={RequestsPage} />
+        <Route path="/orders/:id/chat" component={OrderChatPage} />
         <Route path="/orders" component={OrdersPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/city" component={CityServicesPage} />
