@@ -3,6 +3,8 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, pool } from "./db";
 import { storage } from "./storage";
 import { authUsers, insertRequestSchema, persistedOrders } from "@shared/schema";
+import { getProviderOwnerUserId, getProviderOwnerUserIds } from "./provider-service";
+import { sendPushToUser } from "./push-service";
 import {
   createRequestResponseSchema,
   requestResponses,
@@ -211,6 +213,20 @@ export async function registerPersistentRequestRoutes(app: Express) {
       ...parsed.data,
       clientId: user.id,
     }).returning();
+
+    const matchingProviders = (await storage.getMasters())
+      .filter((provider) => provider.category === request.category)
+      .map((provider) => provider.id);
+    const owners = await getProviderOwnerUserIds(matchingProviders);
+    for (const ownerUserId of new Set(owners.values())) {
+      void sendPushToUser(ownerUserId, {
+        title: "Новая заявка в вашей категории",
+        body: request.title,
+        url: "/master/orders",
+        tag: `request-${request.id}`,
+      });
+    }
+
     res.status(201).json(toRequestView(request, user.name, 0));
   });
 
@@ -240,7 +256,7 @@ export async function registerPersistentRequestRoutes(app: Express) {
   app.post("/api/requests/:id/responses", async (req, res) => {
     const user = await authenticatedUser(req);
     if (!user) return res.status(401).json({ message: "Войдите как исполнитель" });
-    if (user.role !== "master" || !user.masterId) {
+    if ((user.role !== "master" && user.role !== "organization") || !user.masterId) {
       return res.status(403).json({ message: "Отклик доступен только исполнителю" });
     }
     const parsed = createRequestResponseSchema.safeParse(req.body);
@@ -263,6 +279,12 @@ export async function registerPersistentRequestRoutes(app: Express) {
         price: parsed.data.price,
         message: parsed.data.message,
       }).returning();
+      void sendPushToUser(request.clientId, {
+        title: "Новый отклик на заявку",
+        body: `${master.name}: ${parsed.data.price}`,
+        url: "/requests",
+        tag: `request-response-${requestId}`,
+      });
       res.status(201).json(await toResponseView(response));
     } catch (error) {
       if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
@@ -320,6 +342,15 @@ export async function registerPersistentRequestRoutes(app: Express) {
         return createdOrder;
       });
 
+      const selectedOwnerId = await getProviderOwnerUserId(order.masterId);
+      if (selectedOwnerId) {
+        void sendPushToUser(selectedOwnerId, {
+          title: "Клиент выбрал ваше предложение",
+          body: order.title,
+          url: "/master/orders",
+          tag: `selected-order-${order.id}`,
+        });
+      }
       res.status(201).json({ order });
     } catch (error) {
       if (error instanceof RequestApiError) {
