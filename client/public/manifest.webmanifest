@@ -1,16 +1,18 @@
 {
-  "name": "GOVZAmastera — мастера и услуги рядом",
-  "short_name": "GOVZAmastera",
-  "description": "Найдите проверенных мастеров: сантехника, электрика, уборка, ремонт и многое другое в Грозном.",
-  "start_url": "/",
+  "id": "/",
+  "name": "GOVZA — услуги и организации рядом",
+  "short_name": "GOVZA",
+  "description": "Мастера, организации, услуги, заявки и городские контакты в одном приложении.",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#007AFF",
   "lang": "ru",
   "dir": "ltr",
-  "categories": ["lifestyle", "business", "productivity"],
+  "categories": ["business", "lifestyle", "productivity"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -33,21 +35,21 @@
   ],
   "shortcuts": [
     {
-      "name": "Найти мастера",
+      "name": "Найти исполнителя",
       "short_name": "Поиск",
       "url": "/",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Мои заявки",
+      "short_name": "Заявки",
+      "url": "/requests",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Мои заказы",
       "short_name": "Заказы",
       "url": "/orders",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Городские службы",
-      "short_name": "Службы",
-      "url": "/city",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
