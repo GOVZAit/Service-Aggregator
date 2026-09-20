@@ -3,7 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, AtSign, Lock, User, ArrowLeft, Briefcase, UserRound } from "lucide-react";
+import { Eye, EyeOff, AtSign, Lock, User, ArrowLeft, Briefcase, UserRound, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -55,7 +55,7 @@ export default function AuthPage() {
     setError("");
     try {
       const loggedUser = await login(values.identifier, values.password);
-      navigate(loggedUser.role === "master" ? "/master" : "/profile");
+      navigate(loggedUser.role === "master" ? "/master" : loggedUser.role === "organization" ? "/organization" : "/profile");
     } catch (e: any) {
       setError(e.message);
     }
@@ -71,7 +71,11 @@ export default function AuthPage() {
           ? "Аккаунт создан по телефону. Почтовое письмо для такой регистрации недоступно."
           : "Аккаунт создан, но почтовая отправка пока не подключена.";
       toast({ title: "Аккаунт создан", description });
-      navigate(result.user.role === "master" ? "/master/onboarding" : "/profile");
+      navigate(result.user.role === "master"
+        ? "/master/onboarding"
+        : result.user.role === "organization"
+          ? "/organization/onboarding"
+          : "/profile");
     } catch (e: any) {
       setError(e.message);
     }
@@ -90,8 +94,8 @@ export default function AuthPage() {
         </button>
 
         <div className="text-center mb-8">
-          <h1 className="display-face text-3xl font-bold tracking-tight mb-2">GOVZAmastera</h1>
-          <p className="text-muted-foreground text-sm">Сервисы и мастера Грозного</p>
+          <h1 className="display-face text-3xl font-bold tracking-tight mb-2">GOVZA</h1>
+          <p className="text-muted-foreground text-sm">Услуги, мастера и организации рядом</p>
         </div>
 
         <div className="flex bg-muted rounded-2xl p-1">
@@ -201,7 +205,7 @@ export default function AuthPage() {
               {/* Role selector */}
               <div>
                 <p className="text-sm font-medium mb-2">Я регистрируюсь как</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setSelectedRole("client")}
@@ -234,6 +238,23 @@ export default function AuthPage() {
                     <div className="text-center">
                       <p className={cn("text-sm font-semibold", selectedRole === "master" ? "text-primary" : "text-foreground")}>Мастер</p>
                       <p className="text-xs text-muted-foreground">Выполняю заказы</p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole("organization")}
+                    data-testid="role-organization"
+                    className={cn(
+                      "flex flex-col items-center gap-2 rounded-2xl border-2 p-3 transition-all",
+                      selectedRole === "organization"
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-card hover:border-primary/40"
+                    )}
+                  >
+                    <Building2 className={cn("w-6 h-6", selectedRole === "organization" ? "text-primary" : "text-muted-foreground")} />
+                    <div className="text-center">
+                      <p className={cn("text-sm font-semibold", selectedRole === "organization" ? "text-primary" : "text-foreground")}>Организация</p>
+                      <p className="text-[11px] text-muted-foreground">Компания / служба</p>
                     </div>
                   </button>
                 </div>
@@ -332,7 +353,9 @@ export default function AuthPage() {
                   ? "Регистрируем..."
                   : selectedRole === "master"
                   ? "Зарегистрироваться как мастер"
-                  : "Создать аккаунт"}
+                  : selectedRole === "organization"
+                    ? "Зарегистрировать организацию"
+                    : "Создать аккаунт"}
               </Button>
               <p className="text-xs text-muted-foreground text-center">
                 Если почтовая отправка подключена, для регистрации по email отправим логин. Для телефона письмо недоступно. Пароль в письмах не отправляется.
@@ -342,7 +365,7 @@ export default function AuthPage() {
         )}
 
         <p className="text-xs text-center text-muted-foreground mt-6 pb-10">
-          Продолжая, вы соглашаетесь с условиями использования сервиса GOVZAmastera
+          Продолжая, вы соглашаетесь с условиями использования сервиса GOVZA
         </p>
       </main>
     </div>

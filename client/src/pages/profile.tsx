@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { PushNotificationCard } from "@/components/push-notification-card";
 import { OrderCard } from "@/components/order-card";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -199,7 +200,9 @@ export default function ProfilePage() {
         )}
 
         {tab === "settings" && (
-          <Card className="overflow-hidden divide-y divide-border">
+          <div className="space-y-3">
+            <PushNotificationCard />
+            <Card className="overflow-hidden divide-y divide-border">
             <button className="w-full p-4 flex items-center gap-3 text-left" onClick={() => setNotificationPreference(!notifications)} data-testid="toggle-client-notifications">
               <Bell className="w-5 h-5 text-primary" /><div className="flex-1"><p className="font-medium">Уведомления</p><p className="text-xs text-muted-foreground">{notifications ? "Включены на этом устройстве" : "Выключены на этом устройстве"}</p></div>
               <div className={`w-11 h-6 rounded-full p-1 transition-colors ${notifications ? "bg-primary" : "bg-muted"}`}><div className={`w-4 h-4 rounded-full bg-white transition-transform ${notifications ? "translate-x-5" : ""}`} /></div>
@@ -207,9 +210,10 @@ export default function ProfilePage() {
             <button className="w-full p-4 flex items-center gap-3 text-left" onClick={toggleTheme}>
               {isDark ? <Sun className="w-5 h-5 text-primary" /> : <Moon className="w-5 h-5 text-primary" />}<div className="flex-1"><p className="font-medium">Оформление</p><p className="text-xs text-muted-foreground">{isDark ? "Тёмная тема" : "Светлая тема"}</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
-            <a className="p-4 flex items-center gap-3" href="tel:995"><HelpCircle className="w-5 h-5 text-primary" /><div className="flex-1"><p className="font-medium">Помощь</p><p className="text-xs text-muted-foreground">Поддержка GOVZAmastera</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" /></a>
+            <a className="p-4 flex items-center gap-3" href="tel:995"><HelpCircle className="w-5 h-5 text-primary" /><div className="flex-1"><p className="font-medium">Помощь</p><p className="text-xs text-muted-foreground">Поддержка GOVZA</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" /></a>
             <button className="w-full p-4 flex items-center gap-3 text-left text-destructive" onClick={handleLogout} data-testid="button-logout"><LogOut className="w-5 h-5" /><span className="font-medium">Выйти из аккаунта</span></button>
-          </Card>
+            </Card>
+          </div>
         )}
       </main>
       <BottomNavigation />

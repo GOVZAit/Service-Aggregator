@@ -7,6 +7,8 @@ import { emailDeliveryConfigured, sendWelcomeEmail } from "./email";
 import { categories, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema, lostFoundListingInputSchema, updateLostFoundListingSchema } from "@shared/schema";
 import type { AuthUser } from "@shared/schema";
 import { deliverPasswordReset, isPasswordResetDeliveryConfigured, passwordResetRateLimited } from "./password-reset";
+import { getProviderOwnerUserId, isProviderVisible, recordProviderActivity } from "./provider-service";
+import { sendPushToUser } from "./push-service";
 
 function normalizeIdentifier(value: string) {
   if (value.includes("@")) return value.trim().toLowerCase();
@@ -117,11 +119,6 @@ export async function registerRoutes(
       return res.status(400).json({ message: result.error.issues[0].message });
     }
     const { name, identifier: rawIdentifier, password, role } = result.data;
-    if (role === "master") {
-      return res.status(403).json({
-        message: "Регистрация исполнителей временно доступна только по подтверждённому приглашению",
-      });
-    }
     const isEmail = rawIdentifier.includes("@");
     const identifier = normalizeIdentifier(rawIdentifier);
     if (isEmail ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier) : identifier.replace(/\D/g, "").length < 10) {
@@ -153,6 +150,7 @@ export async function registerRoutes(
     }
 
     await startAuthenticatedSession(req, user.id, user.sessionVersion);
+    await recordProviderActivity(user);
     const publicUser = toPublicUser(user);
     if (user.email && emailDeliveryConfigured) queueWelcomeEmail(user);
     const emailDelivery = !user.email
@@ -182,6 +180,7 @@ export async function registerRoutes(
     }
 
     await startAuthenticatedSession(req, user.id, user.sessionVersion);
+    await recordProviderActivity(user);
     const publicUser = toPublicUser(user);
     res.json({ user: publicUser });
   });
@@ -229,6 +228,7 @@ export async function registerRoutes(
     if (!user) {
       return res.status(401).json({ message: "Не авторизован" });
     }
+    await recordProviderActivity(user);
     const publicUser = toPublicUser(user);
     res.json({ user: publicUser });
   });
@@ -264,15 +264,22 @@ export async function registerRoutes(
   });
 
   app.get("/api/masters/:id", async (req, res) => {
-    const master = await storage.getMasterById(Number(req.params.id));
+    const id = Number(req.params.id);
+    const master = await storage.getMasterById(id);
     if (!master) return res.status(404).json({ error: "Master not found" });
-    res.json(master);
+    const visible = await isProviderVisible(id);
+    if (!visible) {
+      const user = await getAuthenticatedUser(req);
+      const ownsProfile = user && user.masterId === id && (user.role === "master" || user.role === "organization");
+      if (!ownsProfile) return res.status(404).json({ error: "Master not found" });
+    }
+    res.json({ ...master, isVisible: visible });
   });
 
   app.patch("/api/masters/:id", async (req, res) => {
     const user = await getAuthenticatedUser(req);
     if (!user) return res.status(401).json({ message: "Не авторизован" });
-    if (user.role !== "master") {
+    if (user.role !== "master" && user.role !== "organization") {
       return res.status(403).json({ message: "Доступно только исполнителям" });
     }
     // A master may only edit their own profile
@@ -319,7 +326,7 @@ export async function registerRoutes(
     const orders = await storage.getOrders(
       user.role === "client" ? { clientId: user.id } : { masterId: user.masterId ?? -1 },
     );
-    if (user.role === "master") {
+    if (user.role === "master" || user.role === "organization") {
       const enriched = await Promise.all(orders.map(async (order) => {
         const client = order.clientId ? await storage.getUserById(order.clientId) : undefined;
         return {
@@ -353,6 +360,15 @@ export async function registerRoutes(
       address: result.data.address,
       comment: result.data.comment,
     });
+    const providerOwnerId = await getProviderOwnerUserId(master.id);
+    if (providerOwnerId) {
+      void sendPushToUser(providerOwnerId, {
+        title: "Новый заказ в GOVZA",
+        body: `${user.name} оформил заказ: ${service.name}`,
+        url: "/master/orders",
+        tag: `order-${order.id}`,
+      });
+    }
     res.status(201).json(order);
   });
 
@@ -373,7 +389,7 @@ export async function registerRoutes(
   app.patch("/api/orders/:id", async (req, res) => {
     const user = await getAuthenticatedUser(req);
     if (!user) return res.status(401).json({ message: "Не авторизован" });
-    if (user.role !== "master" || !user.masterId) {
+    if ((user.role !== "master" && user.role !== "organization") || !user.masterId) {
       return res.status(403).json({ message: "Доступно только исполнителю" });
     }
     const order = await storage.getOrderById(Number(req.params.id));
@@ -385,7 +401,21 @@ export async function registerRoutes(
       (order.status === "pending" && ["in_progress", "rejected"].includes(result.data.status)) ||
       (order.status === "in_progress" && result.data.status === "completed");
     if (!allowed) return res.status(409).json({ message: "Недопустимое изменение статуса" });
-    res.json(await storage.updateOrder(order.id, result.data));
+    const updated = await storage.updateOrder(order.id, result.data);
+    if (order.clientId) {
+      const statusText = result.data.status === "in_progress"
+        ? "Мастер принял заказ"
+        : result.data.status === "completed"
+          ? "Заказ отмечен выполненным"
+          : "Мастер отклонил заказ";
+      void sendPushToUser(order.clientId, {
+        title: statusText,
+        body: order.title,
+        url: "/orders",
+        tag: `order-status-${order.id}`,
+      });
+    }
+    res.json(updated);
   });
 
   // ── Lost & found ─────────────────────────────────────────────────────────────

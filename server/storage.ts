@@ -1,7 +1,14 @@
-import type { Master, ServiceRequest, Order, ChatMessage, AuthUser, LostFoundListing, LostFoundListingInput, LostFoundStatus } from "@shared/schema";
+import type { Master, ServiceRequest, Order, ChatMessage, AuthUser, LostFoundListing, LostFoundListingInput, LostFoundStatus, UserRole } from "@shared/schema";
 import { authUsers, lostFoundListings, masterSettings, persistedOrders } from "@shared/schema";
 import { desc, eq, or, sql } from "drizzle-orm";
 import { db } from "./db";
+import {
+  createProviderProfile,
+  getPersistentProvider,
+  hiddenProviderIds,
+  listPersistentProviders,
+  updatePersistentProvider,
+} from "./provider-service";
 
 const mastersData: Master[] = [
   {
@@ -420,7 +427,7 @@ export interface IStorage {
   addMessage(masterId: number, message: ChatMessage): Promise<ChatMessage>;
 
   // Auth
-  createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: 'client' | 'master' }): Promise<AuthUser>;
+  createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: UserRole }): Promise<AuthUser>;
   getUserByIdentifier(identifier: string): Promise<AuthUser | undefined>;
   getUserById(id: number): Promise<AuthUser | undefined>;
   updateUser(id: number, patch: { name: string }): Promise<AuthUser | undefined>;
@@ -462,30 +469,42 @@ export class MemStorage implements IStorage {
   }
 
   async getMasters(): Promise<Master[]> {
-    return Promise.all(this.masters.map((master) => this.withPersistedSettings(master)));
+    const hidden = await hiddenProviderIds();
+    const seed = await Promise.all(
+      this.masters
+        .filter((master) => !hidden.has(master.id))
+        .map((master) => this.withPersistedSettings(master)),
+    );
+    const persistent = await listPersistentProviders();
+    return [...seed, ...persistent];
   }
 
   async getMasterById(id: number): Promise<Master | undefined> {
+    const persistent = await getPersistentProvider(id);
+    if (persistent) return persistent;
     const master = this.masters.find(m => m.id === id);
     return master ? this.withPersistedSettings(master) : undefined;
   }
 
   async getMastersByCategory(categoryId: number): Promise<Master[]> {
-    return Promise.all(this.masters.filter(m => m.categoryId === categoryId).map((master) => this.withPersistedSettings(master)));
+    const masters = await this.getMasters();
+    return masters.filter((master) => (master.categoryIds ?? [master.categoryId]).includes(categoryId));
   }
 
   async searchMasters(query: string): Promise<Master[]> {
     const q = query.toLowerCase();
-    const matches = this.masters.filter(m =>
-      m.name.toLowerCase().includes(q) ||
-      m.category.toLowerCase().includes(q) ||
-      m.description.toLowerCase().includes(q) ||
-      (m.companyName?.toLowerCase().includes(q) ?? false)
+    const masters = await this.getMasters();
+    return masters.filter((master) =>
+      master.name.toLowerCase().includes(q) ||
+      master.category.toLowerCase().includes(q) ||
+      master.description.toLowerCase().includes(q) ||
+      (master.companyName?.toLowerCase().includes(q) ?? false)
     );
-    return Promise.all(matches.map((master) => this.withPersistedSettings(master)));
   }
 
   async updateMaster(id: number, patch: Partial<Master>): Promise<Master | undefined> {
+    const persistent = await getPersistentProvider(id);
+    if (persistent) return updatePersistentProvider(id, patch);
     const master = this.masters.find(m => m.id === id);
     if (!master) return undefined;
     const { id: _id, ...safe } = patch;
@@ -629,11 +648,27 @@ export class MemStorage implements IStorage {
     return message;
   }
 
-  async createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: 'client' | 'master' }): Promise<AuthUser> {
-    const [user] = await db.insert(authUsers).values({
+  async createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: UserRole }): Promise<AuthUser> {
+    const [created] = await db.insert(authUsers).values({
       ...data,
-      masterId: data.role === "master" ? 1 : null,
+      masterId: null,
     }).returning();
+
+    let user = created;
+    if (data.role === "master" || data.role === "organization") {
+      const profile = await createProviderProfile(
+        created.id,
+        data.role,
+        data.name,
+        data.phone,
+      );
+      const [linked] = await db.update(authUsers)
+        .set({ masterId: profile.id })
+        .where(eq(authUsers.id, created.id))
+        .returning();
+      user = linked;
+    }
+
     return {
       ...user,
       phone: user.phone ?? undefined,

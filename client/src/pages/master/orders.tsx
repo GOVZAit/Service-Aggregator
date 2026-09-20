@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import MasterBottomNavigation from "@/components/master-bottom-navigation";
+import OrganizationBottomNavigation from "@/components/organization-bottom-navigation";
 import {
   CheckCircle2,
   Clock,
@@ -17,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth-context";
 import type { Order, OrderStatus } from "@shared/schema";
 import type { ServiceRequestView } from "@shared/request-schema";
 
@@ -143,6 +145,8 @@ export default function MasterOrdersPage() {
   const [activeTab, setActiveTab] = useState<OrderTab>("new");
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const isOrganization = user?.role === "organization";
 
   const { data: requests = [], isLoading: requestsLoading, isError: requestsError } = useQuery<ServiceRequestView[]>({
     queryKey: ["/api/requests"],
@@ -276,7 +280,7 @@ export default function MasterOrdersPage() {
                 {order.status !== "rejected" && (
                   <button
                     type="button"
-                    onClick={() => navigate(`/master/orders/${order.id}/chat`)}
+                    onClick={() => navigate(`${isOrganization ? "/organization/orders" : "/master/orders"}/${order.id}/chat`)}
                     className="h-11 w-full rounded-xl border border-primary/30 text-sm font-semibold text-primary"
                     data-testid={`master-order-chat-${order.id}`}
                   >
@@ -309,7 +313,7 @@ export default function MasterOrdersPage() {
         {orderMutation.isError && <p className="mt-4 text-center text-sm text-destructive">Не удалось изменить статус. Обновите страницу и попробуйте ещё раз.</p>}
       </main>
 
-      <MasterBottomNavigation />
+      {isOrganization ? <OrganizationBottomNavigation /> : <MasterBottomNavigation />}
     </div>
   );
 }

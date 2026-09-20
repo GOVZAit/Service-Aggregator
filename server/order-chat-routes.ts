@@ -3,6 +3,8 @@ import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db, pool } from "./db";
 import { storage } from "./storage";
 import { orderMessages, sendOrderMessageSchema, type OrderMessageView } from "@shared/order-chat-schema";
+import { getProviderOwnerUserId } from "./provider-service";
+import { sendPushToUser } from "./push-service";
 
 async function ensureOrderChatTable() {
   await pool.query(`
@@ -140,18 +142,38 @@ export async function registerOrderChatRoutes(app: Express) {
     const [message] = await db.insert(orderMessages).values({
       orderId,
       senderUserId: user.id,
-      senderRole: user.role,
+      senderRole: user.role === "client" ? "client" : "master",
       text: parsed.data.text,
     }).returning();
 
     const client = order.clientId ? await storage.getUserById(order.clientId) : undefined;
     const master = await storage.getMasterById(order.masterId);
 
-    res.status(201).json(await messageView(
+    const view = await messageView(
       message,
       user.id,
       client?.name ?? "Клиент",
       master?.name ?? "Мастер",
-    ));
+    );
+
+    const recipientUserId = user.role === "client"
+      ? await getProviderOwnerUserId(order.masterId)
+      : order.clientId;
+    if (recipientUserId) {
+      void sendPushToUser(recipientUserId, {
+        title: user.role === "client"
+          ? `Сообщение от ${client?.name ?? "клиента"}`
+          : `Сообщение от ${master?.name ?? "мастера"}`,
+        body: parsed.data.text.length > 120
+          ? `${parsed.data.text.slice(0, 117)}…`
+          : parsed.data.text,
+        url: user.role === "client"
+          ? `/master/orders/${order.id}/chat`
+          : `/orders/${order.id}/chat`,
+        tag: `order-chat-${order.id}`,
+      });
+    }
+
+    res.status(201).json(view);
   });
 }

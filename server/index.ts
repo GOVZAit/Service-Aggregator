@@ -4,6 +4,11 @@ import connectPgSimple from "connect-pg-simple";
 import { registerPersistentRequestRoutes } from "./persistent-request-routes";
 import { registerOrderChatRoutes } from "./order-chat-routes";
 import { registerOrderReviewRoutes } from "./order-review-routes";
+import { registerPushRoutes } from "./push-routes";
+import { registerProviderRoutes } from "./provider-routes";
+import { ensureProviderTables } from "./provider-service";
+import { initializePushService } from "./push-service";
+import { startProviderLifecycleScheduler } from "./provider-lifecycle";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -83,7 +88,10 @@ app.use((req, res, next) => {
         !path.startsWith("/api/orders") &&
         !path.startsWith("/api/order-chats") &&
         !path.includes("/reviews") &&
-        !path.endsWith("/review")
+        !path.endsWith("/review") &&
+        !path.startsWith("/api/push") &&
+        !path.startsWith("/api/providers") &&
+        !path.startsWith("/api/internal/providers")
       ) {
         // Truncate to keep uploaded document images / PII out of the logs
         const body = JSON.stringify(capturedJsonResponse);
@@ -100,10 +108,15 @@ app.use((req, res, next) => {
 (async () => {
   // Persistent request routes are registered first so they replace the legacy in-memory
   // /api/requests handlers while the rest of the application continues using registerRoutes.
+  await ensureProviderTables();
+  await initializePushService();
   await registerPersistentRequestRoutes(app);
   await registerOrderChatRoutes(app);
   await registerOrderReviewRoutes(app);
+  await registerPushRoutes(app);
+  await registerProviderRoutes(app);
   await registerRoutes(httpServer, app);
+  startProviderLifecycleScheduler();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

@@ -11,6 +11,7 @@ import { executorTypeLabels } from "@shared/schema";
 import type { ExecutorType, MasterSettingsInput } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { PushNotificationCard } from "@/components/push-notification-card";
 
 type Step = "welcome" | "category" | "details" | "description" | "done";
 
@@ -101,6 +102,10 @@ export default function MasterOnboardingPage() {
         >
           Начать настройку <ChevronRight className="w-5 h-5" />
         </button>
+        <div className="w-full mb-5 text-left">
+          <PushNotificationCard />
+        </div>
+
         <button
           onClick={() => navigate("/master")}
           className="mt-3 text-sm text-muted-foreground"

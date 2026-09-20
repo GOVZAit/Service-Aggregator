@@ -2,7 +2,9 @@ import type { Express } from "express";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, pool } from "./db";
 import { storage } from "./storage";
-import { authUsers, insertRequestSchema, persistedOrders } from "@shared/schema";
+import { authUsers, categories, insertRequestSchema, persistedOrders } from "@shared/schema";
+import { getProviderOwnerUserId, getProviderOwnerUserIds } from "./provider-service";
+import { sendPushToUser } from "./push-service";
 import {
   createRequestResponseSchema,
   requestResponses,
@@ -58,6 +60,16 @@ async function authenticatedUser(req: Express.Request) {
   const user = await storage.getUserById(req.session.userId);
   if (!user || user.sessionVersion !== req.session.sessionVersion) return undefined;
   return user;
+}
+
+function providerCategoryNames(provider: { category: string; categoryId: number; categoryIds?: number[] }): string[] {
+  const ids = provider.categoryIds ?? [provider.categoryId];
+  const names = ids.reduce<string[]>((result, id) => {
+    const category = categories.find((item) => item.id === id);
+    if (category) result.push(category.name);
+    return result;
+  }, []);
+  return names.length > 0 ? names : [provider.category];
 }
 
 function relativeTime(date: Date) {
@@ -151,8 +163,9 @@ export async function registerPersistentRequestRoutes(app: Express) {
       if (!user.masterId) return res.status(403).json({ message: "Профиль исполнителя не привязан" });
       const master = await storage.getMasterById(user.masterId);
       if (!master) return res.status(404).json({ message: "Профиль мастера не найден" });
+      const categoryNames = providerCategoryNames(master);
       rows = await db.select().from(serviceRequests)
-        .where(and(eq(serviceRequests.status, "open"), eq(serviceRequests.category, master.category)))
+        .where(and(eq(serviceRequests.status, "open"), inArray(serviceRequests.category, categoryNames)))
         .orderBy(desc(serviceRequests.createdAt));
     }
 
@@ -160,7 +173,7 @@ export async function registerPersistentRequestRoutes(app: Express) {
     const counts = await responseCounts(ids);
     const names = await clientNames(rows.map((row) => row.clientId));
     let responded = new Set<number>();
-    if (user.role === "master" && user.masterId && ids.length > 0) {
+    if (user.role !== "client" && user.masterId && ids.length > 0) {
       const ownResponses = await db.select({ requestId: requestResponses.requestId })
         .from(requestResponses)
         .where(and(inArray(requestResponses.requestId, ids), eq(requestResponses.masterId, user.masterId)));
@@ -171,8 +184,8 @@ export async function registerPersistentRequestRoutes(app: Express) {
       row,
       names.get(row.clientId) ?? "Клиент",
       counts.get(row.id) ?? 0,
-      user.role === "master" ? responded.has(row.id) : undefined,
-      user.role !== "master",
+      user.role !== "client" ? responded.has(row.id) : undefined,
+      user.role === "client",
     )));
   });
 
@@ -186,10 +199,10 @@ export async function registerPersistentRequestRoutes(app: Express) {
     if (user.role === "client" && request.clientId !== user.id) {
       return res.status(403).json({ message: "Нет доступа к этой заявке" });
     }
-    if (user.role === "master") {
+    if (user.role !== "client") {
       if (!user.masterId) return res.status(403).json({ message: "Профиль исполнителя не привязан" });
       const master = await storage.getMasterById(user.masterId);
-      if (!master || master.category !== request.category) {
+      if (!master || !providerCategoryNames(master).includes(request.category)) {
         return res.status(403).json({ message: "Заявка относится к другой категории" });
       }
     }
@@ -211,6 +224,20 @@ export async function registerPersistentRequestRoutes(app: Express) {
       ...parsed.data,
       clientId: user.id,
     }).returning();
+
+    const matchingProviders = (await storage.getMasters())
+      .filter((provider) => providerCategoryNames(provider).includes(request.category))
+      .map((provider) => provider.id);
+    const owners = await getProviderOwnerUserIds(matchingProviders);
+    for (const ownerUserId of new Set(owners.values())) {
+      void sendPushToUser(ownerUserId, {
+        title: "Новая заявка в вашей категории",
+        body: request.title,
+        url: "/master/orders",
+        tag: `request-${request.id}`,
+      });
+    }
+
     res.status(201).json(toRequestView(request, user.name, 0));
   });
 
@@ -240,7 +267,7 @@ export async function registerPersistentRequestRoutes(app: Express) {
   app.post("/api/requests/:id/responses", async (req, res) => {
     const user = await authenticatedUser(req);
     if (!user) return res.status(401).json({ message: "Войдите как исполнитель" });
-    if (user.role !== "master" || !user.masterId) {
+    if ((user.role !== "master" && user.role !== "organization") || !user.masterId) {
       return res.status(403).json({ message: "Отклик доступен только исполнителю" });
     }
     const parsed = createRequestResponseSchema.safeParse(req.body);
@@ -252,7 +279,7 @@ export async function registerPersistentRequestRoutes(app: Express) {
     if (request.status !== "open") return res.status(409).json({ message: "Заявка уже закрыта" });
     const master = await storage.getMasterById(user.masterId);
     if (!master) return res.status(404).json({ message: "Профиль мастера не найден" });
-    if (master.category !== request.category) {
+    if (!providerCategoryNames(master).includes(request.category)) {
       return res.status(403).json({ message: "Можно откликаться только на заявки своей категории" });
     }
 
@@ -263,6 +290,12 @@ export async function registerPersistentRequestRoutes(app: Express) {
         price: parsed.data.price,
         message: parsed.data.message,
       }).returning();
+      void sendPushToUser(request.clientId, {
+        title: "Новый отклик на заявку",
+        body: `${master.name}: ${parsed.data.price}`,
+        url: "/requests",
+        tag: `request-response-${requestId}`,
+      });
       res.status(201).json(await toResponseView(response));
     } catch (error) {
       if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
@@ -320,6 +353,15 @@ export async function registerPersistentRequestRoutes(app: Express) {
         return createdOrder;
       });
 
+      const selectedOwnerId = await getProviderOwnerUserId(order.masterId);
+      if (selectedOwnerId) {
+        void sendPushToUser(selectedOwnerId, {
+          title: "Клиент выбрал ваше предложение",
+          body: order.title,
+          url: "/master/orders",
+          tag: `selected-order-${order.id}`,
+        });
+      }
       res.status(201).json({ order });
     } catch (error) {
       if (error instanceof RequestApiError) {

@@ -30,13 +30,25 @@ import MasterDashboardPage from "@/pages/master/dashboard";
 import MasterOrdersPage from "@/pages/master/orders";
 import MasterProfileEditPage from "@/pages/master/profile";
 import MasterOnboardingPage from "@/pages/master/onboarding";
+import OrganizationOnboardingPage from "@/pages/organization/onboarding";
+import OrganizationProfilePage from "@/pages/organization/profile";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 
 // Executor-only routes (executor interface)
-const EXECUTOR_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding"];
+const MASTER_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding"];
+const ORGANIZATION_ROUTES = ["/organization", "/organization/orders", "/organization/profile", "/organization/onboarding"];
 const PUBLIC_AUTH_ROUTES = ["/auth", "/forgot-password", "/reset-password"];
 
-function isExecutorRoute(path: string) {
-  return EXECUTOR_ROUTES.includes(path) || path.startsWith("/master/orders/");
+function isMasterRoute(path: string) {
+  return MASTER_ROUTES.includes(path) || path.startsWith("/master/orders/");
+}
+
+function isOrganizationRoute(path: string) {
+  return ORGANIZATION_ROUTES.includes(path) || path.startsWith("/organization/orders/");
+}
+
+function isProviderRoute(path: string) {
+  return isMasterRoute(path) || isOrganizationRoute(path);
 }
 
 function RoleGuard({ children }: { children: React.ReactNode }) {
@@ -46,20 +58,26 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const onExecutorRoute = isExecutorRoute(location);
+    const onMasterRoute = isMasterRoute(location);
+    const onOrganizationRoute = isOrganizationRoute(location);
+    const onProviderRoute = onMasterRoute || onOrganizationRoute;
 
-    if (!user && onExecutorRoute) {
+    if (!user && onProviderRoute) {
       navigate("/auth");
-    } else if (user?.role === "master" && !onExecutorRoute && !PUBLIC_AUTH_ROUTES.includes(location)) {
-      // Executor landed on a client page → go to executor dashboard
+    } else if (user?.role === "master" && !onMasterRoute && !PUBLIC_AUTH_ROUTES.includes(location)) {
       navigate("/master");
-    } else if (user?.role === "client" && onExecutorRoute) {
-      // Client somehow landed on executor route → go to client home
+    } else if (user?.role === "organization" && !onOrganizationRoute && !PUBLIC_AUTH_ROUTES.includes(location)) {
+      navigate("/organization");
+    } else if (user?.role === "client" && onProviderRoute) {
       navigate("/");
+    } else if (user?.role === "master" && onOrganizationRoute) {
+      navigate("/master");
+    } else if (user?.role === "organization" && onMasterRoute) {
+      navigate("/organization");
     }
   }, [user, isLoading, location, navigate]);
 
-  if (isLoading || (!user && isExecutorRoute(location))) return null;
+  if (isLoading || (!user && isProviderRoute(location))) return null;
   return <>{children}</>;
 }
 
@@ -74,6 +92,13 @@ function Router() {
         <Route path="/master/orders" component={MasterOrdersPage} />
         <Route path="/master/profile" component={MasterProfileEditPage} />
         <Route path="/master/onboarding" component={MasterOnboardingPage} />
+
+        {/* Organization routes */}
+        <Route path="/organization" component={MasterDashboardPage} />
+        <Route path="/organization/orders/:id/chat" component={OrderChatPage} />
+        <Route path="/organization/orders" component={MasterOrdersPage} />
+        <Route path="/organization/profile" component={OrganizationProfilePage} />
+        <Route path="/organization/onboarding" component={OrganizationOnboardingPage} />
 
         {/* Client routes */}
         <Route path="/" component={HomePage} />
@@ -123,6 +148,7 @@ function App() {
           <ThemeInitializer />
           <Toaster />
           <Router />
+          <PwaInstallPrompt />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
