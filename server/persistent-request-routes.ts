@@ -62,11 +62,13 @@ async function authenticatedUser(req: Express.Request) {
   return user;
 }
 
-function providerCategoryNames(provider: { category: string; categoryId: number; categoryIds?: number[] }) {
+function providerCategoryNames(provider: { category: string; categoryId: number; categoryIds?: number[] }): string[] {
   const ids = provider.categoryIds ?? [provider.categoryId];
-  const names = ids
-    .map((id) => categories.find((category) => category.id === id)?.name)
-    .filter((name): name is string => Boolean(name));
+  const names = ids.reduce<string[]>((result, id) => {
+    const category = categories.find((item) => item.id === id);
+    if (category) result.push(category.name);
+    return result;
+  }, []);
   return names.length > 0 ? names : [provider.category];
 }
 
