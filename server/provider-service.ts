@@ -109,7 +109,7 @@ export function providerRowToMaster(row: typeof providerProfiles.$inferSelect): 
     lng: data.lng ?? DEFAULT_LOCATION.lng,
     companyName: data.companyName ?? (isOrganization ? data.name : undefined),
     hasCertificate: data.hasCertificate ?? false,
-    executorType: isOrganization ? "company" : "private",
+    executorType: isOrganization ? "company" : (data.executorType ?? "private"),
     showPortfolio: data.showPortfolio ?? true,
     showReviews: data.showReviews ?? true,
     showPrices: data.showPrices ?? true,
@@ -184,9 +184,10 @@ export async function updatePersistentProvider(
   delete raw.completedOrders;
   delete raw.distance;
   delete raw.responseTime;
-  delete raw.executorType;
+  const legacyCategoryId = typeof raw.categoryId === "number" ? raw.categoryId : undefined;
   delete raw.category;
   delete raw.categoryId;
+  if (legacyCategoryId) raw.categoryIds = [legacyCategoryId];
 
   const manualOverrides = {
     ...(row.manualOverrides ?? {}),
