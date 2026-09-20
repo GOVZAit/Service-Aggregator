@@ -148,7 +148,7 @@ export default function MasterProfilePage() {
             <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Назад" onClick={() => navigate('/')}>
               <ArrowLeft className="w-6 h-6" />
             </Button>
-            <span className="font-semibold">Профиль мастера</span>
+            <span className="font-semibold">{isOrganization ? "Профиль организации" : "Профиль мастера"}</span>
           </div>
         </header>
         <div className="px-4 py-6 max-w-lg mx-auto space-y-4">
@@ -184,6 +184,7 @@ export default function MasterProfilePage() {
     );
   }
 
+  const isOrganization = master.providerType === "organization";
   const verifiedReviews = reviewSummary?.reviews.map((review) => ({
     name: review.clientName,
     avatar: "",
@@ -292,7 +293,7 @@ export default function MasterProfilePage() {
           <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Назад" onClick={() => navigate('/')} data-testid="button-back">
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <span className="font-semibold">Профиль мастера</span>
+          <span className="font-semibold">{isOrganization ? "Профиль организации" : "Профиль мастера"}</span>
           <div className="ml-auto flex items-center gap-1">
             <Button variant="ghost" size="icon" className="w-11 h-11" aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} aria-pressed={isFavorite} onClick={() => setIsFavorite(!isFavorite)} data-testid="button-favorite-profile">
               <Heart className={`w-5 h-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'text-muted-foreground'}`} />
@@ -444,7 +445,7 @@ export default function MasterProfilePage() {
           {master.verified && (
             <div className="mt-4 flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-xl px-3 py-2">
               <BadgeCheck className="w-4 h-4 shrink-0" />
-              <span>Личность и профессиональные навыки проверены командой GOVZA</span>
+              <span>{isOrganization ? "Данные организации проверены командой GOVZA" : "Личность и профессиональные навыки проверены командой GOVZA"}</span>
             </div>
           )}
         </div>
@@ -574,7 +575,7 @@ export default function MasterProfilePage() {
             onClick={() => setShowBooking(true)}
             data-testid="button-book"
           >
-            Записаться
+            {isOrganization ? "Заказать услугу" : "Записаться"}
           </Button>
 
           {/* Secondary actions */}
