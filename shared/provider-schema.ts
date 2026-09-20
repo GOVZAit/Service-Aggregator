@@ -96,6 +96,7 @@ export const providerProfilePatchSchema = z.object({
   avatar: z.string().max(1_000_000).optional(),
   price: z.string().trim().max(60).optional(),
   companyName: z.string().trim().max(120).optional(),
+  companyName: z.string().trim().max(120).optional(),
   services: z.array(z.object({
     name: z.string().trim().min(1).max(120),
     price: z.string().trim().min(1).max(60),
