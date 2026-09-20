@@ -121,6 +121,18 @@ export const providerProfilePatchSchema = z.object({
   ]).optional(),
 }).strict();
 
+export const manualProviderCreateSchema = z.object({
+  providerType: z.enum(["master", "organization"]),
+  organizationKind: z.enum([
+    "service_company", "medical", "education", "auto_service",
+    "beauty", "delivery", "public_service", "other",
+  ]).optional(),
+  data: providerProfilePatchSchema.omit({ organizationKind: true }).extend({
+    name: z.string().trim().min(2).max(120),
+    categoryIds: categoryIdsSchema,
+  }),
+}).strict();
+
 export const providerImportSchema = z.object({
   sourceName: z.string().trim().min(2).max(80),
   sourceExternalId: z.string().trim().min(1).max(200),
@@ -137,4 +149,5 @@ export const providerImportSchema = z.object({
 }).strict();
 
 export type ProviderProfilePatch = z.infer<typeof providerProfilePatchSchema>;
+export type ManualProviderCreateInput = z.infer<typeof manualProviderCreateSchema>;
 export type ProviderImportInput = z.infer<typeof providerImportSchema>;
