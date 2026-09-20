@@ -187,8 +187,7 @@ export default function ProfilePage() {
               </div>
             )}
             <Button className="w-full rounded-xl" onClick={() => navigate("/")}><Check className="w-4 h-4 mr-2" />Найти мастера</Button>
-            </Card>
-          </div>
+          </Card>
         )}
 
         {tab === "orders" && (
@@ -211,9 +210,10 @@ export default function ProfilePage() {
             <button className="w-full p-4 flex items-center gap-3 text-left" onClick={toggleTheme}>
               {isDark ? <Sun className="w-5 h-5 text-primary" /> : <Moon className="w-5 h-5 text-primary" />}<div className="flex-1"><p className="font-medium">Оформление</p><p className="text-xs text-muted-foreground">{isDark ? "Тёмная тема" : "Светлая тема"}</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
-            <a className="p-4 flex items-center gap-3" href="tel:995"><HelpCircle className="w-5 h-5 text-primary" /><div className="flex-1"><p className="font-medium">Помощь</p><p className="text-xs text-muted-foreground">Поддержка GOVZAmastera</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" /></a>
+            <a className="p-4 flex items-center gap-3" href="tel:995"><HelpCircle className="w-5 h-5 text-primary" /><div className="flex-1"><p className="font-medium">Помощь</p><p className="text-xs text-muted-foreground">Поддержка GOVZA</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" /></a>
             <button className="w-full p-4 flex items-center gap-3 text-left text-destructive" onClick={handleLogout} data-testid="button-logout"><LogOut className="w-5 h-5" /><span className="font-medium">Выйти из аккаунта</span></button>
-          </Card>
+            </Card>
+          </div>
         )}
       </main>
       <BottomNavigation />
