@@ -71,6 +71,7 @@ export default function OrdersPage() {
                 order={order}
                 master={masters.find((m) => m.id === order.masterId)}
                 onLeaveReview={handleLeaveReview}
+                onOpenChat={() => navigate(`/orders/${order.id}/chat`)}
               />
             ))}
           </div>
