@@ -148,7 +148,7 @@ export default function MasterProfilePage() {
             <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Назад" onClick={() => navigate('/')}>
               <ArrowLeft className="w-6 h-6" />
             </Button>
-            <span className="font-semibold">{isOrganization ? "Профиль организации" : "Профиль мастера"}</span>
+            <span className="font-semibold">Профиль исполнителя</span>
           </div>
         </header>
         <div className="px-4 py-6 max-w-lg mx-auto space-y-4">
