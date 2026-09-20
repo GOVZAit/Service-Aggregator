@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, pool } from "./db";
 import { storage } from "./storage";
-import { authUsers, insertRequestSchema, persistedOrders } from "@shared/schema";
+import { authUsers, categories, insertRequestSchema, persistedOrders } from "@shared/schema";
 import { getProviderOwnerUserId, getProviderOwnerUserIds } from "./provider-service";
 import { sendPushToUser } from "./push-service";
 import {
@@ -60,6 +60,14 @@ async function authenticatedUser(req: Express.Request) {
   const user = await storage.getUserById(req.session.userId);
   if (!user || user.sessionVersion !== req.session.sessionVersion) return undefined;
   return user;
+}
+
+function providerCategoryNames(provider: { category: string; categoryId: number; categoryIds?: number[] }) {
+  const ids = provider.categoryIds ?? [provider.categoryId];
+  const names = ids
+    .map((id) => categories.find((category) => category.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
+  return names.length > 0 ? names : [provider.category];
 }
 
 function relativeTime(date: Date) {
@@ -153,8 +161,9 @@ export async function registerPersistentRequestRoutes(app: Express) {
       if (!user.masterId) return res.status(403).json({ message: "Профиль исполнителя не привязан" });
       const master = await storage.getMasterById(user.masterId);
       if (!master) return res.status(404).json({ message: "Профиль мастера не найден" });
+      const categoryNames = providerCategoryNames(master);
       rows = await db.select().from(serviceRequests)
-        .where(and(eq(serviceRequests.status, "open"), eq(serviceRequests.category, master.category)))
+        .where(and(eq(serviceRequests.status, "open"), inArray(serviceRequests.category, categoryNames)))
         .orderBy(desc(serviceRequests.createdAt));
     }
 
@@ -191,7 +200,7 @@ export async function registerPersistentRequestRoutes(app: Express) {
     if (user.role === "master") {
       if (!user.masterId) return res.status(403).json({ message: "Профиль исполнителя не привязан" });
       const master = await storage.getMasterById(user.masterId);
-      if (!master || master.category !== request.category) {
+      if (!master || !providerCategoryNames(master).includes(request.category)) {
         return res.status(403).json({ message: "Заявка относится к другой категории" });
       }
     }
@@ -215,7 +224,7 @@ export async function registerPersistentRequestRoutes(app: Express) {
     }).returning();
 
     const matchingProviders = (await storage.getMasters())
-      .filter((provider) => provider.category === request.category)
+      .filter((provider) => providerCategoryNames(provider).includes(request.category))
       .map((provider) => provider.id);
     const owners = await getProviderOwnerUserIds(matchingProviders);
     for (const ownerUserId of new Set(owners.values())) {
@@ -268,7 +277,7 @@ export async function registerPersistentRequestRoutes(app: Express) {
     if (request.status !== "open") return res.status(409).json({ message: "Заявка уже закрыта" });
     const master = await storage.getMasterById(user.masterId);
     if (!master) return res.status(404).json({ message: "Профиль мастера не найден" });
-    if (master.category !== request.category) {
+    if (!providerCategoryNames(master).includes(request.category)) {
       return res.status(403).json({ message: "Можно откликаться только на заявки своей категории" });
     }
 
