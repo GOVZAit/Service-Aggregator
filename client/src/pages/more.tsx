@@ -28,7 +28,7 @@ export default function MorePage() {
     <div className="min-h-screen bg-background pb-28">
       <header className="border-b border-border bg-background/95 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-xl">
         <div className="mx-auto max-w-4xl">
-          <p className="text-xs text-muted-foreground">Служба 995</p>
+          <p className="text-xs text-muted-foreground">GOVZAmastera</p>
           <h1 className="mt-1 text-2xl font-bold">Ещё</h1>
           <p className="mt-1 text-sm text-muted-foreground">Ваши заявки, заказы и дополнительные полезные разделы</p>
         </div>

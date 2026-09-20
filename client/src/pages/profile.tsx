@@ -103,7 +103,7 @@ export default function ProfilePage() {
           </div>
         </header>
         <main className="px-4 py-12 max-w-lg mx-auto flex flex-col items-center text-center gap-6">
-          <Avatar className="w-24 h-24 bg-muted"><AvatarFallback className="text-3xl">995</AvatarFallback></Avatar>
+          <Avatar className="w-24 h-24 bg-muted"><AvatarFallback className="text-3xl">GM</AvatarFallback></Avatar>
           <div>
             <h2 className="text-xl font-bold mb-2">Войдите в аккаунт</h2>
             <p className="text-muted-foreground text-sm">Регистрация доступна по номеру телефона или email</p>
@@ -207,7 +207,7 @@ export default function ProfilePage() {
             <button className="w-full p-4 flex items-center gap-3 text-left" onClick={toggleTheme}>
               {isDark ? <Sun className="w-5 h-5 text-primary" /> : <Moon className="w-5 h-5 text-primary" />}<div className="flex-1"><p className="font-medium">Оформление</p><p className="text-xs text-muted-foreground">{isDark ? "Тёмная тема" : "Светлая тема"}</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
-            <a className="p-4 flex items-center gap-3" href="tel:995"><HelpCircle className="w-5 h-5 text-primary" /><div className="flex-1"><p className="font-medium">Помощь</p><p className="text-xs text-muted-foreground">Позвонить в службу 995</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" /></a>
+            <a className="p-4 flex items-center gap-3" href="tel:995"><HelpCircle className="w-5 h-5 text-primary" /><div className="flex-1"><p className="font-medium">Помощь</p><p className="text-xs text-muted-foreground">Поддержка GOVZAmastera</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" /></a>
             <button className="w-full p-4 flex items-center gap-3 text-left text-destructive" onClick={handleLogout} data-testid="button-logout"><LogOut className="w-5 h-5" /><span className="font-medium">Выйти из аккаунта</span></button>
           </Card>
         )}

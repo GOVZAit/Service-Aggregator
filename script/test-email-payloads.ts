@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 
 process.env.RESEND_API_KEY = "test-key";
-process.env.EMAIL_FROM = "995 <test@example.com>";
-process.env.PUBLIC_APP_URL = "https://995.example.com";
+process.env.EMAIL_FROM = "GOVZAmastera <test@example.com>";
+process.env.PUBLIC_APP_URL = "https://govza.example.com";
 
 const payloads: Array<{ subject: string; html: string }> = [];
 globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
@@ -27,7 +27,7 @@ assert.equal(
 
 assert.match(payloads[0].html, /client@example\.com/);
 assert.doesNotMatch(JSON.stringify(payloads[0]), /passwordHash|secret-password/);
-assert.match(payloads[1].html, /https:\/\/995\.example\.com\/reset-password\?token=safe-token/);
+assert.match(payloads[1].html, /https:\/\/govza\.example\.com\/reset-password\?token=safe-token/);
 assert.doesNotMatch(JSON.stringify(payloads[1]), /passwordHash|secret-password/);
 
 console.log("Email payload checks passed");
