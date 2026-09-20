@@ -10,7 +10,7 @@ interface PasswordResetEmail {
 }
 
 const resendApiKey = process.env.RESEND_API_KEY;
-const emailFrom = process.env.EMAIL_FROM || "995 <onboarding@resend.dev>";
+const emailFrom = process.env.EMAIL_FROM || "GOVZAmastera <onboarding@resend.dev>";
 
 export const emailDeliveryConfigured = Boolean(resendApiKey);
 const publicAppUrl = (() => {
@@ -67,8 +67,8 @@ export async function sendWelcomeEmail(message: WelcomeEmail): Promise<boolean> 
   const login = escapeHtml(message.login);
   return deliverEmail(
     message.to,
-    "Аккаунт 995 создан",
-    `<p>Ваш аккаунт в сервисе 995 успешно создан.</p>
+    "Аккаунт GOVZAmastera создан",
+    `<p>Ваш аккаунт в сервисе GOVZAmastera успешно создан.</p>
      <p>Логин для входа: <strong>${login}</strong></p>
      <p>Пароль хранится только у вас и никогда не отправляется по почте.</p>`,
   );
@@ -83,7 +83,7 @@ export async function sendPasswordResetEmail(message: PasswordResetEmail): Promi
   const resetUrl = escapeHtml(new URL(message.resetPath, publicAppUrl).toString());
   return deliverEmail(
     message.to,
-    "Восстановление доступа к 995",
+    "Восстановление доступа к GOVZAmastera",
     `<p>Для аккаунта <strong>${login}</strong> запрошено восстановление доступа.</p>
      <p><a href="${resetUrl}">Задать новый пароль</a></p>
      <p>Если это были не вы, проигнорируйте письмо.</p>`,
