@@ -1,0 +1,20 @@
+name: Verify GOVZAmastera live preview
+
+on:
+  push:
+    branches:
+      - test/govzamastera-live
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check live HTML on new VPS
+        run: |
+          body="$(curl --fail --silent --show-error -H 'Host: govza.pro' http://194.67.92.216/)"
+          printf '%s' "$body" | grep -F 'GOVZAmastera'
+          printf '%s' "$body" | grep -F 'govza.pro'
+          echo "Live GOVZAmastera preview verified"
