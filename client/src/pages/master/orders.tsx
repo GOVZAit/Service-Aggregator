@@ -28,7 +28,6 @@ function RequestOpportunityCard({ request }: { request: ServiceRequestView }) {
   const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
   const queryClient = useQueryClient();
-  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   const responseMutation = useMutation({
@@ -143,6 +142,7 @@ export default function MasterOrdersPage() {
   const [section, setSection] = useState<Section>("market");
   const [activeTab, setActiveTab] = useState<OrderTab>("new");
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   const { data: requests = [], isLoading: requestsLoading, isError: requestsError } = useQuery<ServiceRequestView[]>({
     queryKey: ["/api/requests"],
