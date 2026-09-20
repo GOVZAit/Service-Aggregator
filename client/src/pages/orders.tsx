@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { ShoppingBag } from "lucide-react";
 import { OrderCard } from "@/components/order-card";
+import { ReviewModal } from "@/components/review-modal";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import type { Order, Master } from "@shared/schema";
 
 function OrderSkeleton() {
@@ -30,6 +31,7 @@ function OrderSkeleton() {
 
 export default function OrdersPage() {
   const { toast } = useToast();
+  const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
   const [, navigate] = useLocation();
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
@@ -40,12 +42,10 @@ export default function OrdersPage() {
     queryKey: ['/api/masters'],
   });
 
-  const handleLeaveReview = () => {
-    toast({
-      title: "Форма отзыва",
-      description: "Функция отзывов будет добавлена в ближайшее время",
-    });
-  };
+  const { data: reviewed = { orderIds: [] } } = useQuery<{ orderIds: number[] }>({
+    queryKey: ['/api/order-reviews/mine'],
+  });
+
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -70,7 +70,7 @@ export default function OrdersPage() {
                 key={order.id}
                 order={order}
                 master={masters.find((m) => m.id === order.masterId)}
-                onLeaveReview={handleLeaveReview}
+                onLeaveReview={order.status === "completed" && !reviewed.orderIds.includes(order.id) ? () => setReviewOrder(order) : undefined}
                 onOpenChat={() => navigate(`/orders/${order.id}/chat`)}
               />
             ))}
@@ -93,6 +93,7 @@ export default function OrdersPage() {
         )}
       </main>
 
+      {reviewOrder && <ReviewModal order={reviewOrder} onClose={() => setReviewOrder(null)} />}
       <BottomNavigation />
     </div>
   );
