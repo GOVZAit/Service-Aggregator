@@ -15,6 +15,7 @@ concurrency:
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
+    environment: production
     env:
       NEW_HOST: 194.67.92.216
     steps:
