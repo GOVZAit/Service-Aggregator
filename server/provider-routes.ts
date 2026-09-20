@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { storage } from "./storage";
 import {
   createManualProvider,
@@ -20,7 +20,7 @@ async function authenticatedUser(req: Express.Request) {
   return user;
 }
 
-function validImportKey(req: Express.Request) {
+function validImportKey(req: Request) {
   const configured = process.env.IMPORT_API_KEY;
   if (!configured) return false;
   const raw = req.headers["x-import-key"];
