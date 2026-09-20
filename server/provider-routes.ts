@@ -23,7 +23,8 @@ async function authenticatedUser(req: Express.Request) {
 function validImportKey(req: Express.Request) {
   const configured = process.env.IMPORT_API_KEY;
   if (!configured) return false;
-  const supplied = req.header("x-import-key");
+  const raw = req.headers["x-import-key"];
+  const supplied = Array.isArray(raw) ? raw[0] : raw;
   return Boolean(supplied && supplied === configured);
 }
 
