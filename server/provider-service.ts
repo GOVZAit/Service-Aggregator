@@ -5,6 +5,7 @@ import {
   providerActivity,
   providerProfiles,
   providerVisibility,
+  type ManualProviderCreateInput,
   type OrganizationKind,
   type ProviderImportInput,
   type ProviderProfileData,
@@ -201,6 +202,18 @@ export async function updatePersistentProvider(
   }).where(eq(providerProfiles.id, id)).returning();
 
   return updated ? providerRowToMaster(updated) : undefined;
+}
+
+export async function createManualProvider(input: ManualProviderCreateInput) {
+  const [created] = await db.insert(providerProfiles).values({
+    providerType: input.providerType,
+    organizationKind: input.providerType === "organization"
+      ? (input.organizationKind ?? "other")
+      : null,
+    dataSource: "manual",
+    manualOverrides: input.data,
+  }).returning();
+  return providerRowToMaster(created);
 }
 
 export async function importProvider(input: ProviderImportInput) {
