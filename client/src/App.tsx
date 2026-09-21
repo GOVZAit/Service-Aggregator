@@ -128,6 +128,31 @@ function Router() {
   );
 }
 
+
+function RouteEffects() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    const title =
+      location === "/" ? "GOVZA мастера — мастера рядом" :
+      location.startsWith("/doctors") ? "Врачи — GOVZA мастера" :
+      location.startsWith("/contacts") || location === "/city" ? "Контакты — GOVZA мастера" :
+      location.startsWith("/requests") ? "Мои заявки — GOVZA мастера" :
+      location.startsWith("/orders") ? "Мои заказы — GOVZA мастера" :
+      location.startsWith("/profile") ? "Профиль — GOVZA мастера" :
+      location.startsWith("/master") ? "Кабинет мастера — GOVZA мастера" :
+      location.startsWith("/organization") ? "Кабинет организации — GOVZA мастера" :
+      location.startsWith("/lost-found") ? "Потеряно / Найдено — GOVZA мастера" :
+      "GOVZA мастера";
+
+    document.title = title;
+  }, [location]);
+
+  return null;
+}
+
 function ThemeInitializer() {
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -149,6 +174,7 @@ function App() {
       <AuthProvider>
         <TooltipProvider>
           <ThemeInitializer />
+          <RouteEffects />
           <Toaster />
           <Router />
           <PwaInstallPrompt />
