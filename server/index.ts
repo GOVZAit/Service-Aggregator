@@ -88,6 +88,7 @@ app.use((req, res, next) => {
         !path.startsWith("/api/requests") &&
         !path.startsWith("/api/orders") &&
         !path.startsWith("/api/order-chats") &&
+        !path.startsWith("/api/direct-chats") &&
         !path.includes("/reviews") &&
         !path.endsWith("/review") &&
         !path.startsWith("/api/push") &&
