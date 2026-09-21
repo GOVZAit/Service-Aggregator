@@ -6,11 +6,12 @@ import MasterBottomNavigation from "@/components/master-bottom-navigation";
 import OrganizationBottomNavigation from "@/components/organization-bottom-navigation";
 import { AppBrandHeader } from "@/components/app-brand-header";
 import {
-  CheckCircle2, ChevronRight, ClipboardCheck, Clock, MapPin, Settings,
+  CheckCircle2, ChevronRight, ClipboardCheck, Clock, MapPin, MessageCircle, Settings,
   ToggleLeft, ToggleRight, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Master, Order } from "@shared/schema";
+import type { DirectConversationView } from "@shared/direct-chat-schema";
 
 function priceNumber(value: string) {
   return Number(value.replace(/\D/g, "")) || 0;
@@ -24,6 +25,7 @@ export default function MasterDashboardPage() {
   const isOrganization = user?.role === "organization";
   const ordersPath = isOrganization ? "/organization/orders" : "/master/orders";
   const profilePath = isOrganization ? "/organization/profile" : "/master/profile";
+  const messagesPath = isOrganization ? "/organization/messages" : "/master/messages";
 
   const { data: master } = useQuery<Master>({
     queryKey: [`/api/masters/${masterId}`],
@@ -32,6 +34,12 @@ export default function MasterDashboardPage() {
   const { data: orders = [], isLoading } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
     enabled: !!user,
+  });
+  const { data: conversations = [] } = useQuery<DirectConversationView[]>({
+    queryKey: ["/api/direct-chats"],
+    enabled: !!user,
+    refetchInterval: 15_000,
+    staleTime: 0,
   });
 
   const onlineMutation = useMutation({
@@ -155,6 +163,60 @@ export default function MasterDashboardPage() {
                       {order.address}
                     </p>
                   )}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="section-title">Сообщения клиентов</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Прямые обращения вне конкретного заказа</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(messagesPath)}
+              className="flex min-h-11 items-center gap-1 text-sm font-bold text-primary"
+            >
+              Все <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          {conversations.length === 0 ? (
+            <div className="premium-card py-10 text-center">
+              <MessageCircle className="mx-auto h-8 w-8 text-primary/60" />
+              <p className="mt-3 text-sm font-bold">Сообщений пока нет</p>
+              <p className="mt-1 text-xs text-muted-foreground">Клиенты могут написать из вашего публичного профиля.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 lg:grid-cols-2">
+              {conversations.slice(0, 4).map((conversation) => (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  onClick={() => navigate(`${messagesPath}/${conversation.id}`)}
+                  className="premium-card pressable w-full p-4 text-left"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <MessageCircle className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="truncate text-sm font-extrabold">{conversation.counterpartName}</h3>
+                        {conversation.unreadCount > 0 && (
+                          <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                            {conversation.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 truncate text-xs text-muted-foreground">
+                        {conversation.lastMessage || "Новый диалог"}
+                      </p>
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
