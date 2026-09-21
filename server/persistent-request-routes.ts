@@ -3,7 +3,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, pool } from "./db";
 import { storage } from "./storage";
 import { authUsers, insertRequestSchema, persistedOrders } from "@shared/schema";
-import { getEffectiveCategory } from "./category-service";
+import { getEffectiveCategories, getEffectiveCategory } from "./category-service";
 import { getProviderOwnerUserId, getProviderOwnerUserIds } from "./provider-service";
 import { sendPushToUser } from "./push-service";
 import {
@@ -221,6 +221,9 @@ export async function registerPersistentRequestRoutes(app: Express) {
 
     const parsed = insertRequestSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+    if (!getEffectiveCategories().some((category) => category.name === parsed.data.category)) {
+      return res.status(400).json({ message: "Выберите существующую категорию" });
+    }
     const [request] = await db.insert(serviceRequests).values({
       ...parsed.data,
       clientId: user.id,
