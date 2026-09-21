@@ -3,21 +3,20 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Heart, MapPin, Clock, BadgeCheck, Shield,
-  MessageCircle, Phone, PhoneOff, Send, Image as ImageIcon, Loader2, Star, Building2, Award,
+  MessageCircle, Phone, PhoneOff, Star, Building2, Award,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { BookingModal } from "@/components/booking-modal";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { executorTypeLabels } from "@shared/schema";
-import type { Master, ChatMessage } from "@shared/schema";
+import type { Master } from "@shared/schema";
 import type { MasterReviewSummary } from "@shared/order-review-schema";
 
 // ── Call availability logic ───────────────────────────────────────────────────
@@ -96,9 +95,8 @@ export default function MasterProfilePage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [showChat, setShowChat] = useState(false);
+  const { toast } = useToast();
   const [showBooking, setShowBooking] = useState(false);
-  const [newMessage, setNewMessage] = useState("");
   const [revealPhone, setRevealPhone] = useState(false);
 
   const masterId = Number(id);
@@ -148,32 +146,31 @@ export default function MasterProfilePage() {
     favoriteMutation.mutate(isFavorite);
   };
 
-  const { data: messages = [], isLoading: messagesLoading } = useQuery<ChatMessage[]>({
-    queryKey: [`/api/messages/${masterId}`],
-    enabled: showChat,
-  });
-
-  const sendMessageMutation = useMutation({
-    mutationFn: async (text: string) => {
-      return apiRequest('POST', `/api/messages/${masterId}`, { text, sender: 'user' });
+  const directChatMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/providers/${masterId}/direct-chat`);
+      return response.json() as Promise<{ id: number }>;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/messages/${masterId}`] });
-      setNewMessage("");
-      setTimeout(() => {
-        apiRequest('POST', `/api/messages/${masterId}`, {
-          text: 'Отлично! Могу приехать сегодня после 15:00. Вам удобно?',
-          sender: 'master'
-        }).then(() => {
-          queryClient.invalidateQueries({ queryKey: [`/api/messages/${masterId}`] });
-        });
-      }, 1500);
+    onSuccess: (conversation) => {
+      navigate(`/messages/${conversation.id}`);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Чат пока недоступен",
+        description: error.message.includes("409")
+          ? "Этот исполнитель ещё не подключил личный чат GOVZA."
+          : "Не удалось открыть диалог. Попробуйте ещё раз.",
+        variant: "destructive",
+      });
     },
   });
 
-  const sendMessage = () => {
-    if (!newMessage.trim()) return;
-    sendMessageMutation.mutate(newMessage);
+  const openDirectChat = () => {
+    if (user?.role !== "client") {
+      navigate("/auth");
+      return;
+    }
+    directChatMutation.mutate();
   };
 
   // ── Loading state ─────────────────────────────────────────────────────────
@@ -240,83 +237,6 @@ export default function MasterProfilePage() {
   const tabCount = (pricesVisible ? 1 : 0) + (portfolioVisible ? 1 : 0) + (reviewsVisible ? 1 : 0);
   const defaultTab = pricesVisible ? "services" : portfolioVisible ? "portfolio" : "reviews";
   const tabGridClass = tabCount === 3 ? "grid-cols-3" : tabCount === 2 ? "grid-cols-2" : "grid-cols-1";
-
-  // ── Chat view ─────────────────────────────────────────────────────────────
-  if (showChat) {
-    const allMessages = messages.length > 0 ? messages : [
-      { id: 1, text: 'Здравствуйте! Чем могу помочь?', sender: 'master' as const, time: '10:30' }
-    ];
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <header className="sticky top-0 z-40 bg-background/92 backdrop-blur-2xl border-b border-border/70 px-4 py-3 safe-area-pt">
-          <div className="flex items-center gap-3 max-w-lg mx-auto">
-            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Назад" onClick={() => setShowChat(false)} data-testid="button-back-from-chat">
-              <ArrowLeft className="w-6 h-6" />
-            </Button>
-            <Avatar className="w-10 h-10 rounded-xl">
-              <AvatarImage src={master.avatar} alt={master.name} className="object-cover" />
-              <AvatarFallback className="rounded-xl">{master.name.slice(0, 2)}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold truncate">{master.name}</p>
-              <p className="text-xs text-green-500 font-medium">онлайн</p>
-            </div>
-            {callState.status === 'active' && (
-              <a href={`tel:${callState.phone}`}>
-                <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Позвонить мастеру">
-                  <Phone className="w-5 h-5" />
-                </Button>
-              </a>
-            )}
-          </div>
-        </header>
-
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4 max-w-lg mx-auto">
-            {messagesLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              allMessages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                    msg.sender === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-md'
-                      : 'bg-muted rounded-bl-md'
-                  }`}>
-                    <p className="text-sm">{msg.text}</p>
-                    <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                      {msg.time}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </ScrollArea>
-
-        <div className="sticky bottom-0 bg-background border-t border-border p-4 safe-area-pb">
-          <div className="flex items-center gap-2 max-w-lg mx-auto">
-            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Прикрепить фото">
-              <ImageIcon className="w-5 h-5" />
-            </Button>
-            <Input
-              placeholder="Сообщение..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-              className="flex-1"
-              data-testid="input-chat-message"
-            />
-            <Button size="icon" className="w-11 h-11" aria-label="Отправить сообщение" onClick={sendMessage} disabled={sendMessageMutation.isPending} data-testid="button-send-message">
-              {sendMessageMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ── Profile view ──────────────────────────────────────────────────────────
   return (
@@ -620,7 +540,8 @@ export default function MasterProfilePage() {
             <Button
               variant="outline"
               className="flex-1 rounded-2xl"
-              onClick={() => setShowChat(true)}
+              onClick={openDirectChat}
+              disabled={directChatMutation.isPending}
               data-testid="button-chat"
             >
               <MessageCircle className="w-5 h-5 mr-2" />
