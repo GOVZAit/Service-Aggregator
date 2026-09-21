@@ -99,6 +99,7 @@ app.use((req, res, next) => {
         !path.startsWith("/api/push") &&
         !path.startsWith("/api/providers") &&
         !path.startsWith("/api/internal/providers") &&
+        !path.startsWith("/api/moderation") &&
         !path.startsWith("/api/admin") &&
         !path.startsWith("/api/internal/admin")
       ) {
