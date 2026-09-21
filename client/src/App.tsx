@@ -37,6 +37,7 @@ import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
 import { AppBootScreen } from "@/components/app-boot-screen";
+import { RouteErrorBoundary } from "@/components/route-error-boundary";
 
 // Executor-only routes (executor interface)
 const MASTER_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding"];
@@ -179,7 +180,9 @@ function App() {
           <ThemeInitializer />
           <RouteEffects />
           <Toaster />
-          <Router />
+          <RouteErrorBoundary>
+            <Router />
+          </RouteErrorBoundary>
           <PwaInstallPrompt />
           <PwaUpdatePrompt />
           <NetworkStatusBanner />
