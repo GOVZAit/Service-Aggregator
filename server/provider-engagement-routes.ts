@@ -133,7 +133,7 @@ async function invitationView(row: typeof requestInvitations.$inferSelect): Prom
     category: request.category,
     description: request.description,
     budget: request.budget,
-    location: row.status === "responded" ? request.location : "Адрес откроется после отклика",
+    location: request.selectedMasterId === row.masterId ? request.location : "Адрес откроется после выбора исполнителя",
     postedAt: relativeTime(request.createdAt),
     clientName: client?.name ?? "Клиент",
     createdAt: row.createdAt.toISOString(),
