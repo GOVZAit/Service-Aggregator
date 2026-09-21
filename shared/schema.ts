@@ -139,6 +139,8 @@ export interface Order {
 
   date: string;
 
+  scheduledAt?: string;
+
   price: string;
   /** Internal owner link for client-scoped order lists */
 
@@ -319,7 +321,7 @@ export const clientProfileSchema = z.object({
 export const createOrderSchema = z.object({
   masterId: z.number().int().positive(),
   service: z.string().min(1, 'Выберите услугу').max(120),
-  scheduledAt: z.string().min(1, 'Выберите дату и время').max(40),
+  scheduledAt: z.string().datetime({ offset: true, message: 'Некорректная дата и время' }),
   address: z.string().min(3, 'Укажите адрес').max(250),
   comment: z.string().max(1000).optional(),
 }).strict();
@@ -380,6 +382,7 @@ export const persistedOrders = pgTable("orders", {
   clientId: integer("client_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
   status: text("status").$type<OrderStatus>().notNull(),
   date: text("date").notNull(),
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
   price: text("price").notNull(),
   address: text("address"),
   comment: text("comment"),
