@@ -10,6 +10,7 @@ import {
 } from "./provider-service";
 import { authUsers } from "@shared/schema";
 import { providerProfiles, providerVisibility, providerProfilePatchSchema, manualProviderCreateSchema } from "@shared/provider-schema";
+import { categoryIdsExist } from "./category-service";
 import {
   adminAuditLog,
   adminVerificationPatchSchema,
@@ -233,6 +234,10 @@ export async function registerAdminRoutes(app: Express) {
     const parsed = manualProviderCreateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
 
+    if (!categoryIdsExist(parsed.data.data.categoryIds)) {
+      return res.status(400).json({ message: "Выбрана несуществующая категория" });
+    }
+
     const provider = await createManualProvider(parsed.data);
     await logAdminAction(admin.id, "provider.create", "provider", provider.id, {
       providerType: provider.providerType,
@@ -250,6 +255,9 @@ export async function registerAdminRoutes(app: Express) {
 
     const parsed = providerProfilePatchSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+    if (parsed.data.categoryIds && !categoryIdsExist(parsed.data.categoryIds)) {
+      return res.status(400).json({ message: "Выбрана несуществующая категория" });
+    }
 
     const provider = await updatePersistentProvider(id, parsed.data);
     if (!provider) return res.status(404).json({ message: "Профиль не найден" });
