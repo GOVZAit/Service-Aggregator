@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { orderMessages, sendOrderMessageSchema, type OrderMessageView } from "@shared/order-chat-schema";
 import { getProviderOwnerUserId } from "./provider-service";
 import { sendPushToUser } from "./push-service";
+import { broadcastRealtimeEvent } from "./realtime";
 
 async function ensureOrderChatTable() {
   await pool.query(`
@@ -159,6 +160,11 @@ export async function registerOrderChatRoutes(app: Express) {
     const recipientUserId = user.role === "client"
       ? await getProviderOwnerUserId(order.masterId)
       : order.clientId;
+    broadcastRealtimeEvent(
+      [user.id, recipientUserId],
+      { type: "order-message", orderId: order.id },
+    );
+
     if (recipientUserId) {
       void sendPushToUser(recipientUserId, {
         title: user.role === "client"
