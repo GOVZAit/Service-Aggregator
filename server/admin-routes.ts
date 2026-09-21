@@ -17,7 +17,7 @@ import {
   providerVerifications,
 } from "@shared/admin-schema";
 
-async function authenticatedAdmin(req: Express.Request, res: Response) {
+export async function authenticatedAdmin(req: Express.Request, res: Response) {
   if (!req.session.userId || req.session.sessionVersion === undefined) {
     res.status(401).json({ message: "Не авторизован" });
     return undefined;
@@ -53,7 +53,7 @@ function normalizeIdentifier(value: string) {
   return digits;
 }
 
-async function logAdminAction(
+export async function logAdminAction(
   adminUserId: number | null,
   action: string,
   entityType: string,
