@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import { registerPersistentRequestRoutes } from "./persistent-request-routes";
+import { ensureRequestTables, registerPersistentRequestRoutes } from "./persistent-request-routes";
 import { registerOrderChatRoutes } from "./order-chat-routes";
 import { registerOrderReviewRoutes } from "./order-review-routes";
 import { registerDirectChatRoutes } from "./direct-chat-routes";
@@ -129,6 +129,7 @@ app.use((req, res, next) => {
   await ensureDirectoryTables();
   await ensureCategoryTables();
   await ensureProviderImportTables();
+  await ensureRequestTables();
   await ensureProviderEngagementTables();
   await ensureVerificationWorkflowTables();
   await initializePushService();
