@@ -274,7 +274,7 @@ export async function registerAdminRoutes(app: Express) {
     const parsed = adminVisibilityPatchSchema.safeParse(req.body);
     if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ message: "Некорректный id" });
     if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
-    if (!(await getProviderProfileRow(id))) return res.status(404).json({ message: "Профиль не найден" });
+    if (!(await storage.getMasterById(id))) return res.status(404).json({ message: "Профиль не найден" });
 
     await setProviderVisibility(id, parsed.data.visible, "manual");
     await logAdminAction(admin.id, parsed.data.visible ? "provider.show" : "provider.hide", "provider", id);
