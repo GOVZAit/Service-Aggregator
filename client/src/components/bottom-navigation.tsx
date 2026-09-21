@@ -28,7 +28,7 @@ export function BottomNavigation() {
     <nav
       className={cn(
         // Mobile: full-width bottom bar
-        "fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border safe-area-pb shadow-[0_-10px_30px_hsl(var(--foreground)/0.05)]",
+        "fixed bottom-0 left-0 right-0 z-50 border-t border-border/70 bg-background/92 safe-area-pb shadow-[0_-18px_50px_-34px_hsl(var(--foreground)/0.34)] backdrop-blur-2xl",
         // Desktop: floating centered dock so sections stay reachable on wide screens
         "lg:bottom-5 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-[min(92vw,760px)] lg:rounded-full lg:border lg:border-border/80 lg:shadow-xl"
       )}
@@ -54,9 +54,9 @@ export function BottomNavigation() {
               data-testid={`nav-${tab.id}`}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "pressable min-w-[70px] min-h-[52px] shrink-0 flex flex-col items-center justify-center gap-1 px-2 py-1.5 rounded-xl transition-colors lg:flex-row lg:gap-2 lg:px-4 lg:rounded-full",
+                "pressable min-w-[70px] min-h-[54px] shrink-0 flex flex-col items-center justify-center gap-1 px-2 py-1.5 rounded-2xl transition-all lg:flex-row lg:gap-2 lg:px-4 lg:rounded-full",
                 isActive
-                  ? "text-primary lg:bg-primary/10"
+                  ? "text-primary bg-primary/[0.07] lg:bg-primary/10"
                   : "text-muted-foreground lg:hover:bg-muted"
               )}
             >
@@ -73,10 +73,10 @@ export function BottomNavigation() {
           data-testid="nav-profile"
           aria-current={location.startsWith("/profile") ? "page" : undefined}
           className={cn(
-            "pressable relative z-10 my-1.5 mr-2 flex min-h-[52px] min-w-[70px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl bg-background/95 px-2 py-1.5 transition-colors lg:mr-3 lg:flex-row lg:gap-2 lg:rounded-full lg:px-4",
+            "pressable relative z-10 my-1.5 mr-2 flex min-h-[54px] min-w-[70px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl bg-background/95 px-2 py-1.5 transition-all lg:mr-3 lg:flex-row lg:gap-2 lg:rounded-full lg:px-4",
             "before:absolute before:-left-1 before:top-2 before:bottom-2 before:border-l before:border-border/70",
             location.startsWith("/profile")
-              ? "text-primary lg:bg-primary/10"
+              ? "text-primary bg-primary/[0.07] lg:bg-primary/10"
               : "text-muted-foreground lg:hover:bg-muted"
           )}
         >
