@@ -1,10 +1,11 @@
 import { useLocation, Link } from "wouter";
-import { Home, ClipboardList, Building2 } from "lucide-react";
+import { Home, ClipboardList, Building2, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/organization", label: "Главная", icon: Home },
   { href: "/organization/orders", label: "Заявки", icon: ClipboardList },
+  { href: "/organization/messages", label: "Сообщения", icon: MessageCircle },
   { href: "/organization/profile", label: "Организация", icon: Building2 },
 ];
 
