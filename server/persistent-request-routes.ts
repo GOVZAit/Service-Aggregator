@@ -6,6 +6,7 @@ import { authUsers, insertRequestSchema, persistedOrders } from "@shared/schema"
 import { getEffectiveCategories, getEffectiveCategory } from "./category-service";
 import { getProviderOwnerUserId, getProviderOwnerUserIds } from "./provider-service";
 import { sendPushToUser } from "./push-service";
+import { requestInvitations } from "@shared/provider-engagement-schema";
 import {
   createRequestResponseSchema,
   requestResponses,
@@ -20,7 +21,7 @@ class RequestApiError extends Error {
   }
 }
 
-async function ensureRequestTables() {
+export async function ensureRequestTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS service_requests (
       id serial PRIMARY KEY,
@@ -294,6 +295,14 @@ export async function registerPersistentRequestRoutes(app: Express) {
         price: parsed.data.price,
         message: parsed.data.message,
       }).returning();
+      await db.update(requestInvitations).set({
+        status: "responded",
+        respondedAt: new Date(),
+      }).where(and(
+        eq(requestInvitations.requestId, requestId),
+        eq(requestInvitations.masterId, user.masterId),
+        eq(requestInvitations.status, "pending"),
+      ));
       void sendPushToUser(request.clientId, {
         title: "Новый отклик на заявку",
         body: `${master.name}: ${parsed.data.price}`,
@@ -343,6 +352,14 @@ export async function registerPersistentRequestRoutes(app: Express) {
           .where(eq(requestResponses.requestId, requestId));
         await tx.update(requestResponses).set({ status: "selected" })
           .where(eq(requestResponses.id, response.id));
+
+        await tx.update(requestInvitations).set({
+          status: "declined",
+          respondedAt: new Date(),
+        }).where(and(
+          eq(requestInvitations.requestId, requestId),
+          eq(requestInvitations.status, "pending"),
+        ));
 
         const [createdOrder] = await tx.insert(persistedOrders).values({
           title: request.title,

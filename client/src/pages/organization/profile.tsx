@@ -6,6 +6,7 @@ import OrganizationBottomNavigation from "@/components/organization-bottom-navig
 import { AppBrandHeader } from "@/components/app-brand-header";
 import { PushNotificationCard } from "@/components/push-notification-card";
 import { ProviderVerificationCard } from "@/components/provider-verification-card";
+import { ProviderAvailabilityCard } from "@/components/provider-availability-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -179,6 +180,7 @@ export default function OrganizationProfilePage() {
           </div>
         </section>
 
+        <ProviderAvailabilityCard defaultFrom={provider.workingHours.from} defaultTo={provider.workingHours.to} />
         <PushNotificationCard />
         <ProviderVerificationCard />
 
