@@ -103,7 +103,14 @@ self.addEventListener("push", (event) => {
     },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) =>
+        Promise.all(clients.map((client) => client.postMessage({ type: "govza:push-received" })))
+      ),
+    ])
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {

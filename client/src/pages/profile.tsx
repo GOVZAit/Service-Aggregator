@@ -1,5 +1,5 @@
 import {
-  Bell, Check, ChevronRight, FileText, HelpCircle, LogIn, LogOut,
+  Check, ChevronRight, FileText, HelpCircle, LogIn, LogOut,
   Moon, Pencil, Save, Sun, UserPlus, X, Download, UserRound, Mail,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -30,9 +30,6 @@ export default function ProfilePage() {
   const [tab, setTab] = useState<CabinetTab>("account");
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
-  const [notifications, setNotifications] = useState(
-    () => localStorage.getItem("client-notifications") !== "off",
-  );
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const { user, isLoading: authLoading, logout, updateProfile } = useAuth();
@@ -51,12 +48,6 @@ export default function ProfilePage() {
     setIsDark(dark);
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("theme", dark ? "dark" : "light");
-  };
-
-  const setNotificationPreference = (enabled: boolean) => {
-    setNotifications(enabled);
-    localStorage.setItem("client-notifications", enabled ? "on" : "off");
-    toast({ title: enabled ? "Уведомления включены" : "Уведомления выключены" });
   };
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
@@ -291,17 +282,7 @@ export default function ProfilePage() {
             </section>
 
             <Card className="overflow-hidden rounded-[1.5rem] border-border/70 shadow-sm">
-              <button className="flex w-full items-center gap-3 p-4 text-left" onClick={() => setNotificationPreference(!notifications)}>
-                <Bell className="h-5 w-5 text-primary" />
-                <div className="flex-1">
-                  <p className="font-bold">Внутренние уведомления</p>
-                  <p className="text-xs text-muted-foreground">{notifications ? "Включены" : "Выключены"}</p>
-                </div>
-                <div className={cn("relative h-6 w-11 rounded-full p-1 transition-colors", notifications ? "bg-primary" : "bg-muted")}>
-                  <div className={cn("h-4 w-4 rounded-full bg-white transition-transform", notifications && "translate-x-5")} />
-                </div>
-              </button>
-              <button className="flex w-full items-center gap-3 border-t border-border/70 p-4 text-left" onClick={toggleTheme}>
+              <button className="flex w-full items-center gap-3 p-4 text-left" onClick={toggleTheme}>
                 {isDark ? <Sun className="h-5 w-5 text-primary" /> : <Moon className="h-5 w-5 text-primary" />}
                 <div className="flex-1">
                   <p className="font-bold">Оформление</p>
