@@ -83,7 +83,8 @@ export async function registerDirectoryRoutes(app: Express) {
     const patch = doctorPatchSchema.safeParse(req.body);
     if (!patch.success) return res.status(400).json({ message: patch.error.issues[0].message });
 
-    const full = doctorDirectoryPayloadSchema.safeParse({ ...existing, ...patch.data });
+    const { id: _existingId, ...existingPayload } = existing;
+    const full = doctorDirectoryPayloadSchema.safeParse({ ...existingPayload, ...patch.data });
     if (!full.success) return res.status(400).json({ message: full.error.issues[0].message });
 
     await upsertDirectoryRecord("doctor", id, patch.data);
@@ -139,7 +140,8 @@ export async function registerDirectoryRoutes(app: Express) {
     const patch = cityServicePatchSchema.safeParse(req.body);
     if (!patch.success) return res.status(400).json({ message: patch.error.issues[0].message });
 
-    const full = cityServiceDirectoryPayloadSchema.safeParse({ ...existing, ...patch.data });
+    const { id: _existingId, ...existingPayload } = existing;
+    const full = cityServiceDirectoryPayloadSchema.safeParse({ ...existingPayload, ...patch.data });
     if (!full.success) return res.status(400).json({ message: full.error.issues[0].message });
 
     await upsertDirectoryRecord("city_service", id, patch.data);
