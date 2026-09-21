@@ -1,6 +1,7 @@
 import { useLocation, Link } from "wouter";
 import { Home, ClipboardList, Building2, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUnreadCounts } from "@/hooks/use-unread-counts";
 
 const tabs = [
   { href: "/organization", label: "Главная", icon: Home },
@@ -11,6 +12,7 @@ const tabs = [
 
 export default function OrganizationBottomNavigation() {
   const [location] = useLocation();
+  const { directCount, orderCount } = useUnreadCounts();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/70 bg-background/92 backdrop-blur-2xl safe-area-bottom shadow-[0_-18px_50px_-34px_hsl(var(--foreground)/0.34)] lg:bottom-5 lg:left-1/2 lg:right-auto lg:w-auto lg:-translate-x-1/2 lg:rounded-full lg:border">
@@ -26,7 +28,14 @@ export default function OrganizationBottomNavigation() {
                 active ? "text-primary bg-primary/[0.07]" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className={cn("w-6 h-6", active && "scale-110")} />
+              <span className="relative">
+                <Icon className={cn("w-6 h-6", active && "scale-110")} />
+                {((href === "/organization/messages" ? directCount : href === "/organization/orders" ? orderCount : 0) > 0) && (
+                  <span className="absolute -right-2.5 -top-2 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 py-0.5 text-[9px] font-bold leading-none text-primary-foreground">
+                    {(href === "/organization/messages" ? directCount : orderCount) > 99 ? "99+" : (href === "/organization/messages" ? directCount : orderCount)}
+                  </span>
+                )}
+              </span>
               <span className={cn("text-[10px] font-medium", active && "font-semibold")}>{label}</span>
             </Link>
           );
