@@ -1,18 +1,25 @@
 {
   "id": "/",
-  "name": "GOVZA — услуги и организации рядом",
-  "short_name": "GOVZA",
-  "description": "Мастера, организации, услуги, заявки и городские контакты в одном приложении.",
+  "name": "GOVZA мастера",
+  "short_name": "GOVZA мастера",
+  "description": "Мастера, организации, врачи и городские сервисы рядом.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
   "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#007AFF",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0B8FB6",
   "lang": "ru",
   "dir": "ltr",
-  "categories": ["business", "lifestyle", "productivity"],
+  "categories": [
+    "business",
+    "lifestyle",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -38,19 +45,34 @@
       "name": "Найти исполнителя",
       "short_name": "Поиск",
       "url": "/",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Мои заявки",
       "short_name": "Заявки",
       "url": "/requests",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Мои заказы",
       "short_name": "Заказы",
       "url": "/orders",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
