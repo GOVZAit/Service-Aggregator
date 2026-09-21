@@ -6,6 +6,7 @@ import { authUsers, insertRequestSchema, persistedOrders } from "@shared/schema"
 import { getEffectiveCategories, getEffectiveCategory } from "./category-service";
 import { getProviderOwnerUserId, getProviderOwnerUserIds } from "./provider-service";
 import { sendPushToUser } from "./push-service";
+import { requestInvitations } from "@shared/provider-engagement-schema";
 import {
   createRequestResponseSchema,
   requestResponses,
@@ -294,6 +295,14 @@ export async function registerPersistentRequestRoutes(app: Express) {
         price: parsed.data.price,
         message: parsed.data.message,
       }).returning();
+      await db.update(requestInvitations).set({
+        status: "responded",
+        respondedAt: new Date(),
+      }).where(and(
+        eq(requestInvitations.requestId, requestId),
+        eq(requestInvitations.masterId, user.masterId),
+        eq(requestInvitations.status, "pending"),
+      ));
       void sendPushToUser(request.clientId, {
         title: "Новый отклик на заявку",
         body: `${master.name}: ${parsed.data.price}`,
