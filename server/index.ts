@@ -15,6 +15,7 @@ import { registerCategoryRoutes } from "./category-routes";
 import { ensureProviderImportTables, startProviderImportScheduler } from "./provider-importer";
 import { registerProviderImportRoutes } from "./provider-import-routes";
 import { ensureProviderEngagementTables, registerProviderEngagementRoutes } from "./provider-engagement-routes";
+import { registerUrgentRoutes } from "./urgent-routes";
 import { ensureVerificationWorkflowTables } from "./verification-service";
 import { registerVerificationRoutes } from "./verification-routes";
 import { ensureProviderTables } from "./provider-service";
@@ -107,7 +108,8 @@ app.use((req, res, next) => {
         !path.startsWith("/api/providers") &&
         !path.startsWith("/api/internal/providers") &&
         !path.startsWith("/api/admin") &&
-        !path.startsWith("/api/internal/admin")
+        !path.startsWith("/api/internal/admin") &&
+        !path.startsWith("/api/urgent")
       ) {
         // Truncate to keep uploaded document images / PII out of the logs
         const body = JSON.stringify(capturedJsonResponse);
@@ -145,6 +147,7 @@ app.use((req, res, next) => {
   await registerCategoryRoutes(app);
   await registerProviderImportRoutes(app);
   await registerProviderEngagementRoutes(app);
+  await registerUrgentRoutes(app);
   await registerVerificationRoutes(app);
   await registerRoutes(httpServer, app);
   startProviderLifecycleScheduler();

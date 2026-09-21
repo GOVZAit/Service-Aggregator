@@ -17,6 +17,7 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
 import FilterSheet, { FilterPanel, applyMasterFilters, type FilterState, defaultFilterState } from "@/components/filter-sheet";
 import { BroadcastModal } from "@/components/broadcast-modal";
+import { UrgentNowModal } from "@/components/urgent-now-modal";
 import { WelcomeOnboarding, useWelcomeOnboarding } from "@/components/welcome-onboarding";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
@@ -70,6 +71,7 @@ export default function HomePage() {
   const [showFilter, setShowFilter] = useState(false);
   const [filterState, setFilterState] = useState<FilterState>(defaultFilterState);
   const [showBroadcast, setShowBroadcast] = useState(false);
+  const [showUrgent, setShowUrgent] = useState(false);
   const [broadcastCategory, setBroadcastCategory] = useState<string | undefined>();
   const [city, setCity] = useState<string>(DEFAULT_CITY);
   const [showLocation, setShowLocation] = useState(false);
@@ -297,14 +299,24 @@ export default function HomePage() {
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => { setBroadcastCategory(selectedCategoryName ?? undefined); setShowBroadcast(true); }}
-                className="accent-gradient relative z-10 mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white shadow-md sm:w-auto sm:min-w-44"
-                data-testid="button-broadcast"
-              >
-                Создать заявку <ChevronRight className="h-4 w-4" />
-              </button>
+              <div className="relative z-10 mt-4 grid gap-2 sm:flex">
+                <button
+                  type="button"
+                  onClick={() => setShowUrgent(true)}
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-orange-600 px-4 text-sm font-extrabold text-white shadow-md sm:w-auto sm:min-w-44"
+                  data-testid="button-urgent-now"
+                >
+                  <Zap className="h-4 w-4 fill-current" /> Нужен сейчас
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setBroadcastCategory(selectedCategoryName ?? undefined); setShowBroadcast(true); }}
+                  className="accent-gradient flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white shadow-md sm:w-auto sm:min-w-44"
+                  data-testid="button-broadcast"
+                >
+                  Обычная заявка <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </section>
 
             {!selectedCategory && !searchQuery && (
@@ -442,6 +454,13 @@ export default function HomePage() {
         <BroadcastModal
           initialCategory={broadcastCategory}
           onClose={() => { setShowBroadcast(false); setBroadcastCategory(undefined); }}
+        />
+      )}
+
+      {showUrgent && (
+        <UrgentNowModal
+          initialCategoryId={selectedCategory}
+          onClose={() => setShowUrgent(false)}
         />
       )}
 
