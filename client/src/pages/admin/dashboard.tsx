@@ -611,6 +611,139 @@ export default function AdminDashboardPage() {
         </section>
 
         <section className="premium-card p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">Справочники</div>
+              <h2 className="mt-1 text-lg font-extrabold">Врачи и городские контакты</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Seed-записи остаются базой, ручные изменения и скрытия сохраняются в PostgreSQL.
+              </p>
+            </div>
+            <Button variant="outline" onClick={startDirectoryCreate}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Добавить запись
+            </Button>
+          </div>
+
+          <div className="mt-4 flex w-fit rounded-2xl bg-muted/70 p-1">
+            <button
+              type="button"
+              className={`rounded-xl px-4 py-2 text-sm font-bold transition ${directoryTab === "doctors" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+              onClick={() => {
+                setDirectoryTab("doctors");
+                setDirectorySelectedId(null);
+                setDirectoryCreating(false);
+                setDirectoryDraft("");
+              }}
+            >
+              Врачи · {doctors.length}
+            </button>
+            <button
+              type="button"
+              className={`rounded-xl px-4 py-2 text-sm font-bold transition ${directoryTab === "city-services" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+              onClick={() => {
+                setDirectoryTab("city-services");
+                setDirectorySelectedId(null);
+                setDirectoryCreating(false);
+                setDirectoryDraft("");
+              }}
+            >
+              Службы и контакты · {cityServices.length}
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(380px,.9fr)]">
+            <div className="max-h-[620px] space-y-2 overflow-auto pr-1">
+              {directoryItems.map((item) => {
+                const record = item.record as Doctor | CityOrganization;
+                const isDoctor = directoryTab === "doctors";
+                const meta = isDoctor
+                  ? (record as Doctor).specialty
+                  : `${(record as CityOrganization).subcategory} · ${(record as CityOrganization).categoryId}`;
+                return (
+                  <div
+                    key={item.id}
+                    className={`rounded-2xl border p-3 transition ${directorySelectedId === item.id ? "border-primary/40 bg-primary/[.035]" : "border-border/70"}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <button
+                        type="button"
+                        className="min-w-0 flex-1 text-left"
+                        onClick={() => selectDirectoryItem(item)}
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate font-bold">{record.name}</span>
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
+                            {item.origin === "seed" ? "seed" : item.origin === "override" ? "override" : "manual"}
+                          </span>
+                          {!item.visible && (
+                            <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold uppercase text-destructive">
+                              скрыто
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          #{item.id} · {meta}
+                        </div>
+                      </button>
+                      <Button
+                        size="sm"
+                        variant={item.visible ? "ghost" : "outline"}
+                        disabled={directoryWorking}
+                        onClick={() => void toggleDirectoryVisibility(item)}
+                      >
+                        {item.visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="rounded-2xl border border-border/70 bg-muted/[.18] p-4">
+              {directoryDraft ? (
+                <>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-extrabold uppercase tracking-[.12em] text-primary">
+                        {directoryCreating ? "Новая запись" : `Редактирование #${directorySelectedId}`}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Поля валидируются на сервере перед сохранением.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={directoryWorking}
+                      onClick={() => void saveDirectory()}
+                    >
+                      <Save className="mr-1.5 h-4 w-4" />
+                      Сохранить
+                    </Button>
+                  </div>
+                  <textarea
+                    className="mt-4 min-h-[470px] w-full resize-y rounded-xl border border-border bg-background p-3 font-mono text-xs leading-relaxed outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+                    value={directoryDraft}
+                    onChange={(event) => setDirectoryDraft(event.target.value)}
+                    spellCheck={false}
+                  />
+                </>
+              ) : (
+                <div className="grid min-h-[360px] place-items-center text-center">
+                  <div>
+                    <Database className="mx-auto h-8 w-8 text-muted-foreground/50" />
+                    <p className="mt-3 text-sm font-semibold">Выберите запись</p>
+                    <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted-foreground">
+                      Здесь можно изменить все поля записи или создать новую. Изменения сразу становятся persistent override.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="premium-card p-5">
           <h2 className="text-lg font-extrabold">Журнал действий</h2>
           <div className="mt-4 divide-y divide-border/70">
             {audit.map((entry) => (
