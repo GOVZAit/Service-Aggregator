@@ -38,6 +38,7 @@ const OrganizationProfilePage = lazy(() => import("@/pages/organization/profile"
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
+import { RealtimeSync } from "@/components/realtime-sync";
 import { AppBootScreen } from "@/components/app-boot-screen";
 import { RouteErrorBoundary } from "@/components/route-error-boundary";
 
@@ -193,6 +194,7 @@ function App() {
             <Router />
           </RouteErrorBoundary>
           <PwaInstallPrompt />
+          <RealtimeSync />
           <PwaUpdatePrompt />
           <NetworkStatusBanner />
         </TooltipProvider>
