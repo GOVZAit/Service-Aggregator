@@ -223,7 +223,7 @@ function isPublicIp(address: string) {
 }
 
 async function resolvePublicAddress(url: URL) {
-  const hostname = url.hostname.toLocaleLowerCase("en-US");
+  const hostname = url.hostname.replace(/^\[|\]$/g, "").toLocaleLowerCase("en-US");
   if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname.endsWith(".local") || hostname.endsWith(".internal")) {
     throw new Error("Import source hostname is not public");
   }
@@ -267,6 +267,10 @@ async function requestText(
 ): Promise<string> {
   if (targetUrl.protocol !== "https:") {
     throw new Error("Import source and redirects must use HTTPS");
+  }
+
+  if (targetUrl.username || targetUrl.password) {
+    throw new Error("Credentials in import source redirects are not allowed");
   }
 
   const resolved = await resolvePublicAddress(targetUrl);
