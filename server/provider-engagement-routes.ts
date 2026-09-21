@@ -277,7 +277,16 @@ export async function registerProviderEngagementRoutes(app: Express) {
           eq(requestInvitations.masterId, masterId),
         ))
       : [];
+    const existingResponses = requestIds.length > 0
+      ? await db.select({ requestId: requestResponses.requestId }).from(requestResponses).where(and(
+          inArray(requestResponses.requestId, requestIds),
+          eq(requestResponses.masterId, masterId),
+        ))
+      : [];
     const existingByRequest = new Map(existing.map((invitation) => [invitation.requestId, invitation.status]));
+    existingResponses.forEach((response) => {
+      if (!existingByRequest.has(response.requestId)) existingByRequest.set(response.requestId, "responded");
+    });
 
     res.json(compatible.map((request) => ({
       id: request.id,
@@ -409,6 +418,13 @@ export async function registerProviderEngagementRoutes(app: Express) {
       status: "declined",
       respondedAt: new Date(),
     }).where(eq(requestInvitations.id, invitation.id));
+
+    void sendPushToUser(invitation.clientId, {
+      title: "Исполнитель ответил на приглашение",
+      body: "Исполнитель пока не готов взять эту заявку.",
+      url: "/requests",
+      tag: `request-invitation-declined-${invitation.id}`,
+    });
 
     res.json({ ok: true });
   });
