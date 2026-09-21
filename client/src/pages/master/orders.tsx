@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import type { Order, OrderStatus } from "@shared/schema";
 import type { ServiceRequestView } from "@shared/request-schema";
+import type { OrderReviewView } from "@shared/order-review-schema";
 
 type OrderTab = "new" | "active" | "done";
 type Section = "market" | "orders";
@@ -138,6 +139,107 @@ function RequestOpportunityCard({ request }: { request: ServiceRequestView }) {
         </div>
       )}
     </article>
+  );
+}
+
+function ReviewReplyPanel({ orderId }: { orderId: number }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const { data: review, isLoading } = useQuery<OrderReviewView | null>({
+    queryKey: ["/api/orders", orderId, "review"],
+  });
+
+  const replyMutation = useMutation({
+    mutationFn: async () => {
+      if (!review) throw new Error("Отзыв не найден");
+      const response = await apiRequest("PATCH", `/api/reviews/${review.id}/reply`, { text: draft.trim() });
+      return response.json() as Promise<OrderReviewView>;
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["/api/orders", orderId, "review"], updated);
+      void queryClient.invalidateQueries({ queryKey: [`/api/masters/${updated.masterId}/reviews`] });
+      setEditing(false);
+      setDraft("");
+      toast({ title: "Ответ опубликован" });
+    },
+    onError: () => {
+      toast({ title: "Не удалось сохранить ответ", variant: "destructive" });
+    },
+  });
+
+  if (isLoading) {
+    return <div className="h-20 animate-pulse rounded-2xl bg-muted/60" />;
+  }
+
+  if (!review) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border px-3 py-3 text-xs text-muted-foreground">
+        Клиент пока не оставил отзыв по этому заказу.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-border/70 bg-muted/35 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-bold">Отзыв клиента · {review.rating}/5</p>
+        <span className="text-[10px] text-muted-foreground">Проверенный заказ</span>
+      </div>
+      {review.comment && <p className="mt-2 text-sm leading-relaxed">«{review.comment}»</p>}
+
+      {review.providerReply && !editing ? (
+        <div className="mt-3 rounded-xl bg-background p-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-primary">Ваш ответ</p>
+          <p className="mt-1 text-sm leading-relaxed">{review.providerReply}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(review.providerReply ?? "");
+              setEditing(true);
+            }}
+            className="mt-2 text-xs font-bold text-primary"
+          >
+            Изменить ответ
+          </button>
+        </div>
+      ) : editing || !review.providerReply ? (
+        <div className="mt-3 space-y-2">
+          <textarea
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder="Поблагодарите клиента или поясните детали работы…"
+            rows={3}
+            maxLength={2000}
+            className="w-full resize-none rounded-2xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+          <div className="flex gap-2">
+            {editing && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setDraft("");
+                }}
+                className="h-10 flex-1 rounded-xl border border-border text-xs font-bold"
+              >
+                Отмена
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={draft.trim().length < 2 || replyMutation.isPending}
+              onClick={() => replyMutation.mutate()}
+              className="h-10 flex-[2] rounded-xl bg-primary px-3 text-xs font-bold text-white disabled:opacity-40"
+            >
+              {replyMutation.isPending ? "Сохраняем…" : review.providerReply ? "Сохранить ответ" : "Ответить на отзыв"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -305,7 +407,7 @@ export default function MasterOrdersPage() {
                     <CheckCircle2 className="mr-1 inline h-4 w-4" />Завершить заказ
                   </button>
                 )}
-                {order.status === "completed" && <p className="flex items-center gap-1 text-sm font-medium text-green-600"><CheckCircle2 className="h-4 w-4" />Заказ выполнен</p>}
+                {order.status === "completed" && <><p className="flex items-center gap-1 text-sm font-medium text-green-600"><CheckCircle2 className="h-4 w-4" />Заказ выполнен</p><ReviewReplyPanel orderId={order.id} /></>}
                 {order.status === "rejected" && <p className="text-sm text-muted-foreground">Заказ отклонён</p>}
               </article>
             ))}

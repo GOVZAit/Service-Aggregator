@@ -13,6 +13,8 @@ export const orderReviews = pgTable("order_reviews", {
   priceMatch: integer("price_match").notNull(),
   courtesy: integer("courtesy").notNull(),
   comment: text("comment"),
+  providerReply: text("provider_reply"),
+  providerReplyAt: timestamp("provider_reply_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("order_reviews_order_unique").on(table.orderId),
@@ -33,6 +35,12 @@ export const createOrderReviewSchema = z.object({
 
 export type CreateOrderReviewInput = z.infer<typeof createOrderReviewSchema>;
 
+export const providerReviewReplySchema = z.object({
+  text: z.string().trim().min(2, "Ответ слишком короткий").max(2000, "Ответ слишком длинный"),
+}).strict();
+
+export type ProviderReviewReplyInput = z.infer<typeof providerReviewReplySchema>;
+
 export interface OrderReviewView {
   id: number;
   orderId: number;
@@ -45,6 +53,8 @@ export interface OrderReviewView {
   priceMatch: number;
   courtesy: number;
   comment: string;
+  providerReply?: string;
+  providerReplyAt?: string;
   createdAt: string;
   verifiedOrder: true;
 }
