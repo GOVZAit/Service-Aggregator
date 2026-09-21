@@ -9,6 +9,12 @@ import {
   updatePersistentProvider,
 } from "./provider-service";
 import { authUsers } from "@shared/schema";
+import { orderReviews } from "@shared/order-review-schema";
+import {
+  adminReportResolutionSchema,
+  adminReviewModerationSchema,
+  moderationReports,
+} from "@shared/moderation-schema";
 import { providerProfiles, providerVisibility, providerProfilePatchSchema, manualProviderCreateSchema } from "@shared/provider-schema";
 import {
   adminAuditLog,
@@ -308,6 +314,177 @@ export async function registerAdminRoutes(app: Express) {
     });
 
     res.json({ status: parsed.data.status, note: parsed.data.note || null });
+  });
+
+  app.get("/api/admin/moderation/reviews", async (req, res) => {
+    const admin = await authenticatedAdmin(req, res);
+    if (!admin) return;
+
+    const status = typeof req.query.status === "string" ? req.query.status : "all";
+    const rows = await db.select().from(orderReviews).orderBy(desc(orderReviews.createdAt));
+    const filtered = status === "all"
+      ? rows
+      : rows.filter((row) => row.moderationStatus === status);
+
+    const result = await Promise.all(filtered.map(async (row) => {
+      const [client, provider, order] = await Promise.all([
+        storage.getUserById(row.clientId),
+        storage.getMasterById(row.masterId),
+        storage.getOrderById(row.orderId),
+      ]);
+      return {
+        id: row.id,
+        orderId: row.orderId,
+        masterId: row.masterId,
+        providerName: provider?.name ?? "Исполнитель",
+        clientName: client?.name ?? "Клиент",
+        service: order?.title ?? "Заказ",
+        rating: row.rating,
+        comment: row.comment ?? "",
+        providerReply: row.providerReply ?? null,
+        moderationStatus: row.moderationStatus,
+        moderationNote: row.moderationNote ?? null,
+        moderatedAt: row.moderatedAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      };
+    }));
+
+    res.json(result);
+  });
+
+  app.patch("/api/admin/moderation/reviews/:id", async (req, res) => {
+    const admin = await authenticatedAdmin(req, res);
+    if (!admin) return;
+
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ message: "Некорректный отзыв" });
+    }
+
+    const parsed = adminReviewModerationSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+
+    const [existing] = await db.select().from(orderReviews)
+      .where(eq(orderReviews.id, id))
+      .limit(1);
+    if (!existing) return res.status(404).json({ message: "Отзыв не найден" });
+
+    const [updated] = await db.update(orderReviews)
+      .set({
+        moderationStatus: parsed.data.status,
+        moderationNote: parsed.data.note || null,
+        moderatedBy: admin.id,
+        moderatedAt: new Date(),
+      })
+      .where(eq(orderReviews.id, id))
+      .returning();
+
+    await logAdminAction(
+      admin.id,
+      parsed.data.status === "hidden" ? "review.hide" : "review.show",
+      "review",
+      id,
+      { note: parsed.data.note || "" },
+    );
+
+    res.json({
+      id: updated.id,
+      moderationStatus: updated.moderationStatus,
+      moderationNote: updated.moderationNote,
+      moderatedAt: updated.moderatedAt?.toISOString() ?? null,
+    });
+  });
+
+  app.get("/api/admin/moderation/reports", async (req, res) => {
+    const admin = await authenticatedAdmin(req, res);
+    if (!admin) return;
+
+    const status = typeof req.query.status === "string" ? req.query.status : "open";
+    const targetType = typeof req.query.targetType === "string" ? req.query.targetType : "all";
+
+    const rows = await db.select().from(moderationReports)
+      .orderBy(desc(moderationReports.createdAt));
+    const filtered = rows.filter((row) => {
+      if (status !== "all" && row.status !== status) return false;
+      if (targetType !== "all" && row.targetType !== targetType) return false;
+      return true;
+    });
+
+    const result = await Promise.all(filtered.map(async (row) => {
+      const reporter = await storage.getUserById(row.reporterUserId);
+      let targetLabel = `${row.targetType} #${row.targetId}`;
+
+      if (row.targetType === "provider") {
+        const provider = await storage.getMasterById(row.targetId);
+        targetLabel = provider?.name ?? targetLabel;
+      } else {
+        const [review] = await db.select({
+          masterId: orderReviews.masterId,
+          comment: orderReviews.comment,
+        }).from(orderReviews).where(eq(orderReviews.id, row.targetId)).limit(1);
+        if (review) {
+          const provider = await storage.getMasterById(review.masterId);
+          targetLabel = `Отзыв о ${provider?.name ?? "исполнителе"}`;
+        }
+      }
+
+      return {
+        id: row.id,
+        reporterName: reporter?.name ?? "Пользователь",
+        targetType: row.targetType,
+        targetId: row.targetId,
+        targetLabel,
+        reason: row.reason,
+        details: row.details ?? "",
+        status: row.status,
+        resolutionNote: row.resolutionNote ?? null,
+        resolvedAt: row.resolvedAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      };
+    }));
+
+    res.json(result);
+  });
+
+  app.patch("/api/admin/moderation/reports/:id", async (req, res) => {
+    const admin = await authenticatedAdmin(req, res);
+    if (!admin) return;
+
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ message: "Некорректная жалоба" });
+    }
+
+    const parsed = adminReportResolutionSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+
+    const [existing] = await db.select().from(moderationReports)
+      .where(eq(moderationReports.id, id))
+      .limit(1);
+    if (!existing) return res.status(404).json({ message: "Жалоба не найдена" });
+
+    const [updated] = await db.update(moderationReports)
+      .set({
+        status: parsed.data.status,
+        resolutionNote: parsed.data.note || null,
+        resolvedBy: admin.id,
+        resolvedAt: new Date(),
+      })
+      .where(eq(moderationReports.id, id))
+      .returning();
+
+    await logAdminAction(admin.id, `report.${parsed.data.status}`, "moderation_report", id, {
+      targetType: existing.targetType,
+      targetId: existing.targetId,
+      note: parsed.data.note || "",
+    });
+
+    res.json({
+      id: updated.id,
+      status: updated.status,
+      resolutionNote: updated.resolutionNote,
+      resolvedAt: updated.resolvedAt?.toISOString() ?? null,
+    });
   });
 
   app.get("/api/admin/audit", async (req, res) => {
