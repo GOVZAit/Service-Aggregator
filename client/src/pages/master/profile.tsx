@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context";
 import MasterBottomNavigation from "@/components/master-bottom-navigation";
 import { AppBrandHeader } from "@/components/app-brand-header";
 import { PushNotificationCard } from "@/components/push-notification-card";
+import { ProviderVerificationCard } from "@/components/provider-verification-card";
 import { Award, Briefcase, Building2, Camera, Check, Clock, LogOut, Moon, Phone, Plus, Save, Sun, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,6 +130,7 @@ export default function MasterProfilePage() {
       <section className="premium-card overflow-hidden"><div className="p-4 border-b"><h3 className="font-semibold">Видимость публичного профиля</h3></div>{visibility.map(([field, label, enabled]) => <button key={field} onClick={() => mutation.mutate({ [field]: !enabled })} className="w-full p-4 border-b last:border-0 flex justify-between"><span className="text-sm">{label}</span><span className={cn("w-11 h-6 rounded-full p-1", enabled ? "bg-primary" : "bg-muted")}><span className={cn("block w-4 h-4 rounded-full bg-white transition-transform", enabled && "translate-x-5")} /></span></button>)}</section>
 
       <PushNotificationCard />
+      <ProviderVerificationCard />
 
       <div className="grid grid-cols-2 gap-2"><Button variant="outline" className="h-11 rounded-xl" onClick={toggleTheme}>{isDark ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}{isDark ? "Светлая тема" : "Тёмная тема"}</Button><Button variant="ghost" className="h-11 text-destructive" onClick={async () => { await logout(); navigate("/"); }}><LogOut className="w-4 h-4 mr-2" />Выйти</Button></div>
     </main><MasterBottomNavigation />

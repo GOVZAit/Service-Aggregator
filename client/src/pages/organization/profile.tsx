@@ -5,6 +5,7 @@ import { Building2, Check, Eye, EyeOff, LogOut, Plus, Save, Trash2 } from "lucid
 import OrganizationBottomNavigation from "@/components/organization-bottom-navigation";
 import { AppBrandHeader } from "@/components/app-brand-header";
 import { PushNotificationCard } from "@/components/push-notification-card";
+import { ProviderVerificationCard } from "@/components/provider-verification-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -179,6 +180,7 @@ export default function OrganizationProfilePage() {
         </section>
 
         <PushNotificationCard />
+        <ProviderVerificationCard />
 
         <section className="premium-card p-4">
           <div className="flex items-center gap-3">
