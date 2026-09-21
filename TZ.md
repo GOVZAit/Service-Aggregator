@@ -217,7 +217,7 @@ AuthUser {
 - ✅ Счётчики непрочитанных в навигации.
 - ✅ Организации с несколькими категориями и отдельным кабинетом.
 - ✅ Provider lifecycle: напоминание о неактивности и автоматическое скрытие.
-- ✅ Импорт providers с раздельными importedData/manualOverrides.
+- ✅ Автоматический importer providers: конфигурируемые JSON/JSON-LD источники, scheduler, admin-trigger, журнал запусков и раздельные importedData/manualOverrides.
 - ✅ Админ-панель: каталог providers, видимость, верификация, ручные правки, аудит действий.
 - ✅ Врачи и городские контакты имеют persistent directory layer и редактируются из админки.
 - ✅ PWA: установка, offline fallback, branded boot, обновления, safe-area и stale-chunk recovery.
@@ -227,6 +227,15 @@ AuthUser {
 - ✅ Уникальные title/meta description/canonical для ключевых разделов.
 - ✅ Полноэкранный просмотр портфолио.
 - ✅ Сортировка отзывов и ответы исполнителя на отзывы.
+
+### Production-конфигурация импорта providers
+- `PROVIDER_IMPORT_SOURCES_JSON` — JSON-массив источников. URL источников и optional auth headers задаются только через environment, не через публичный API.
+- Поддерживаемые adapters: `json` (явный field mapping) и `jsonld` (schema.org JSON-LD).
+- Категории сопоставляются только через `defaultCategoryIds`, явный `categoryMap` или точное совпадение названия существующей категории; fuzzy/AI-классификация не используется.
+- `PROVIDER_IMPORT_ENABLED=true` включает scheduler.
+- `PROVIDER_IMPORT_INTERVAL_MINUTES` — интервал scheduler, минимум 15 минут, default 360.
+- `PROVIDER_IMPORT_RUN_ON_STARTUP=true` — один запуск после старта сервера.
+- Ручные правки администратора хранятся в `manualOverrides` и не перезаписываются последующими импортами.
 
 ## 9. Что осталось
 
