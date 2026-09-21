@@ -313,23 +313,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const mutateVerification = async (provider: AdminProvider, status: VerificationStatus) => {
-    setWorking(provider.id);
-    setError("");
-    try {
-      await api(`/api/admin/providers/${provider.id}/verification`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось изменить верификацию");
-    } finally {
-      setWorking(null);
-    }
-  };
-
   const createProvider = async () => {
     const categoryIds = createForm.categoryIds
       .split(",")
@@ -765,17 +748,15 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2" onClick={(event) => event.stopPropagation()}>
-                    <select
-                      className="h-9 rounded-xl border border-border bg-background px-2 text-xs font-semibold"
-                      value={provider.verification.status}
-                      disabled={working === provider.id}
-                      onChange={(event) => void mutateVerification(provider, event.target.value as VerificationStatus)}
-                    >
-                      <option value="unverified">Не проверен</option>
-                      <option value="pending">На проверке</option>
-                      <option value="verified">Подтверждён</option>
-                      <option value="rejected">Отклонён</option>
-                    </select>
+                    <span className="rounded-xl border border-border bg-background px-2.5 py-2 text-xs font-semibold">
+                      {provider.verification.status === "verified"
+                        ? "Подтверждён"
+                        : provider.verification.status === "pending"
+                          ? "На проверке"
+                          : provider.verification.status === "rejected"
+                            ? "Отклонён"
+                            : "Не проверен"}
+                    </span>
                     <Button
                       variant={provider.visible ? "outline" : "default"}
                       size="sm"
@@ -844,6 +825,143 @@ export default function AdminDashboardPage() {
               )}
             </div>
           </aside>
+        </section>
+
+        <section className="premium-card p-5">
+          <div>
+            <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">Верификация</div>
+            <h2 className="mt-1 text-lg font-extrabold">Очередь проверки документов</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Подтверждение через эту очередь синхронизирует публичный бейдж и сохраняет историю решения.
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,.8fr)_minmax(420px,1.2fr)]">
+            <div className="max-h-[620px] space-y-2 overflow-auto pr-1">
+              {verificationQueue.map((item) => (
+                <button
+                  type="button"
+                  key={item.providerId}
+                  onClick={() => void openVerification(item)}
+                  className={`w-full rounded-2xl border p-4 text-left transition ${verificationSelected?.providerId === item.providerId ? "border-primary/50 bg-primary/[.035]" : "border-border/70"}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate font-extrabold">{item.companyName || item.name}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        #{item.providerId} · {item.providerType === "organization" ? "Организация" : "Мастер"}
+                        {item.phone ? ` · ${item.phone}` : ""}
+                      </div>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-extrabold uppercase ${
+                      item.status === "pending"
+                        ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                        : item.status === "verified"
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                          : item.status === "rejected"
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-muted text-muted-foreground"
+                    }`}>
+                      {item.status}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-[11px] text-muted-foreground">
+                    Документов: {item.documents.length} · {new Date(item.submittedAt).toLocaleString("ru-RU")}
+                  </div>
+                </button>
+              ))}
+              {verificationQueue.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                  Заявок с документами пока нет.
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-border/70 bg-muted/[.18] p-4">
+              {!verificationSelected ? (
+                <div className="grid min-h-[340px] place-items-center text-center">
+                  <div>
+                    <ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground/50" />
+                    <p className="mt-3 text-sm font-semibold">Выберите заявку</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Документы не публикуются в карточке исполнителя.</p>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-extrabold uppercase tracking-[.12em] text-primary">
+                        Проверка #{verificationSelected.providerId}
+                      </div>
+                      <h3 className="mt-1 font-extrabold">{verificationSelected.companyName || verificationSelected.name}</h3>
+                      {verificationSelected.providerComment && (
+                        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                          Комментарий исполнителя: {verificationSelected.providerComment}
+                        </p>
+                      )}
+                    </div>
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold">{verificationSelected.status}</span>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+                    {verificationSelected.documents.map((document) => (
+                      <div key={document.id} className="overflow-hidden rounded-xl border border-border bg-background">
+                        <a href={document.image} target="_blank" rel="noreferrer">
+                          <img src={document.image} alt={document.title} className="aspect-[4/3] w-full object-cover" />
+                        </a>
+                        <div className="p-2">
+                          <p className="line-clamp-2 text-[11px] font-bold">{document.title}</p>
+                          <p className="mt-0.5 text-[10px] text-muted-foreground">{document.type}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <textarea
+                    className="mt-4 min-h-20 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50"
+                    placeholder="Комментарий решения. Для отклонения обязателен."
+                    value={verificationNote}
+                    onChange={(event) => setVerificationNote(event.target.value)}
+                    maxLength={1000}
+                  />
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      className="border-destructive/30 text-destructive hover:bg-destructive/5"
+                      disabled={verificationWorking || !verificationNote.trim()}
+                      onClick={() => void reviewVerification("rejected")}
+                    >
+                      Отклонить
+                    </Button>
+                    <Button
+                      disabled={verificationWorking}
+                      onClick={() => void reviewVerification("verified")}
+                    >
+                      Подтвердить
+                    </Button>
+                  </div>
+
+                  {(verificationDetail?.events.length ?? 0) > 0 && (
+                    <details className="mt-4 rounded-xl border border-border bg-background p-3" open>
+                      <summary className="cursor-pointer text-xs font-extrabold">История</summary>
+                      <div className="mt-3 space-y-2">
+                        {verificationDetail!.events.map((event) => (
+                          <div key={event.id} className="grid gap-1 text-[11px] sm:grid-cols-[125px_1fr]">
+                            <time className="text-muted-foreground">{new Date(event.createdAt).toLocaleString("ru-RU")}</time>
+                            <div>
+                              <span className="font-bold">{event.actorRole} · {event.action}</span>
+                              {event.note && <span className="text-muted-foreground"> · {event.note}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </section>
 
         <section className="premium-card p-5">
