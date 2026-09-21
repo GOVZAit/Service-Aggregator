@@ -1,7 +1,15 @@
 import { z } from "zod";
 import { index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
-export const categories = [
+export interface Category {
+  id: number;
+  name: string;
+  iconName: string;
+  emoji: string;
+  color: string;
+}
+
+export const categories: Category[] = [
   { id: 1, name: 'Сантехника', iconName: 'Wrench', emoji: '🔧', color: '#007AFF' },
   { id: 2, name: 'Электрика', iconName: 'Zap', emoji: '⚡', color: '#FF9500' },
   { id: 3, name: 'Уборка', iconName: 'Sparkles', emoji: '🧹', color: '#34C759' },
@@ -10,9 +18,7 @@ export const categories = [
   { id: 6, name: 'Авто', iconName: 'Car', emoji: '🚗', color: '#5856D6' },
   { id: 7, name: 'Доставка', iconName: 'Package', emoji: '📦', color: '#AF52DE' },
   { id: 8, name: 'Репетиторы', iconName: 'BookOpen', emoji: '📚', color: '#00C7BE' },
-] as const;
-
-export type Category = typeof categories[number];
+];
 
 // Cities of the Chechen Republic for location filter
 export const cities = [
