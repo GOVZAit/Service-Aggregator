@@ -235,6 +235,24 @@ export async function registerProviderEngagementRoutes(app: Express) {
     res.json({ ok: true });
   });
 
+  app.delete("/api/providers/me/availability/:date", async (req, res) => {
+    const user = await authenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if ((user.role !== "master" && user.role !== "organization") || !user.masterId) {
+      return res.status(403).json({ message: "Доступно только исполнителю" });
+    }
+
+    const date = req.params.date;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ message: "Некорректная дата" });
+    }
+    await db.delete(providerAvailability).where(and(
+      eq(providerAvailability.providerId, user.masterId),
+      eq(providerAvailability.date, date),
+    ));
+    res.json({ ok: true });
+  });
+
   app.get("/api/masters/:id/invitation-options", async (req, res) => {
     const user = await authenticatedUser(req);
     if (!user) return res.status(401).json({ message: "Войдите как клиент" });
