@@ -1,4 +1,4 @@
-import { Clock, MessageCircle, Star } from "lucide-react";
+import { Clock, MessageCircle, RotateCcw, Star } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ interface OrderCardProps {
   master: Master | undefined;
   onLeaveReview?: () => void;
   onOpenChat?: () => void;
+  onRepeatOrder?: () => void;
 }
 
 const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "secondary" | "outline" }> = {
@@ -18,7 +19,7 @@ const statusConfig: Record<OrderStatus, { label: string; variant: "default" | "s
   rejected: { label: 'Отклонён', variant: 'outline' },
 };
 
-export function OrderCard({ order, master, onLeaveReview, onOpenChat }: OrderCardProps) {
+export function OrderCard({ order, master, onLeaveReview, onOpenChat, onRepeatOrder }: OrderCardProps) {
   const status = statusConfig[order.status];
 
   return (
@@ -80,6 +81,17 @@ export function OrderCard({ order, master, onLeaveReview, onOpenChat }: OrderCar
         >
           <Star className="w-4 h-4 mr-2 fill-amber-400 text-amber-400" />
           Оставить отзыв
+        </Button>
+      )}
+
+      {order.status === 'completed' && onRepeatOrder && (
+        <Button
+          onClick={onRepeatOrder}
+          className="w-full mt-4"
+          data-testid={`button-repeat-order-${order.id}`}
+        >
+          <RotateCcw className="w-4 h-4 mr-2" />
+          Повторить заказ
         </Button>
       )}
     </div>

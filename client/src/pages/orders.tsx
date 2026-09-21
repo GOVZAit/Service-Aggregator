@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { ShoppingBag } from "lucide-react";
 import { OrderCard } from "@/components/order-card";
 import { ReviewModal } from "@/components/review-modal";
+import { BookingModal } from "@/components/booking-modal";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { AppBrandHeader } from "@/components/app-brand-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +33,7 @@ function OrderSkeleton() {
 
 export default function OrdersPage() {
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
+  const [repeatOrder, setRepeatOrder] = useState<Order | null>(null);
   const [, navigate] = useLocation();
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({ queryKey: ["/api/orders"] });
@@ -57,15 +59,19 @@ export default function OrdersPage() {
           </div>
         ) : orders.length > 0 ? (
           <div className="grid gap-4 lg:grid-cols-2">
-            {orders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                master={masters.find((master) => master.id === order.masterId)}
-                onLeaveReview={order.status === "completed" && !reviewed.orderIds.includes(order.id) ? () => setReviewOrder(order) : undefined}
-                onOpenChat={() => navigate(`/orders/${order.id}/chat`)}
-              />
-            ))}
+            {orders.map((order) => {
+              const master = masters.find((item) => item.id === order.masterId);
+              return (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  master={master}
+                  onLeaveReview={order.status === "completed" && !reviewed.orderIds.includes(order.id) ? () => setReviewOrder(order) : undefined}
+                  onOpenChat={() => navigate(`/orders/${order.id}/chat`)}
+                  onRepeatOrder={order.status === "completed" && master ? () => setRepeatOrder(order) : undefined}
+                />
+              );
+            })}
           </div>
         ) : (
           <EmptyState
@@ -78,6 +84,19 @@ export default function OrdersPage() {
       </main>
 
       {reviewOrder && <ReviewModal order={reviewOrder} onClose={() => setReviewOrder(null)} />}
+      {repeatOrder && (() => {
+        const master = masters.find((item) => item.id === repeatOrder.masterId);
+        return master ? (
+          <BookingModal
+            master={master}
+            initialService={repeatOrder.title}
+            initialAddress={repeatOrder.address ?? ""}
+            initialComment={repeatOrder.comment ?? ""}
+            heading="Повторить заказ"
+            onClose={() => setRepeatOrder(null)}
+          />
+        ) : null;
+      })()}
       <BottomNavigation />
     </div>
   );
