@@ -219,6 +219,7 @@ AuthUser {
 - ✅ Provider lifecycle: напоминание о неактивности и автоматическое скрытие.
 - ✅ Автоматический importer providers: конфигурируемые JSON/JSON-LD источники, scheduler, admin-trigger, журнал запусков и раздельные importedData/manualOverrides.
 - ✅ Админ-панель: каталог providers, видимость, верификация, ручные правки, аудит действий.
+- ✅ Workflow верификации исполнителей: приватные документы → pending → решение администратора → публичный бейдж → push и журнал событий.
 - ✅ Врачи и городские контакты имеют persistent directory layer и редактируются из админки.
 - ✅ PWA: установка, offline fallback, branded boot, обновления, safe-area и stale-chunk recovery.
 - ✅ Route-level code splitting и динамическая загрузка тяжёлых разделов.
