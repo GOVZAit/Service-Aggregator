@@ -11,6 +11,7 @@ import {
 } from "@shared/direct-chat-schema";
 import { getProviderOwnerUserId, isProviderVisible } from "./provider-service";
 import { sendPushToUser } from "./push-service";
+import { broadcastRealtimeEvent } from "./realtime";
 
 async function ensureDirectChatTables() {
   await pool.query(`
@@ -194,6 +195,10 @@ export async function registerDirectChatRoutes(app: Express) {
       set: { providerUserId },
     }).returning();
 
+    broadcastRealtimeEvent(
+      [user.id, providerUserId],
+      { type: "direct-conversation", conversationId: conversation.id },
+    );
     res.status(201).json(await conversationView(conversation, user.id));
   });
 
@@ -276,6 +281,11 @@ export async function registerDirectChatRoutes(app: Express) {
         ? `/organization/messages/${conversation.id}`
         : `/master/messages/${conversation.id}`
       : `/messages/${conversation.id}`;
+
+    broadcastRealtimeEvent(
+      [conversation.clientId, conversation.providerUserId],
+      { type: "direct-message", conversationId: conversation.id },
+    );
 
     void sendPushToUser(recipientUserId, {
       title: senderIsClient
