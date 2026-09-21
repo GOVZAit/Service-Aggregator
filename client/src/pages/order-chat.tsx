@@ -43,8 +43,8 @@ export default function OrderChatPage() {
   const { data: messages = [], isLoading: messagesLoading } = useQuery<OrderMessageView[]>({
     queryKey: ["/api/orders", orderId, "messages"],
     enabled: Number.isInteger(orderId) && orderId > 0,
-    refetchInterval: 3000,
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
