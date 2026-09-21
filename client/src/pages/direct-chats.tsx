@@ -31,8 +31,8 @@ export default function DirectChatsPage() {
   const { data: conversations = [], isLoading } = useQuery<DirectConversationView[]>({
     queryKey: ["/api/direct-chats"],
     enabled: !!user,
-    refetchInterval: 15_000,
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const backPath = user?.role === "organization"
