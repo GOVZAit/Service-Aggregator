@@ -1,15 +1,17 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { MapView } from "@/components/map-view";
 import {
-  Search, SlidersHorizontal, MapPin, X, BadgeCheck, Zap, ChevronDown, Check,
+  BadgeCheck, Car, Check, ChevronDown, ChevronRight, Droplets, GraduationCap,
+  Hammer, MapPin, Palette, PlugZap, Search, SlidersHorizontal, Sparkles,
+  Truck, X, Zap,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { AppBrandHeader } from "@/components/app-brand-header";
+import { MapView } from "@/components/map-view";
 import { MasterCard } from "@/components/master-card";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
@@ -22,33 +24,43 @@ import { cn } from "@/lib/utils";
 import { cities } from "@shared/schema";
 import type { Category, Master } from "@shared/schema";
 
+const categoryIcons: Record<string, typeof PlugZap> = {
+  "Сантехника": Droplets,
+  "Электрика": PlugZap,
+  "Уборка": Sparkles,
+  "Ремонт": Hammer,
+  "Красота": Palette,
+  "Авто": Car,
+  "Доставка": Truck,
+  "Репетиторы": GraduationCap,
+};
+
 function MasterCardSkeleton() {
   return (
-    <div className="rounded-2xl bg-card border border-border/60 p-4 space-y-3 animate-pulse">
+    <div className="premium-card space-y-4 p-4 animate-pulse">
       <div className="flex gap-3">
-        <Skeleton className="w-16 h-16 rounded-2xl shrink-0" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-36" />
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-3 w-28" />
+        <Skeleton className="h-20 w-20 shrink-0 rounded-2xl" />
+        <div className="flex-1 space-y-2 pt-1">
+          <Skeleton className="h-5 w-36" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-28" />
         </div>
-        <Skeleton className="w-16 h-6 shrink-0" />
       </div>
-      <div className="grid grid-cols-3 gap-1.5">
-        <Skeleton className="aspect-square rounded-lg" />
-        <Skeleton className="aspect-square rounded-lg" />
-        <Skeleton className="aspect-square rounded-lg" />
+      <div className="grid grid-cols-3 gap-2">
+        <Skeleton className="aspect-[4/3] rounded-xl" />
+        <Skeleton className="aspect-[4/3] rounded-xl" />
+        <Skeleton className="aspect-[4/3] rounded-xl" />
       </div>
     </div>
   );
 }
 
 function extractMinPrice(price: string): number {
-  const match = price.replace(/[^\d]/g, ' ').trim().split(/\s+/)[0];
+  const match = price.replace(/[^\d]/g, " ").trim().split(/\s+/)[0];
   return parseInt(match) || 0;
 }
 
-const DEFAULT_CITY: string = cities[0]; // "Все города"
+const DEFAULT_CITY: string = cities[0];
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -68,49 +80,38 @@ export default function HomePage() {
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
-    queryKey: ['/api/categories'],
+    queryKey: ["/api/categories"],
   });
-
   const { data: allMasters = [], isLoading: mastersLoading } = useQuery<Master[]>({
-    queryKey: ['/api/masters'],
+    queryKey: ["/api/masters"],
   });
 
   const toggleFavorite = (masterId: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setFavorites((prev) =>
-      prev.includes(masterId) ? prev.filter((id) => id !== masterId) : [...prev, masterId]
-    );
+    setFavorites((prev) => prev.includes(masterId) ? prev.filter((id) => id !== masterId) : [...prev, masterId]);
   };
 
-  // Masters narrowed by district / category / search (before the filter sheet state)
   const baseMasters = useMemo(() => {
     let result = allMasters;
-
-    if (city !== DEFAULT_CITY) {
-      result = result.filter((m) => m.city === city);
-    }
-
+    if (city !== DEFAULT_CITY) result = result.filter((master) => master.city === city);
     if (selectedCategory) {
-      result = result.filter((m) => (m.categoryIds ?? [m.categoryId]).includes(selectedCategory));
+      result = result.filter((master) => (master.categoryIds ?? [master.categoryId]).includes(selectedCategory));
     }
-
     if (debouncedSearch.trim()) {
       const q = debouncedSearch.toLowerCase();
-      result = result.filter(
-        (m) =>
-          m.name.toLowerCase().includes(q) ||
-          m.category.toLowerCase().includes(q) ||
-          m.description.toLowerCase().includes(q)
+      result = result.filter((master) =>
+        master.name.toLowerCase().includes(q) ||
+        master.category.toLowerCase().includes(q) ||
+        master.description.toLowerCase().includes(q) ||
+        (master.companyName?.toLowerCase().includes(q) ?? false)
       );
     }
-
     return result;
   }, [selectedCategory, debouncedSearch, allMasters, city]);
 
   const filteredMasters = useMemo(() => {
     const result = applyMasterFilters(baseMasters, filterState);
-
     return [...result].sort((a, b) => {
       switch (filterState.sortBy) {
         case "rating": return b.rating - a.rating;
@@ -124,270 +125,270 @@ export default function HomePage() {
   }, [baseMasters, filterState]);
 
   const selectedCategoryName = selectedCategory
-    ? categories.find((c) => c.id === selectedCategory)?.name
+    ? categories.find((category) => category.id === selectedCategory)?.name
     : null;
 
   const hasActiveFilters =
-    filterState.verifiedOnly || filterState.onlineOnly || filterState.certifiedOnly ||
-    filterState.executorType !== "all" || filterState.sortBy !== "rating";
+    filterState.verifiedOnly ||
+    filterState.onlineOnly ||
+    filterState.certifiedOnly ||
+    filterState.executorType !== "all" ||
+    filterState.sortBy !== "rating";
 
-  const initials = user?.name
-    ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-    : "АБ";
+  const clearFilters = () => {
+    setSelectedCategory(null);
+    setFilterState(defaultFilterState);
+    setCity(DEFAULT_CITY);
+  };
 
   return (
     <div className="app-page bg-background">
       {showWelcome && <WelcomeOnboarding onDone={dismissWelcome} />}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt">
-        <div className="max-w-lg lg:max-w-6xl mx-auto px-4 lg:px-6 pt-3 pb-3">
-          <div className="flex items-center justify-between mb-3">
-            <button
-              onClick={() => setShowLocation(true)}
-              data-testid="button-location"
-              className="flex items-center gap-1.5 -ml-1 px-2 py-1 rounded-lg hover-elevate active-elevate-2 transition-colors text-left"
-            >
-              <MapPin className="w-4 h-4 text-primary shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[10px] text-muted-foreground leading-none">Чеченская Республика</p>
-                <div className="flex items-center gap-0.5 font-semibold text-sm leading-tight">
-                  <span className="truncate">{city}</span>
-                  <ChevronDown className="w-3.5 h-3.5 shrink-0" />
-                </div>
-              </div>
-            </button>
-            <Avatar className="w-10 h-10 bg-primary shadow-sm">
-              <AvatarFallback className="bg-transparent text-white font-semibold text-sm">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </div>
 
-          <div className="flex items-center gap-2">
+      <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
+        <div className="mx-auto max-w-lg px-4 pb-4 pt-3 lg:max-w-6xl lg:px-6">
+          <AppBrandHeader
+            city={city}
+            onLocationClick={() => setShowLocation(true)}
+            subtitle="Надёжные мастера рядом"
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowLocation(true)}
+            className="pressable mt-3 flex min-h-11 items-center gap-2 rounded-2xl bg-primary/[0.055] px-3 text-left sm:hidden"
+            data-testid="button-location"
+          >
+            <MapPin className="h-4 w-4 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-medium leading-none text-muted-foreground">Чеченская Республика</p>
+              <p className="mt-1 truncate text-sm font-bold">{city}</p>
+            </div>
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </button>
+
+          <div className="mt-4 flex items-center gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Какая услуга нужна?"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 pr-10 h-13 text-base bg-muted/60 border-0 rounded-2xl shadow-sm font-medium placeholder:text-muted-foreground/70"
-                style={{ height: "52px" }}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="h-14 rounded-[1.25rem] border-border/55 bg-card pl-12 pr-11 text-base font-medium shadow-sm placeholder:text-muted-foreground/75"
                 data-testid="input-search"
               />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery("")}
                   aria-label="Очистить поиск"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground w-11 h-11 flex items-center justify-center"
-                  data-testid="button-clear-search"
+                  className="absolute right-1.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-muted-foreground"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="h-4 w-4" />
                 </button>
               )}
             </div>
             <button
+              type="button"
               onClick={() => setShowFilter(true)}
               aria-label="Фильтры и сортировка"
               data-testid="button-filter"
               className={cn(
-                "rounded-2xl flex items-center justify-center transition-colors relative shrink-0 lg:hidden",
+                "pressable relative flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.25rem] border shadow-sm lg:hidden",
                 hasActiveFilters
-                  ? "bg-primary text-white"
-                  : "bg-muted/60 text-foreground hover:bg-muted"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border/55 bg-card text-foreground"
               )}
-              style={{ width: "52px", height: "52px" }}
             >
-              <SlidersHorizontal className="w-5 h-5" />
-              {hasActiveFilters && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-background" />
-              )}
+              <SlidersHorizontal className="h-5 w-5" />
+              {hasActiveFilters && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-background bg-orange-500" />}
             </button>
           </div>
-        </div>
 
-        <div className="max-w-lg lg:max-w-6xl mx-auto px-4 lg:px-6 pb-3 pt-1">
-          {categoriesLoading ? (
-            <div className="flex gap-2 overflow-hidden">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-24 rounded-2xl shrink-0" />
-              ))}
-            </div>
-          ) : (
-            <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 lg:-mx-6 lg:px-6 lg:flex-wrap lg:overflow-visible">
-              {categories.map((cat) => {
-                const isSelected = selectedCategory === cat.id;
+          <div className="scrollbar-none -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6">
+            {categoriesLoading ? (
+              Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-11 w-28 shrink-0 rounded-2xl" />)
+            ) : (
+              categories.slice(0, 8).map((category) => {
+                const Icon = categoryIcons[category.name] ?? Zap;
+                const active = selectedCategory === category.id;
                 return (
                   <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory((prev) => (prev === cat.id ? null : cat.id))}
-                    data-testid={`category-chip-${cat.id}`}
+                    key={category.id}
+                    type="button"
+                    onClick={() => setSelectedCategory((current) => current === category.id ? null : category.id)}
                     className={cn(
-                      "pressable min-h-[44px] flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-sm font-semibold whitespace-nowrap shrink-0 transition-all",
-                      isSelected
-                        ? "text-white shadow-md"
-                        : "bg-muted/60 text-foreground hover:bg-muted"
+                      "pressable flex min-h-11 shrink-0 items-center gap-2 rounded-2xl px-3.5 text-sm font-semibold",
+                      active
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "border border-border/55 bg-card text-foreground shadow-sm"
                     )}
-                    style={isSelected ? { backgroundColor: cat.color } : undefined}
+                    data-testid={`category-chip-${category.id}`}
                   >
-                    <span>{cat.name}</span>
+                    <Icon className={cn("h-4 w-4", !active && "text-primary")} />
+                    {category.name}
                   </button>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="px-4 py-4 max-w-lg mx-auto lg:max-w-6xl lg:px-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        {/* Desktop sidebar with filters */}
-        <aside className="hidden lg:block sticky top-[190px] self-start" data-testid="desktop-sidebar">
-          <div className="rounded-2xl border border-border/60 bg-card p-4">
-            <h2 className="font-bold text-base mb-4">Фильтры и сортировка</h2>
-            <FilterPanel value={filterState} onChange={setFilterState} />
-          </div>
-        </aside>
+      <main className="mx-auto max-w-lg px-4 py-5 lg:max-w-6xl lg:px-6">
+        <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-8">
+          <aside className="sticky top-[185px] hidden lg:block">
+            <div className="premium-card p-5">
+              <h2 className="mb-4 text-base font-bold">Фильтры и сортировка</h2>
+              <FilterPanel value={filterState} onChange={setFilterState} />
+            </div>
+          </aside>
 
-        <div className="min-w-0">
-        {/* Broadcast banner */}
-        <div className="mb-5 rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-            <Zap className="w-5 h-5 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground leading-tight">Нужен мастер срочно?</p>
-            <p className="text-xs text-muted-foreground leading-tight mt-0.5">Отправьте заявку сразу всем и примите первого</p>
-          </div>
-          <button
-            onClick={() => { setBroadcastCategory(selectedCategoryName ?? undefined); setShowBroadcast(true); }}
-            data-testid="button-broadcast"
-            className="pressable shrink-0 min-h-[44px] text-xs font-bold text-primary-foreground bg-primary px-3 py-2 rounded-xl whitespace-nowrap"
-          >
-            Найти
-          </button>
-        </div>
-
-        <section>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-bold">
-              {selectedCategoryName || "Рекомендуемые"}
-            </h2>
-            {(selectedCategory || hasActiveFilters || city !== DEFAULT_CITY) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => { setSelectedCategory(null); setFilterState(defaultFilterState); setCity(DEFAULT_CITY); }}
-                className="text-primary text-xs"
-                data-testid="button-reset-category"
+          <div className="min-w-0">
+            <section className="hero-gradient relative overflow-hidden rounded-[1.75rem] border border-primary/15 p-5 shadow-sm sm:p-6">
+              <div className="pointer-events-none absolute -right-8 -top-12 h-44 w-44 rounded-full bg-cyan-300/25 blur-2xl" />
+              <div className="pointer-events-none absolute -bottom-16 right-20 h-36 w-36 rounded-full bg-primary/15 blur-2xl" />
+              <div className="relative z-10 flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Zap className="h-6 w-6" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-lg font-extrabold tracking-[-0.03em]">Нужен мастер срочно?</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Оставьте заявку — получите предложения подходящих мастеров и выберите лучшего.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setBroadcastCategory(selectedCategoryName ?? undefined); setShowBroadcast(true); }}
+                className="accent-gradient relative z-10 mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white shadow-md sm:w-auto sm:min-w-44"
+                data-testid="button-broadcast"
               >
-                <X className="w-3.5 h-3.5 mr-1" />
-                Сбросить
-              </Button>
+                Создать заявку <ChevronRight className="h-4 w-4" />
+              </button>
+            </section>
+
+            {!selectedCategory && !searchQuery && (
+              <section className="mt-7">
+                <div className="mb-3 flex items-end justify-between gap-3">
+                  <div>
+                    <h2 className="section-title">Все категории</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">Выберите направление за пару секунд</p>
+                  </div>
+                </div>
+                <div className="scrollbar-none -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+                  {categories.slice(0, 8).map((category) => {
+                    const Icon = categoryIcons[category.name] ?? Zap;
+                    const count = allMasters.filter((master) => (master.categoryIds ?? [master.categoryId]).includes(category.id)).length;
+                    return (
+                      <button
+                        type="button"
+                        key={category.id}
+                        onClick={() => setSelectedCategory(category.id)}
+                        className="premium-card pressable min-w-[132px] p-4 text-left"
+                      >
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/[0.08] text-primary">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <p className="mt-4 text-sm font-bold">{category.name}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{count || "Новые"} специалистов</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             )}
-          </div>
 
-          {!mastersLoading && filteredMasters.length > 0 && (
-            <div className="flex items-center gap-3 mb-4 flex-wrap" data-testid="masters-stats">
-              <div className="flex bg-muted/60 rounded-xl p-0.5 mr-1">
-                <button
-                  onClick={() => setViewMode("list")}
-                  aria-pressed={viewMode === "list"}
-                  data-testid="masters-view-list"
-                  className={cn(
-                    "min-h-[44px] px-3 py-2 rounded-lg text-xs font-semibold transition-all",
-                    viewMode === "list" ? "bg-background shadow-sm" : "text-muted-foreground"
-                  )}
-                >
-                  Список
-                </button>
-                <button
-                  onClick={() => setViewMode("map")}
-                  aria-pressed={viewMode === "map"}
-                  data-testid="masters-view-map"
-                  className={cn(
-                    "min-h-[44px] px-3 py-2 rounded-lg text-xs font-semibold transition-all",
-                    viewMode === "map" ? "bg-background shadow-sm" : "text-muted-foreground"
-                  )}
-                >
-                  Карта
-                </button>
+            <section className="mt-7">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <BadgeCheck className="h-5 w-5 text-primary" />
+                    <h2 className="section-title">{selectedCategoryName || "Проверенные мастера"}</h2>
+                  </div>
+                  {!selectedCategoryName && <p className="mt-1 text-xs text-muted-foreground">Надёжные специалисты с рейтингом и отзывами</p>}
+                </div>
+                {(selectedCategory || hasActiveFilters || city !== DEFAULT_CITY) && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="shrink-0 text-xs text-primary">
+                    <X className="mr-1 h-3.5 w-3.5" /> Сбросить
+                  </Button>
+                )}
               </div>
-              <span className="text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{filteredMasters.length}</span>{" "}мастеров
-              </span>
-              <span className="text-muted-foreground/40 text-xs">·</span>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <BadgeCheck className="w-3.5 h-3.5 text-primary" />
-                <span className="font-semibold text-foreground">
-                  {filteredMasters.filter((m) => m.verified).length}
-                </span>
-                {" "}проверены
-              </span>
-              {city !== DEFAULT_CITY && (
-                <>
-                  <span className="text-muted-foreground/40 text-xs">·</span>
-                  <span className="text-xs text-primary font-medium">{city}</span>
-                </>
+
+              {!mastersLoading && filteredMasters.length > 0 && (
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  <div className="flex rounded-2xl bg-muted/70 p-1">
+                    {(["list", "map"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setViewMode(mode)}
+                        className={cn(
+                          "min-h-10 rounded-xl px-3 text-xs font-bold transition-all",
+                          viewMode === mode ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                        )}
+                      >
+                        {mode === "list" ? "Список" : "Карта"}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    <span className="font-bold text-foreground">{filteredMasters.length}</span> специалистов
+                  </span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <BadgeCheck className="h-3.5 w-3.5 text-primary" />
+                    {filteredMasters.filter((master) => master.verified).length} проверены
+                  </span>
+                </div>
               )}
-            </div>
-          )}
 
-          {mastersLoading ? (
-            <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <MasterCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : filteredMasters.length > 0 ? (
-            viewMode === "map" ? (
-              <div className="rounded-3xl overflow-hidden border border-border/60 h-[420px] lg:h-[540px]">
-                <MapView
-                  organizations={filteredMasters.map((m) => ({
-                    id: m.id,
-                    name: m.name,
-                    subcategory: m.category,
-                    address: [m.city, m.district].filter(Boolean).join(", "),
-                    phone: m.phone,
-                    hours: `${m.workingHours.from}–${m.workingHours.to}`,
-                    lat: m.lat,
-                    lng: m.lng,
-                  }))}
-                  onSelect={(p) => navigate(`/master/${p.id}`)}
+              {mastersLoading ? (
+                <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+                  {Array.from({ length: 4 }).map((_, index) => <MasterCardSkeleton key={index} />)}
+                </div>
+              ) : filteredMasters.length > 0 ? (
+                viewMode === "map" ? (
+                  <div className="overflow-hidden rounded-[1.75rem] border border-border/70 shadow-sm h-[440px] lg:h-[560px]">
+                    <MapView
+                      organizations={filteredMasters.map((master) => ({
+                        id: master.id,
+                        name: master.name,
+                        subcategory: master.category,
+                        address: [master.city, master.district].filter(Boolean).join(", "),
+                        phone: master.phone,
+                        hours: `${master.workingHours.from}–${master.workingHours.to}`,
+                        lat: master.lat,
+                        lng: master.lng,
+                      }))}
+                      onSelect={(point) => navigate(`/master/${point.id}`)}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+                    {filteredMasters.map((master) => (
+                      <MasterCard
+                        key={master.id}
+                        master={master}
+                        isFavorite={favorites.includes(master.id)}
+                        onToggleFavorite={(event) => toggleFavorite(master.id, event)}
+                      />
+                    ))}
+                  </div>
+                )
+              ) : (
+                <EmptyState
+                  icon={<Search className="h-10 w-10" />}
+                  title={debouncedSearch ? "Ничего не найдено" : "Специалисты не найдены"}
+                  description={debouncedSearch
+                    ? `По запросу «${debouncedSearch}» ничего не найдено. Измените запрос или сбросьте фильтры.`
+                    : "В выбранной категории или городе пока нет специалистов."}
+                  action={<Button variant="outline" onClick={() => { clearFilters(); setSearchQuery(""); }}>Сбросить всё</Button>}
                 />
-              </div>
-            ) : (
-            <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
-              {filteredMasters.map((master) => (
-                <MasterCard
-                  key={master.id}
-                  master={master}
-                  isFavorite={favorites.includes(master.id)}
-                  onToggleFavorite={(e) => toggleFavorite(master.id, e)}
-                />
-              ))}
-            </div>
-            )
-          ) : (
-            <EmptyState
-              icon={<Search className="w-10 h-10" />}
-              title={debouncedSearch ? "Ничего не найдено" : "Мастера не найдены"}
-              description={
-                debouncedSearch
-                  ? `По запросу «${debouncedSearch}» мастеров не найдено. Попробуйте изменить запрос или сбросить фильтры.`
-                  : "В выбранной категории или городе нет мастеров. Попробуйте сбросить фильтры."
-              }
-              action={
-                <Button
-                  variant="outline"
-                  onClick={() => { setSelectedCategory(null); setSearchQuery(""); setFilterState(defaultFilterState); setCity(DEFAULT_CITY); }}
-                  className="rounded-xl"
-                  data-testid="button-reset-all-filters"
-                >
-                  Сбросить всё
-                </Button>
-              }
-            />
-          )}
-        </section>
+              )}
+            </section>
+          </div>
         </div>
       </main>
 
@@ -407,31 +408,29 @@ export default function HomePage() {
         />
       )}
 
-      {/* Location selector */}
       <Sheet open={showLocation} onOpenChange={setShowLocation}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[80vh]">
-          <SheetHeader className="text-left mb-2">
+        <SheetContent side="bottom" className="rounded-t-[2rem]">
+          <SheetHeader className="mb-3 text-left">
             <SheetTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              Выберите город
+              <MapPin className="h-5 w-5 text-primary" /> Выберите город
             </SheetTitle>
           </SheetHeader>
-          <p className="text-xs text-muted-foreground mb-4">Чеченская Республика</p>
-          <div className="space-y-1.5 pb-4">
-            {cities.map((d) => {
-              const isActive = city === d;
+          <p className="mb-4 text-xs text-muted-foreground">Чеченская Республика</p>
+          <div className="space-y-2 pb-4">
+            {cities.map((item) => {
+              const active = city === item;
               return (
                 <button
-                  key={d}
-                  onClick={() => { setCity(d); setShowLocation(false); }}
-                  data-testid={`option-city-${d}`}
+                  type="button"
+                  key={item}
+                  onClick={() => { setCity(item); setShowLocation(false); }}
                   className={cn(
-                    "w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-left transition-colors",
-                    isActive ? "bg-primary/10 text-primary" : "bg-muted/40 hover-elevate active-elevate-2"
+                    "flex min-h-12 w-full items-center justify-between rounded-2xl px-4 text-left font-semibold",
+                    active ? "bg-primary/10 text-primary" : "bg-muted/50"
                   )}
                 >
-                  <span className="font-medium">{d}</span>
-                  {isActive && <Check className="w-5 h-5" />}
+                  {item}
+                  {active && <Check className="h-5 w-5" />}
                 </button>
               );
             })}

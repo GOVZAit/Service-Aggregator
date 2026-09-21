@@ -1,6 +1,7 @@
-import { Building2, Car, ChevronRight, Landmark, Phone, ShieldAlert } from "lucide-react";
+import { Building2, Car, ChevronRight, HeartPulse, Lightbulb, Phone, ShieldAlert } from "lucide-react";
 import { Link } from "wouter";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { AppBrandHeader } from "@/components/app-brand-header";
 
 const sections = [
   {
@@ -24,58 +25,82 @@ const sections = [
     description: "Такси, вокзалы, эвакуаторы, АЗС и автомойки",
     color: "bg-orange-500/10 text-orange-600",
   },
+  {
+    href: "/doctors",
+    icon: HeartPulse,
+    title: "Медицина",
+    description: "Врачи, клиники, больницы и полезные медицинские контакты",
+    color: "bg-rose-500/10 text-rose-600",
+  },
 ] as const;
 
 export default function ContactsHubPage() {
   return (
-    <div className="min-h-screen bg-background pb-28">
-      <header className="border-b border-border bg-background/95 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-xl">
-        <div className="mx-auto max-w-4xl">
-          <p className="text-xs text-muted-foreground">Чеченская Республика</p>
-          <h1 className="mt-1 text-2xl font-bold">Контакты</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Службы и полезные места, которые не относятся к мастерам
-          </p>
+    <div className="app-page bg-background">
+      <header className="app-header-shell safe-area-pt">
+        <div className="mx-auto max-w-4xl px-4 py-4">
+          <AppBrandHeader compact />
+          <div className="mt-6">
+            <h1 className="text-3xl font-extrabold tracking-[-0.04em]">Контакты</h1>
+            <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              Службы и полезные места, которые не относятся к мастерам.
+            </p>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl space-y-3 px-4 py-5">
-        <div className="rounded-3xl border border-border bg-muted/35 p-5">
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-              <ShieldAlert className="h-6 w-6" />
+      <main className="mx-auto max-w-4xl space-y-4 px-4 py-5">
+        <a
+          href="tel:112"
+          className="hero-gradient relative block overflow-hidden rounded-[1.75rem] border border-primary/15 p-5 shadow-sm"
+        >
+          <div className="pointer-events-none absolute -right-8 -top-12 h-40 w-40 rounded-full bg-cyan-300/30 blur-2xl" />
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <ShieldAlert className="h-7 w-7" />
             </div>
-            <div>
-              <h2 className="font-bold">Нужна срочная помощь?</h2>
-              <p className="text-sm text-muted-foreground">Экстренный номер — 112</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-extrabold tracking-[-0.03em]">Нужна срочная помощь?</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Экстренный номер — <span className="font-extrabold text-primary">112</span>
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Звонок бесплатный и доступен круглосуточно.</p>
+            </div>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-rose-500 text-lg font-extrabold text-white shadow-md">
+              112
             </div>
           </div>
-        </div>
+        </a>
 
         <div className="grid gap-3 sm:grid-cols-2">
           {sections.map(({ href, icon: Icon, title, description, color }) => (
             <Link
               key={title}
               href={href}
-              className="pressable flex min-h-[104px] items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:bg-muted/50"
+              className="premium-card pressable group flex min-h-[120px] items-center gap-4 p-4 transition-transform active:scale-[.99]"
             >
-              <div className={`shrink-0 rounded-2xl p-3 ${color}`}>
+              <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${color}`}>
                 <Icon className="h-6 w-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="font-bold">{title}</h2>
-                <p className="mt-1 text-sm leading-snug text-muted-foreground">{description}</p>
+                <h2 className="text-lg font-extrabold tracking-[-0.03em]">{title}</h2>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
               </div>
-              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
             </Link>
           ))}
         </div>
 
-        <div className="flex items-start gap-3 rounded-2xl border border-dashed border-border p-4 text-muted-foreground">
-          <Landmark className="mt-0.5 h-5 w-5 shrink-0" />
-          <p className="text-sm">
-            Новые справочные категории можно добавлять сюда отдельными карточками.
-          </p>
+        <div className="flex items-start gap-3 rounded-[1.5rem] border border-primary/10 bg-primary/[0.035] p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Lightbulb className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold">Не нашли нужный контакт?</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Новые справочные категории будут появляться здесь отдельными карточками.
+            </p>
+          </div>
         </div>
       </main>
 

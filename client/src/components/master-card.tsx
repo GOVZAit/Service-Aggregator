@@ -1,6 +1,5 @@
-import { Heart, MapPin, Clock, BadgeCheck, Crown, Star, Building2 } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { BadgeCheck, Building2, Clock, Heart, MapPin, Star } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Master } from "@shared/schema";
 import { Link } from "wouter";
 
@@ -12,113 +11,74 @@ interface MasterCardProps {
 
 export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardProps) {
   const previewPhotos = master.showPortfolio !== false ? (master.portfolio?.slice(0, 3) ?? []) : [];
+  const isOrganization = master.providerType === "organization";
 
   return (
     <Link href={`/master/${master.id}`}>
-      <div
+      <article
         data-testid={`master-card-${master.id}`}
-        className="bg-card rounded-2xl p-4 hover-elevate active-elevate-2 transition-all duration-200 cursor-pointer border border-border/40"
+        className="premium-card pressable group cursor-pointer overflow-hidden p-4 transition-transform duration-200 active:scale-[.995]"
       >
-        <div className="flex gap-3 mb-3">
+        <div className="flex gap-3.5">
           <div className="relative shrink-0">
-            <Avatar className="w-16 h-16 rounded-2xl">
+            <Avatar className="h-[78px] w-[78px] rounded-[1.35rem] border border-border/50 shadow-sm">
               <AvatarImage src={master.avatar} alt={master.name} className="object-cover" />
-              <AvatarFallback className="rounded-2xl text-lg">
+              <AvatarFallback className="rounded-[1.35rem] bg-primary/10 text-lg font-extrabold text-primary">
                 {master.name.slice(0, 2)}
               </AvatarFallback>
             </Avatar>
-            {master.isOnline && (
-              <span
-                data-testid={`status-online-${master.id}`}
-                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-card shadow-sm"
-                title="Сейчас онлайн"
-              />
+            {master.verified && (
+              <span className="absolute -bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full border border-primary/10 bg-background px-2 py-1 text-[10px] font-bold text-primary shadow-sm">
+                <BadgeCheck className="h-3 w-3" /> Проверен
+              </span>
             )}
           </div>
 
-          <div className="flex-1 min-w-0">
-            {(master.providerType === "organization" || master.companyName) && (
-              <div
-                className="flex items-center gap-1 text-[11px] font-semibold text-primary/90 uppercase tracking-wide mb-0.5 truncate"
-                data-testid={`text-company-${master.id}`}
-              >
-                <Building2 className="w-3 h-3 shrink-0" />
-                <span className="truncate">
-                  {master.providerType === "organization" ? "Организация" : master.companyName}
-                </span>
+          <div className="min-w-0 flex-1">
+            {(isOrganization || master.companyName) && (
+              <div className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-[.08em] text-primary/80">
+                <Building2 className="h-3 w-3" />
+                <span className="truncate">{isOrganization ? "Организация" : master.companyName}</span>
               </div>
             )}
-            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-              <span className="font-semibold text-foreground truncate" data-testid={`text-name-${master.id}`}>
-                {master.name}
-              </span>
-              {master.topMaster && (
-                <span
-                  data-testid={`badge-top-${master.id}`}
-                  className="inline-flex items-center gap-0.5 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full px-1.5 py-0.5 text-[10px] font-bold flex-shrink-0"
-                >
-                  <Crown className="w-3 h-3" />
-                  ТОП
-                </span>
-              )}
-              {master.verified && (
-                <span className="inline-flex items-center gap-0.5 bg-primary/10 text-primary rounded-full px-1.5 py-0.5 text-[10px] font-semibold flex-shrink-0">
-                  <BadgeCheck className="w-3 h-3" />
-                  Проверен
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground mb-1.5">{master.category}</p>
-
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-500/10 rounded-md px-1.5 py-0.5">
-                <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                <span className="text-sm font-bold text-foreground" data-testid={`text-rating-${master.id}`}>
-                  {master.rating.toFixed(1)}
-                </span>
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-[1.02rem] font-extrabold tracking-[-0.03em]" data-testid={`text-name-${master.id}`}>
+                  {master.name}
+                </h3>
+                <p className="mt-0.5 text-sm font-medium text-muted-foreground">{master.category}</p>
               </div>
-              <span className="text-xs text-muted-foreground" data-testid={`text-reviews-${master.id}`}>
-                ({master.reviews} отз.)
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggleFavorite}
-              data-testid={`button-favorite-${master.id}`}
-              className="-mr-2 -mt-1 w-9 h-9"
-            >
-              <Heart
-                className={`w-5 h-5 transition-colors ${
-                  isFavorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"
-                }`}
-              />
-            </Button>
-            {master.showPrices !== false && (
-              <span
-                className="text-sm font-bold text-primary whitespace-nowrap"
-                data-testid={`text-price-${master.id}`}
+              <button
+                type="button"
+                onClick={onToggleFavorite}
+                className="pressable -mr-1 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-muted"
+                aria-label={isFavorite ? "Убрать из избранного" : "Добавить в избранное"}
               >
-                {master.price}
+                <Heart className={`h-5 w-5 ${isFavorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+              </button>
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-amber-400/10 px-2 py-1 text-sm font-bold">
+                <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                {master.rating.toFixed(1)}
               </span>
-            )}
+              <span className="text-xs text-muted-foreground">({master.reviews} отзывов)</span>
+              {master.showPrices !== false && (
+                <span className="ml-auto whitespace-nowrap text-sm font-extrabold text-primary">{master.price}</span>
+              )}
+            </div>
           </div>
         </div>
 
         {previewPhotos.length > 0 && (
-          <div className="grid grid-cols-3 gap-1.5 mb-3">
-            {previewPhotos.map((src, idx) => (
-              <div
-                key={idx}
-                className="aspect-square rounded-lg overflow-hidden bg-muted"
-              >
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            {previewPhotos.map((src, index) => (
+              <div key={index} className="aspect-[4/3] overflow-hidden rounded-xl bg-muted">
                 <img
                   src={src}
-                  alt={`Работа ${idx + 1}`}
-                  className="w-full h-full object-cover"
+                  alt={`Работа ${index + 1}`}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                   loading="lazy"
                 />
               </div>
@@ -126,21 +86,24 @@ export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardP
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-3 border-t border-border/60">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground min-w-0">
-            <span className="flex items-center gap-1 truncate">
-              <MapPin className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">
-                {master.district ? `${master.district} · ` : ""}{master.distance}
-              </span>
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+          <div className="flex min-w-0 items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex min-w-0 items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="truncate">{[master.city, master.district].filter(Boolean).join(" · ") || "Рядом"}</span>
             </span>
-            <span className="flex items-center gap-1 shrink-0">
-              <Clock className="w-3.5 h-3.5" />
+            <span className="flex shrink-0 items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
               {master.responseTime}
             </span>
           </div>
+          {master.isOnline && (
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Онлайн
+            </span>
+          )}
         </div>
-      </div>
+      </article>
     </Link>
   );
 }
