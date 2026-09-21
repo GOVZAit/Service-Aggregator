@@ -1,4 +1,5 @@
 import type { Express, Request } from "express";
+import { categoryIdsExist } from "./category-service";
 import { storage } from "./storage";
 import {
   createManualProvider,
@@ -52,6 +53,10 @@ export async function registerProviderRoutes(app: Express) {
     const parsed = providerProfilePatchSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
 
+    if (parsed.data.categoryIds && !categoryIdsExist(parsed.data.categoryIds)) {
+      return res.status(400).json({ message: "Выбрана несуществующая категория" });
+    }
+
     const provider = await updatePersistentProvider(user.masterId, parsed.data);
     if (!provider) {
       const fallback = await storage.updateMaster(user.masterId, parsed.data);
@@ -79,6 +84,9 @@ export async function registerProviderRoutes(app: Express) {
     }
     const parsed = manualProviderCreateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+    if (!categoryIdsExist(parsed.data.data.categoryIds)) {
+      return res.status(400).json({ message: "Выбрана несуществующая категория" });
+    }
     res.status(201).json(await createManualProvider(parsed.data));
   });
 
@@ -92,6 +100,9 @@ export async function registerProviderRoutes(app: Express) {
     }
     const parsed = providerImportSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+    if (!categoryIdsExist(parsed.data.data.categoryIds)) {
+      return res.status(400).json({ message: "Импорт содержит неизвестную категорию" });
+    }
     const provider = await importProvider(parsed.data);
     res.status(201).json(provider);
   });
@@ -104,6 +115,9 @@ export async function registerProviderRoutes(app: Express) {
     const parsed = providerProfilePatchSchema.safeParse(req.body);
     if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ message: "Некорректный id" });
     if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+    if (parsed.data.categoryIds && !categoryIdsExist(parsed.data.categoryIds)) {
+      return res.status(400).json({ message: "Выбрана несуществующая категория" });
+    }
     const provider = await updatePersistentProvider(id, parsed.data);
     if (!provider) return res.status(404).json({ message: "Профиль не найден" });
     res.json(provider);
