@@ -35,6 +35,7 @@ const MasterProfileEditPage = lazy(() => import("@/pages/master/profile"));
 const MasterOnboardingPage = lazy(() => import("@/pages/master/onboarding"));
 const OrganizationOnboardingPage = lazy(() => import("@/pages/organization/onboarding"));
 const OrganizationProfilePage = lazy(() => import("@/pages/organization/profile"));
+const AdminDashboardPage = lazy(() => import("@/pages/admin/dashboard"));
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
@@ -46,6 +47,7 @@ import { RouteErrorBoundary } from "@/components/route-error-boundary";
 const MASTER_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding", "/master/messages"];
 const ORGANIZATION_ROUTES = ["/organization", "/organization/orders", "/organization/profile", "/organization/onboarding", "/organization/messages"];
 const PUBLIC_AUTH_ROUTES = ["/auth", "/forgot-password", "/reset-password"];
+const ADMIN_ROUTES = ["/admin"];
 
 function isMasterRoute(path: string) {
   return MASTER_ROUTES.includes(path) || path.startsWith("/master/orders/") || path.startsWith("/master/messages/");
@@ -59,6 +61,10 @@ function isProviderRoute(path: string) {
   return isMasterRoute(path) || isOrganizationRoute(path);
 }
 
+function isAdminRoute(path: string) {
+  return ADMIN_ROUTES.includes(path) || path.startsWith("/admin/");
+}
+
 function RoleGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const [location, navigate] = useLocation();
@@ -69,9 +75,20 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
     const onMasterRoute = isMasterRoute(location);
     const onOrganizationRoute = isOrganizationRoute(location);
     const onProviderRoute = onMasterRoute || onOrganizationRoute;
+    const onAdminRoute = isAdminRoute(location);
 
-    if (!user && onProviderRoute) {
+    if (!user && (onProviderRoute || onAdminRoute)) {
       navigate("/auth");
+    } else if (user?.role === "admin" && !onAdminRoute && !PUBLIC_AUTH_ROUTES.includes(location)) {
+      navigate("/admin");
+    } else if (user && user.role !== "admin" && onAdminRoute) {
+      if (user.role === "master") {
+        navigate("/master");
+      } else if (user.role === "organization") {
+        navigate("/organization");
+      } else {
+        navigate("/");
+      }
     } else if (user?.role === "master" && !onMasterRoute && !PUBLIC_AUTH_ROUTES.includes(location)) {
       navigate("/master");
     } else if (user?.role === "organization" && !onOrganizationRoute && !PUBLIC_AUTH_ROUTES.includes(location)) {
@@ -85,7 +102,7 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, location, navigate]);
 
-  if (isLoading || (!user && isProviderRoute(location))) return <AppBootScreen />;
+  if (isLoading || (!user && (isProviderRoute(location) || isAdminRoute(location)))) return <AppBootScreen />;
   return <>{children}</>;
 }
 
@@ -112,6 +129,9 @@ function Router() {
         <Route path="/organization/messages" component={DirectChatsPage} />
         <Route path="/organization/profile" component={OrganizationProfilePage} />
         <Route path="/organization/onboarding" component={OrganizationOnboardingPage} />
+
+        {/* Admin routes */}
+        <Route path="/admin" component={AdminDashboardPage} />
 
         {/* Client routes */}
         <Route path="/" component={HomePage} />
@@ -150,6 +170,7 @@ function RouteEffects() {
 
     const title =
       location === "/" ? "GOVZA мастера — мастера рядом" :
+      location.startsWith("/admin") ? "Админ-панель — GOVZA мастера" :
       location.startsWith("/doctors") ? "Врачи — GOVZA мастера" :
       location.startsWith("/contacts") || location === "/city" ? "Контакты — GOVZA мастера" :
       location.startsWith("/requests") ? "Мои заявки — GOVZA мастера" :
