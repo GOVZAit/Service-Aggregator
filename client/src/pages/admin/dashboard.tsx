@@ -70,6 +70,43 @@ interface AdminDirectoryItem<T> {
 
 type DirectoryTab = "doctors" | "city-services";
 
+interface ImportSourceView {
+  name: string;
+  url: string;
+  adapter: "json" | "jsonld";
+  enabled: boolean;
+  providerType: "master" | "organization" | null;
+  organizationKind: string | null;
+  defaultCategoryIds: number[] | null;
+  categoryMappings: number;
+  hasCustomHeaders: boolean;
+  timeoutMs: number;
+  maxItems: number;
+}
+
+interface ImportConfig {
+  enabled: boolean;
+  configurationError: string | null;
+  intervalMinutes: number;
+  runOnStartup: boolean;
+  sources: ImportSourceView[];
+}
+
+interface ImportRun {
+  id: number;
+  sourceName: string;
+  trigger: "scheduler" | "admin" | "startup";
+  status: "running" | "success" | "partial" | "failed";
+  fetched: number;
+  parsed: number;
+  imported: number;
+  skipped: number;
+  errors: string[];
+  details: Record<string, unknown>;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
 const fieldClass =
   "h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10";
 
@@ -102,6 +139,10 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<number | "create" | "edit" | null>(null);
   const [error, setError] = useState("");
+
+  const [importConfig, setImportConfig] = useState<ImportConfig | null>(null);
+  const [importRuns, setImportRuns] = useState<ImportRun[]>([]);
+  const [importWorking, setImportWorking] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryEditingId, setCategoryEditingId] = useState<number | null>(null);
@@ -160,13 +201,15 @@ export default function AdminDashboardPage() {
     setError("");
     setLoading(true);
     try {
-      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories] = await Promise.all([
+      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories, nextImportConfig, nextImportRuns] = await Promise.all([
         api<Summary>("/api/admin/summary"),
         api<AdminProvider[]>(`/api/admin/providers${queryString}`),
         api<AuditEntry[]>("/api/admin/audit?limit=30"),
         api<AdminDirectoryItem<Doctor>[]>("/api/admin/directories/doctors"),
         api<AdminDirectoryItem<CityOrganization>[]>("/api/admin/directories/city-services"),
         api<Category[]>("/api/admin/categories"),
+        api<ImportConfig>("/api/admin/import/config"),
+        api<ImportRun[]>("/api/admin/import/runs?limit=30"),
       ]);
       setSummary(nextSummary);
       setProviders(nextProviders);
@@ -174,6 +217,8 @@ export default function AdminDashboardPage() {
       setDoctors(nextDoctors);
       setCityServices(nextCityServices);
       setCategories(nextCategories);
+      setImportConfig(nextImportConfig);
+      setImportRuns(nextImportRuns);
       if (selected) {
         const refreshed = nextProviders.find((item) => item.id === selected.id);
         if (refreshed) setSelected(refreshed);
@@ -296,6 +341,39 @@ export default function AdminDashboardPage() {
       setError(err instanceof Error ? err.message : "Не удалось сохранить изменения");
     } finally {
       setWorking(null);
+    }
+  };
+
+
+  const runImport = async (sourceName?: string) => {
+    const key = sourceName ?? "all";
+    setImportWorking(key);
+    setError("");
+    try {
+      await api<{ results: Array<{ sourceName: string; status: string; imported: number; skipped: number }> }>("/api/admin/import/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sourceName ? { sourceName } : {}),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось запустить импорт");
+    } finally {
+      setImportWorking(null);
+    }
+  };
+
+  const reloadImportConfig = async () => {
+    setImportWorking("reload");
+    setError("");
+    try {
+      const config = await api<ImportConfig>("/api/admin/import/reload", { method: "POST" });
+      setImportConfig(config);
+      setImportRuns(await api<ImportRun[]>("/api/admin/import/runs?limit=30"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось перечитать конфигурацию импорта");
+    } finally {
+      setImportWorking(null);
     }
   };
 
@@ -677,6 +755,156 @@ export default function AdminDashboardPage() {
               )}
             </div>
           </aside>
+        </section>
+
+        <section className="premium-card p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">Автоматический импорт</div>
+              <h2 className="mt-1 text-lg font-extrabold">Источники providers</h2>
+              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+                Интернет-данные обновляют только importedData. Ручные исправления остаются в manualOverrides и имеют приоритет.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                disabled={importWorking !== null}
+                onClick={() => void reloadImportConfig()}
+              >
+                <RefreshCw className="mr-1.5 h-4 w-4" />
+                Перечитать конфиг
+              </Button>
+              <Button
+                disabled={importWorking !== null || !importConfig?.sources.some((item) => item.enabled)}
+                onClick={() => void runImport()}
+              >
+                <Database className="mr-1.5 h-4 w-4" />
+                Запустить все
+              </Button>
+            </div>
+          </div>
+
+          {importConfig?.configurationError && (
+            <div className="mt-4 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              Ошибка конфигурации: {importConfig.configurationError}
+            </div>
+          )}
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-border/70 bg-muted/[.22] p-4">
+              <div className="text-xs text-muted-foreground">Scheduler</div>
+              <div className="mt-1 font-extrabold">{importConfig?.enabled ? "Включён" : "Выключен"}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                Интервал: {importConfig?.intervalMinutes ?? "—"} мин
+              </div>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-muted/[.22] p-4">
+              <div className="text-xs text-muted-foreground">Источники</div>
+              <div className="mt-1 font-extrabold">{importConfig?.sources.length ?? 0}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                Активных: {importConfig?.sources.filter((item) => item.enabled).length ?? 0}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-muted/[.22] p-4">
+              <div className="text-xs text-muted-foreground">При старте сервера</div>
+              <div className="mt-1 font-extrabold">{importConfig?.runOnStartup ? "Импортировать" : "Не запускать"}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">Управляется environment config</div>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {(importConfig?.sources ?? []).map((item) => (
+              <div key={item.name} className="rounded-2xl border border-border/70 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="truncate font-extrabold">{item.name}</h3>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
+                        {item.adapter}
+                      </span>
+                      {!item.enabled && (
+                        <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold uppercase text-destructive">
+                          disabled
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 break-all text-[11px] leading-relaxed text-muted-foreground">{item.url}</div>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                      <span>{item.providerType ?? "тип из JSON-LD"}</span>
+                      <span>mapping: {item.categoryMappings}</span>
+                      <span>max: {item.maxItems}</span>
+                      <span>timeout: {item.timeoutMs} ms</span>
+                      {item.hasCustomHeaders && <span>custom headers</span>}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={!item.enabled || importWorking !== null}
+                    onClick={() => void runImport(item.name)}
+                  >
+                    Запустить
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {importConfig && importConfig.sources.length === 0 && !importConfig.configurationError && (
+              <div className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground lg:col-span-2">
+                Источники пока не настроены. Движок готов; конфигурация читается из <code>PROVIDER_IMPORT_SOURCES_JSON</code>.
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6">
+            <h3 className="font-extrabold">Последние запуски</h3>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-xs">
+                <thead className="text-muted-foreground">
+                  <tr className="border-b border-border">
+                    <th className="px-2 py-2 font-semibold">Источник</th>
+                    <th className="px-2 py-2 font-semibold">Статус</th>
+                    <th className="px-2 py-2 font-semibold">Trigger</th>
+                    <th className="px-2 py-2 font-semibold">Fetched</th>
+                    <th className="px-2 py-2 font-semibold">Imported</th>
+                    <th className="px-2 py-2 font-semibold">Skipped</th>
+                    <th className="px-2 py-2 font-semibold">Время</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importRuns.map((run) => (
+                    <tr key={run.id} className="border-b border-border/60 last:border-0">
+                      <td className="px-2 py-2 font-semibold">{run.sourceName}</td>
+                      <td className="px-2 py-2">{run.status}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{run.trigger}</td>
+                      <td className="px-2 py-2">{run.fetched}</td>
+                      <td className="px-2 py-2">{run.imported}</td>
+                      <td className="px-2 py-2">{run.skipped}</td>
+                      <td className="px-2 py-2 text-muted-foreground">
+                        {new Date(run.startedAt).toLocaleString("ru-RU")}
+                      </td>
+                    </tr>
+                  ))}
+                  {importRuns.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-2 py-8 text-center text-muted-foreground">Запусков пока нет.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {importRuns.some((run) => run.errors.length > 0) && (
+              <details className="mt-3 rounded-xl border border-border p-3">
+                <summary className="cursor-pointer text-xs font-extrabold">Ошибки последних запусков</summary>
+                <div className="mt-3 space-y-2 text-[11px] text-muted-foreground">
+                  {importRuns.filter((run) => run.errors.length > 0).slice(0, 5).map((run) => (
+                    <div key={run.id}>
+                      <span className="font-bold text-foreground">{run.sourceName}:</span> {run.errors.slice(0, 5).join(" · ")}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
         </section>
 
         <section className="premium-card p-5">
