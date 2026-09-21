@@ -23,7 +23,7 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { AppBrandHeader } from "@/components/app-brand-header";
 import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
-import { getOrgDistance, type CityOrganization } from "@/lib/city-services-data";
+import { cityOrganizations as seededCityOrganizations, getOrgDistance, type CityOrganization } from "@/lib/city-services-data";
 
 // Only the "contacts" category
 const CONTACTS_CATEGORY_ID = 'contacts';
@@ -68,8 +68,9 @@ export default function ContactsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<number[]>([]);
 
-  const { data: cityOrganizations = [] } = useQuery<CityOrganization[]>({
+  const { data: cityOrganizations = seededCityOrganizations } = useQuery<CityOrganization[]>({
     queryKey: ["/api/directory/city-services"],
+    initialData: seededCityOrganizations,
   });
 
   const goToDetail = (org: CityOrganization) => {
