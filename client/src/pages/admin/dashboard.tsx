@@ -293,21 +293,18 @@ export default function AdminDashboardPage() {
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           {[
-            ["Профили", summary?.totalProviders ?? "—", Database],
-            ["Импорт", summary?.importedProviders ?? "—", Database],
-            ["Скрыты", summary?.hiddenProviders ?? "—", EyeOff],
-            ["На проверке", summary?.pendingVerifications ?? "—", ShieldCheck],
-            ["Пользователи", summary?.users ?? "—", Users],
-          ].map(([label, value, Icon]) => {
-            const SummaryIcon = Icon as typeof Database;
-            return (
-              <div key={String(label)} className="premium-card p-4">
-                <SummaryIcon className="h-4 w-4 text-primary" />
-                <div className="mt-3 text-2xl font-extrabold">{String(value)}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{String(label)}</div>
-              </div>
-            );
-          })}
+            { label: "Профили", value: summary?.totalProviders ?? "—", Icon: Database },
+            { label: "Импорт", value: summary?.importedProviders ?? "—", Icon: Database },
+            { label: "Скрыты", value: summary?.hiddenProviders ?? "—", Icon: EyeOff },
+            { label: "На проверке", value: summary?.pendingVerifications ?? "—", Icon: ShieldCheck },
+            { label: "Пользователи", value: summary?.users ?? "—", Icon: Users },
+          ].map(({ label, value, Icon }) => (
+            <div key={label} className="premium-card p-4">
+              <Icon className="h-4 w-4 text-primary" />
+              <div className="mt-3 text-2xl font-extrabold">{String(value)}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{label}</div>
+            </div>
+          ))}
         </section>
 
         <section className="premium-card p-4 sm:p-5">
