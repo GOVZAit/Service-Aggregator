@@ -12,6 +12,7 @@ import type { ExecutorType, MasterSettingsInput } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { PushNotificationCard } from "@/components/push-notification-card";
+import { AppBrandHeader } from "@/components/app-brand-header";
 
 type Step = "welcome" | "category" | "details" | "description" | "done";
 
@@ -69,11 +70,14 @@ export default function MasterOnboardingPage() {
 
   if (step === "welcome") {
     return (
-      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center px-6 text-center safe-area-pt safe-area-pb">
-        <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center mb-6">
+      <div className="min-h-[100dvh] bg-background safe-area-pt safe-area-pb">
+        <div className="mx-auto max-w-lg px-5 py-6">
+          <AppBrandHeader compact />
+          <div className="flex flex-col items-center justify-center pt-10 text-center">
+        <div className="w-24 h-24 rounded-[2rem] bg-primary/10 flex items-center justify-center mb-6">
           <Briefcase className="w-12 h-12 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold mb-2">
+        <h1 className="text-3xl font-extrabold tracking-[-0.04em] mb-2">
           Добро пожаловать, {user?.name?.split(" ")[0] || "мастер"}!
         </h1>
         <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mb-8">
@@ -86,7 +90,7 @@ export default function MasterOnboardingPage() {
             "Напишите пару слов о себе",
             "Начните получать заявки",
           ].map((text, i) => (
-            <div key={i} className="flex items-center gap-3 text-left bg-muted rounded-2xl px-4 py-3">
+            <div key={i} className="flex items-center gap-3 text-left premium-card px-4 py-3">
               <div className="w-7 h-7 rounded-full bg-primary text-white text-sm font-bold flex items-center justify-center shrink-0">
                 {i + 1}
               </div>
@@ -98,7 +102,7 @@ export default function MasterOnboardingPage() {
         <button
           onClick={() => setStep("category")}
           data-testid="button-onboarding-start"
-          className="w-full h-13 py-3.5 rounded-2xl bg-primary text-white font-bold text-base flex items-center justify-center gap-2"
+          className="accent-gradient w-full h-13 py-3.5 rounded-2xl text-white font-bold text-base shadow-md flex items-center justify-center gap-2"
         >
           Начать настройку <ChevronRight className="w-5 h-5" />
         </button>
@@ -113,6 +117,8 @@ export default function MasterOnboardingPage() {
         >
           Пропустить пока
         </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -123,12 +129,12 @@ export default function MasterOnboardingPage() {
         <div className="w-24 h-24 rounded-full bg-green-100 dark:bg-green-950/50 flex items-center justify-center mb-6">
           <CheckCircle2 className="w-12 h-12 text-green-500" />
         </div>
-        <h1 className="text-2xl font-bold mb-2">Профиль готов!</h1>
+        <h1 className="text-3xl font-extrabold tracking-[-0.04em] mb-2">Профиль готов!</h1>
         <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mb-8">
           Ваш профиль активен. Включите онлайн на главной и начните получать заявки от клиентов Грозного.
         </p>
 
-        <div className="w-full rounded-2xl bg-muted p-4 text-sm space-y-2 mb-8 text-left">
+        <div className="premium-card w-full p-4 text-sm space-y-2 mb-8 text-left">
           {selectedCategory && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Категория</span>
@@ -152,7 +158,7 @@ export default function MasterOnboardingPage() {
         <button
           onClick={() => navigate("/master")}
           data-testid="button-onboarding-finish"
-          className="w-full py-3.5 rounded-2xl bg-primary text-white font-bold text-base"
+          className="accent-gradient w-full py-3.5 rounded-2xl text-white font-bold text-base shadow-md"
         >
           Перейти на главную
         </button>
@@ -162,8 +168,11 @@ export default function MasterOnboardingPage() {
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col safe-area-pt">
+      <div className="px-5 pt-5">
+        <AppBrandHeader compact />
+      </div>
       {/* Progress */}
-      <div className="px-5 pt-14 pb-4">
+      <div className="px-5 pt-8 pb-4">
         <div className="flex items-center gap-2 mb-6">
           {steps.map((s, i) => {
             const isDone = i < stepIndex;
@@ -197,7 +206,7 @@ export default function MasterOnboardingPage() {
                   onClick={() => setSelectedCategory(name)}
                   data-testid={`onboarding-category-${name}`}
                   className={cn(
-                    "flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all",
+                    "premium-card flex flex-col items-center gap-3 p-4 transition-all",
                     selectedCategory === name
                       ? "border-primary bg-primary/5"
                       : "border-border bg-card hover:border-primary/30"
@@ -228,7 +237,7 @@ export default function MasterOnboardingPage() {
                   data-testid={`onboarding-executor-${t}`}
                   aria-pressed={executorType === t}
                   className={cn(
-                    "w-full px-4 py-3.5 rounded-2xl border-2 text-left text-sm font-medium transition-all",
+                    "premium-card w-full px-4 py-3.5 text-left text-sm font-bold transition-all",
                     executorType === t ? "border-primary bg-primary/5 text-primary" : "border-border bg-card"
                   )}
                 >
@@ -241,7 +250,7 @@ export default function MasterOnboardingPage() {
               data-testid="onboarding-toggle-certificate"
               aria-pressed={hasCertificate}
               className={cn(
-                "w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all",
+                "premium-card w-full flex items-center justify-between px-4 py-3.5 transition-all",
                 hasCertificate ? "border-primary bg-primary/5" : "border-border bg-card"
               )}
             >
@@ -272,7 +281,7 @@ export default function MasterOnboardingPage() {
               placeholder="Например: Опытный сантехник с 10-летним стажем. Работаю по всему Грозному, гарантия на все работы..."
               rows={6}
               data-testid="input-onboarding-description"
-              className="w-full px-4 py-3 rounded-2xl bg-muted border border-border text-base resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full px-4 py-3 rounded-2xl bg-card border border-border/70 text-base resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             <p className="text-xs text-muted-foreground mt-2">{description.length} / 300 символов</p>
 
@@ -300,7 +309,7 @@ export default function MasterOnboardingPage() {
           className={cn(
             "w-full py-3.5 rounded-2xl font-bold text-base transition-all",
             (step === "description" || (step === "details" ? executorType : selectedCategory))
-              ? "bg-primary text-white"
+              ? "accent-gradient text-white shadow-md"
               : "bg-muted text-muted-foreground cursor-not-allowed"
           )}
         >
