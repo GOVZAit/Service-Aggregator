@@ -493,25 +493,6 @@ export async function registerRoutes(
     res.json(await storage.updateLostFoundListing(listing.id, result.data));
   });
 
-  // ── Messages ─────────────────────────────────────────────────────────────────
-
-  app.get("/api/messages/:masterId", async (req, res) => {
-    res.json(await storage.getMessages(Number(req.params.masterId)));
-  });
-
-  app.post("/api/messages/:masterId", async (req, res) => {
-    const { text, sender } = req.body;
-    if (!text || !sender) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-    const message = {
-      id: Date.now(),
-      text,
-      sender,
-      time: new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
-    };
-    res.json(await storage.addMessage(Number(req.params.masterId), message));
-  });
 
   return httpServer;
 }
