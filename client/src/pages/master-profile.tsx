@@ -3,7 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Heart, MapPin, Clock, BadgeCheck, Shield,
-  MessageCircle, Phone, PhoneOff, Star, Building2, Award,
+  MessageCircle, Phone, PhoneOff, Star, Building2, Award, Share2,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { BookingModal } from "@/components/booking-modal";
+import { PortfolioLightbox } from "@/components/portfolio-lightbox";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
@@ -57,7 +58,17 @@ function getCallState(master: Master): CallState {
 
 // ── Reviews ───────────────────────────────────────────────────────────────────
 
-const reviewsByMasterId: Record<number, Array<{ name: string; avatar: string; rating: number; text: string; date: string; service: string }>> = {
+type DisplayReview = {
+  name: string;
+  avatar: string;
+  rating: number;
+  text: string;
+  date: string;
+  service: string;
+  providerReply?: string;
+};
+
+const reviewsByMasterId: Record<number, DisplayReview[]> = {
   1: [
     { name: "Рамзан Д.", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcabd36?w=60&h=60&fit=crop&crop=face", rating: 5, text: "Умар пришёл в срок, работу сделал быстро и чисто. Кран больше не течёт! Буду обращаться ещё.", date: "10 апр 2026", service: "Замена смесителя" },
     { name: "Зара Э.", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=60&h=60&fit=crop&crop=face", rating: 5, text: "Отличный специалист. Прочистил засор за 20 минут, объяснил причину и дал советы по профилактике.", date: "5 апр 2026", service: "Прочистка засора" },
@@ -74,7 +85,7 @@ const reviewsByMasterId: Record<number, Array<{ name: string; avatar: string; ra
   ],
 };
 
-const defaultReviews = [
+const defaultReviews: DisplayReview[] = [
   { name: "Клиент", avatar: "", rating: 5, text: "Отличная работа, всё сделано профессионально!", date: "Апрель 2026", service: "" },
 ];
 
@@ -98,6 +109,8 @@ export default function MasterProfilePage() {
   const { toast } = useToast();
   const [showBooking, setShowBooking] = useState(false);
   const [revealPhone, setRevealPhone] = useState(false);
+  const [portfolioIndex, setPortfolioIndex] = useState<number | null>(null);
+  const [reviewSort, setReviewSort] = useState<"newest" | "high" | "low">("newest");
 
   const masterId = Number(id);
 
@@ -173,6 +186,29 @@ export default function MasterProfilePage() {
     directChatMutation.mutate();
   };
 
+  const shareProfile = async () => {
+    if (!master) return;
+    const url = new URL(`/master/${masterId}`, window.location.origin).href;
+    const title = `${master.name} — GOVZA мастера`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title,
+          text: `${master.name}: ${master.category}`,
+          url,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Ссылка на профиль скопирована" });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast({ title: "Не удалось поделиться профилем", variant: "destructive" });
+    }
+  };
+
   // ── Loading state ─────────────────────────────────────────────────────────
   if (masterLoading) {
     return (
@@ -226,8 +262,14 @@ export default function MasterProfilePage() {
     text: review.comment || "Оценка оставлена после завершённого заказа GOVZA.",
     date: new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(review.createdAt)),
     service: review.service,
+    ...(review.providerReply ? { providerReply: review.providerReply } : {}),
   })) ?? [];
-  const reviews = verifiedReviews.length > 0 ? verifiedReviews : (reviewsByMasterId[masterId] ?? defaultReviews);
+  const reviews: DisplayReview[] = verifiedReviews.length > 0 ? verifiedReviews : (reviewsByMasterId[masterId] ?? defaultReviews);
+  const sortedReviews = [...reviews].sort((left, right) => {
+    if (reviewSort === "high") return right.rating - left.rating;
+    if (reviewSort === "low") return left.rating - right.rating;
+    return 0;
+  });
   const displayRating = reviewSummary && reviewSummary.count > 0 ? reviewSummary.average : master.rating;
   const displayReviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : master.reviews;
   const callState = getCallState(master);
@@ -244,6 +286,7 @@ export default function MasterProfilePage() {
       {showBooking && (
         <BookingModal master={master} onClose={() => setShowBooking(false)} />
       )}
+      <PortfolioLightbox images={master.portfolio} index={portfolioIndex} onIndexChange={setPortfolioIndex} />
 
       <header className="sticky top-0 z-40 bg-background/92 backdrop-blur-2xl border-b border-border/70 px-4 py-3 safe-area-pt">
         <div className="flex items-center gap-4 max-w-lg mx-auto">
@@ -252,6 +295,9 @@ export default function MasterProfilePage() {
           </Button>
           <span className="font-semibold">{isOrganization ? "Профиль организации" : "Профиль мастера"}</span>
           <div className="ml-auto flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Поделиться профилем" onClick={() => void shareProfile()} data-testid="button-share-profile">
+              <Share2 className="w-5 h-5 text-muted-foreground" />
+            </Button>
             <Button variant="ghost" size="icon" className="w-11 h-11" aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} aria-pressed={isFavorite} onClick={toggleFavorite} data-testid="button-favorite-profile">
               <Heart className={`w-5 h-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'text-muted-foreground'}`} />
             </Button>
@@ -365,18 +411,21 @@ export default function MasterProfilePage() {
               </div>
               <div className="grid grid-cols-3 gap-1.5">
                 {master.portfolio.slice(0, 3).map((img, idx) => (
-                  <div
+                  <button
+                    type="button"
                     key={idx}
-                    className="aspect-square rounded-xl overflow-hidden bg-muted"
+                    onClick={() => setPortfolioIndex(idx)}
+                    className="aspect-square overflow-hidden rounded-xl bg-muted"
                     data-testid={`portfolio-preview-${idx}`}
+                    aria-label={`Открыть работу ${idx + 1}`}
                   >
                     <img
                       src={img}
                       alt={`Работа ${idx + 1}`}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                       loading="lazy"
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -434,13 +483,21 @@ export default function MasterProfilePage() {
           <TabsContent value="portfolio" className="mt-4">
             <div className="grid grid-cols-2 gap-3">
               {master.portfolio.map((img, idx) => (
-                <img
+                <button
                   key={idx}
-                  src={img}
-                  alt={`Работа ${idx + 1}`}
-                  className="w-full aspect-[4/3] object-cover rounded-xl"
-                  data-testid={`portfolio-image-${idx}`}
-                />
+                  type="button"
+                  onClick={() => setPortfolioIndex(idx)}
+                  className="overflow-hidden rounded-xl"
+                  aria-label={`Открыть работу ${idx + 1}`}
+                >
+                  <img
+                    src={img}
+                    alt={`Работа ${idx + 1}`}
+                    className="w-full aspect-[4/3] object-cover"
+                    data-testid={`portfolio-image-${idx}`}
+                    loading="lazy"
+                  />
+                </button>
               ))}
             </div>
           </TabsContent>
@@ -486,7 +543,27 @@ export default function MasterProfilePage() {
               </div>
             )}
 
-            {reviews.map((review, idx) => (
+            <div className="flex flex-wrap gap-2" aria-label="Сортировка отзывов">
+              {([
+                ["newest", "Свежие"],
+                ["high", "Высокие"],
+                ["low", "Низкие"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setReviewSort(value)}
+                  className={cn(
+                    "min-h-9 rounded-full px-3 text-xs font-bold transition",
+                    reviewSort === value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {sortedReviews.map((review, idx) => (
               <div key={idx} data-testid={`review-${idx}`} className="premium-card p-4 space-y-2">
                 <div className="flex items-center gap-3">
                   <Avatar className="w-9 h-9">
@@ -507,6 +584,14 @@ export default function MasterProfilePage() {
                   </div>
                 </div>
                 <p className="text-sm text-foreground/80 leading-relaxed">«{review.text}»</p>
+                {review.providerReply && (
+                  <div className="rounded-2xl bg-primary/[0.06] p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-primary">
+                      Ответ исполнителя
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed">{review.providerReply}</p>
+                  </div>
+                )}
               </div>
             ))}
           </TabsContent>
