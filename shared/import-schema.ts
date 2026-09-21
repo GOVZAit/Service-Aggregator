@@ -96,6 +96,19 @@ export const providerImportSourceSchema = z.object({
   }
 });
 
-export const providerImportSourcesSchema = z.array(providerImportSourceSchema).max(50);
+export const providerImportSourcesSchema = z.array(providerImportSourceSchema).max(50).superRefine((sources, ctx) => {
+  const seen = new Set<string>();
+  sources.forEach((source, index) => {
+    const normalized = source.name.toLocaleLowerCase("en-US");
+    if (seen.has(normalized)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [index, "name"],
+        message: "Import source names must be unique",
+      });
+    }
+    seen.add(normalized);
+  });
+});
 
 export type ProviderImportSource = z.infer<typeof providerImportSourceSchema>;
