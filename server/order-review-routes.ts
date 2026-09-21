@@ -2,8 +2,10 @@ import type { Express } from "express";
 import { asc, eq } from "drizzle-orm";
 import { db, pool } from "./db";
 import { storage } from "./storage";
+import { sendPushToUser } from "./push-service";
 import {
   createOrderReviewSchema,
+  providerReviewReplySchema,
   orderReviews,
   type MasterReviewSummary,
   type OrderReviewView,
@@ -22,8 +24,12 @@ async function ensureOrderReviewTable() {
       price_match integer NOT NULL CHECK (price_match BETWEEN 1 AND 5),
       courtesy integer NOT NULL CHECK (courtesy BETWEEN 1 AND 5),
       comment text,
+      provider_reply text,
+      provider_reply_at timestamptz,
       created_at timestamptz NOT NULL DEFAULT now()
     );
+    ALTER TABLE order_reviews ADD COLUMN IF NOT EXISTS provider_reply text;
+    ALTER TABLE order_reviews ADD COLUMN IF NOT EXISTS provider_reply_at timestamptz;
     CREATE UNIQUE INDEX IF NOT EXISTS order_reviews_order_unique ON order_reviews(order_id);
     CREATE INDEX IF NOT EXISTS order_reviews_master_id_idx ON order_reviews(master_id);
     CREATE INDEX IF NOT EXISTS order_reviews_client_id_idx ON order_reviews(client_id);
@@ -58,6 +64,8 @@ async function reviewView(row: typeof orderReviews.$inferSelect): Promise<OrderR
     priceMatch: row.priceMatch,
     courtesy: row.courtesy,
     comment: row.comment ?? "",
+    ...(row.providerReply ? { providerReply: row.providerReply } : {}),
+    ...(row.providerReplyAt ? { providerReplyAt: row.providerReplyAt.toISOString() } : {}),
     createdAt: row.createdAt.toISOString(),
     verifiedOrder: true,
   };
@@ -125,6 +133,47 @@ export async function registerOrderReviewRoutes(app: Express) {
     if (!review) return res.json(null);
 
     res.json(await reviewView(review));
+  });
+
+  app.patch("/api/reviews/:id/reply", async (req, res) => {
+    const user = await authenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if ((user.role !== "master" && user.role !== "organization") || !user.masterId) {
+      return res.status(403).json({ message: "Ответить на отзыв может исполнитель" });
+    }
+
+    const reviewId = Number(req.params.id);
+    if (!Number.isInteger(reviewId) || reviewId <= 0) {
+      return res.status(400).json({ message: "Некорректный отзыв" });
+    }
+
+    const parsed = providerReviewReplySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+
+    const [existing] = await db.select().from(orderReviews)
+      .where(eq(orderReviews.id, reviewId))
+      .limit(1);
+    if (!existing) return res.status(404).json({ message: "Отзыв не найден" });
+    if (existing.masterId !== user.masterId) {
+      return res.status(403).json({ message: "Можно отвечать только на отзывы о своём профиле" });
+    }
+
+    const [updated] = await db.update(orderReviews)
+      .set({
+        providerReply: parsed.data.text,
+        providerReplyAt: new Date(),
+      })
+      .where(eq(orderReviews.id, reviewId))
+      .returning();
+
+    void sendPushToUser(updated.clientId, {
+      title: "Исполнитель ответил на ваш отзыв",
+      body: parsed.data.text.length > 120 ? `${parsed.data.text.slice(0, 117)}…` : parsed.data.text,
+      url: `/master/${updated.masterId}`,
+      tag: `review-reply-${updated.id}`,
+    });
+
+    res.json(await reviewView(updated));
   });
 
   app.post("/api/orders/:id/review", async (req, res) => {

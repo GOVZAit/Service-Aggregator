@@ -42,6 +42,7 @@ import { NetworkStatusBanner } from "@/components/network-status-banner";
 import { RealtimeSync } from "@/components/realtime-sync";
 import { AppBootScreen } from "@/components/app-boot-screen";
 import { RouteErrorBoundary } from "@/components/route-error-boundary";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 
 // Executor-only routes (executor interface)
 const MASTER_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding", "/master/messages"];
@@ -168,21 +169,76 @@ function RouteEffects() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
-    const title =
-      location === "/" ? "GOVZA мастера — мастера рядом" :
-      location.startsWith("/admin") ? "Админ-панель — GOVZA мастера" :
-      location.startsWith("/doctors") ? "Врачи — GOVZA мастера" :
-      location.startsWith("/contacts") || location === "/city" ? "Контакты — GOVZA мастера" :
-      location.startsWith("/requests") ? "Мои заявки — GOVZA мастера" :
-      location.startsWith("/orders") ? "Мои заказы — GOVZA мастера" :
-      location.includes("/messages") ? "Сообщения — GOVZA мастера" :
-      location.startsWith("/profile") ? "Профиль — GOVZA мастера" :
-      location.startsWith("/master") ? "Кабинет мастера — GOVZA мастера" :
-      location.startsWith("/organization") ? "Кабинет организации — GOVZA мастера" :
-      location.startsWith("/lost-found") ? "Потеряно / Найдено — GOVZA мастера" :
-      "GOVZA мастера";
+    const metadata =
+      location === "/" ? {
+        title: "GOVZA мастера — мастера рядом",
+        description: "Найдите мастера или организацию рядом, сравните услуги, отзывы и отправьте заявку в GOVZA.",
+      } :
+      location.startsWith("/admin") ? {
+        title: "Админ-панель — GOVZA мастера",
+        description: "Управление каталогом, справочниками и модерацией GOVZA.",
+      } :
+      location.startsWith("/doctors") ? {
+        title: "Врачи — GOVZA мастера",
+        description: "Каталог врачей и медицинских специалистов с контактами и удобным поиском.",
+      } :
+      location.startsWith("/contacts") || location === "/city" ? {
+        title: "Контакты — GOVZA мастера",
+        description: "Полезные городские службы, организации, адреса, телефоны и карта в GOVZA.",
+      } :
+      location.startsWith("/requests") ? {
+        title: "Мои заявки — GOVZA мастера",
+        description: "Создавайте заявки, получайте предложения исполнителей и выбирайте подходящего мастера.",
+      } :
+      location.startsWith("/orders") ? {
+        title: "Мои заказы — GOVZA мастера",
+        description: "Статусы заказов, чат с исполнителем и отзывы после завершения работы.",
+      } :
+      location.includes("/messages") ? {
+        title: "Сообщения — GOVZA мастера",
+        description: "Личные сообщения и переписка с исполнителями и клиентами GOVZA.",
+      } :
+      location.startsWith("/profile") ? {
+        title: "Профиль — GOVZA мастера",
+        description: "Настройки профиля, уведомлений и активности аккаунта GOVZA.",
+      } :
+      /^\/master\/\d+/.test(location) ? {
+        title: "Профиль исполнителя — GOVZA мастера",
+        description: "Услуги, портфолио, проверенные отзывы и контакты исполнителя в GOVZA.",
+      } :
+      location.startsWith("/master") ? {
+        title: "Кабинет мастера — GOVZA мастера",
+        description: "Заявки, заказы, сообщения и управление профилем мастера GOVZA.",
+      } :
+      location.startsWith("/organization") ? {
+        title: "Кабинет организации — GOVZA мастера",
+        description: "Заявки, заказы, сообщения и управление профилем организации GOVZA.",
+      } :
+      location.startsWith("/lost-found") ? {
+        title: "Потеряно / Найдено — GOVZA мастера",
+        description: "Объявления о потерянных и найденных вещах, документах и животных.",
+      } : {
+        title: "GOVZA мастера",
+        description: "GOVZA — мастера, организации, услуги, заявки и полезные городские контакты рядом.",
+      };
 
-    document.title = title;
+    document.title = metadata.title;
+
+    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (description) description.content = metadata.description;
+
+    const ogTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
+    if (ogTitle) ogTitle.content = metadata.title;
+
+    const ogDescription = document.querySelector<HTMLMetaElement>('meta[property="og:description"]');
+    if (ogDescription) ogDescription.content = metadata.description;
+
+    const absoluteUrl = new URL(location || "/", window.location.origin).href;
+    const ogUrl = document.querySelector<HTMLMetaElement>('meta[property="og:url"]');
+    if (ogUrl) ogUrl.content = absoluteUrl;
+
+    const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (canonical) canonical.href = absoluteUrl;
   }, [location]);
 
   return null;
@@ -215,6 +271,7 @@ function App() {
             <Router />
           </RouteErrorBoundary>
           <PwaInstallPrompt />
+          <PullToRefresh />
           <RealtimeSync />
           <PwaUpdatePrompt />
           <NetworkStatusBanner />
