@@ -285,6 +285,108 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const directoryItems = directoryTab === "doctors" ? doctors : cityServices;
+
+  const selectDirectoryItem = (item: AdminDirectoryItem<Doctor> | AdminDirectoryItem<CityOrganization>) => {
+    setDirectoryCreating(false);
+    setDirectorySelectedId(item.id);
+    setDirectoryDraft(JSON.stringify(item.record, null, 2));
+  };
+
+  const startDirectoryCreate = () => {
+    setDirectorySelectedId(null);
+    setDirectoryCreating(true);
+    const template = directoryTab === "doctors"
+      ? {
+          name: "",
+          specialty: "Терапевт",
+          specialtyId: "therapist",
+          locations: [{ clinic: "", address: "", city: "Грозный", schedule: "" }],
+          experienceYears: 0,
+          rating: 0,
+          reviews: 0,
+          price: "по запросу",
+          phone: "",
+          avatar: "",
+        }
+      : {
+          categoryId: "contacts",
+          name: "",
+          subcategory: "",
+          phone: "",
+          address: "",
+          hours: "",
+          district: "",
+        };
+    setDirectoryDraft(JSON.stringify(template, null, 2));
+  };
+
+  const saveDirectory = async () => {
+    setError("");
+    let parsed: Record<string, unknown>;
+    try {
+      const value = JSON.parse(directoryDraft);
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("Запись должна быть JSON-объектом");
+      }
+      parsed = value as Record<string, unknown>;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Некорректный JSON");
+      return;
+    }
+
+    const { id: _id, ...payload } = parsed;
+    const base = directoryTab === "doctors"
+      ? "/api/admin/directories/doctors"
+      : "/api/admin/directories/city-services";
+    const url = directoryCreating ? base : `${base}/${directorySelectedId}`;
+
+    setDirectoryWorking(true);
+    try {
+      await api(url, {
+        method: directoryCreating ? "POST" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setDirectoryCreating(false);
+      setDirectorySelectedId(null);
+      setDirectoryDraft("");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось сохранить запись");
+    } finally {
+      setDirectoryWorking(false);
+    }
+  };
+
+  const toggleDirectoryVisibility = async (
+    item: AdminDirectoryItem<Doctor> | AdminDirectoryItem<CityOrganization>,
+  ) => {
+    const base = directoryTab === "doctors"
+      ? "/api/admin/directories/doctors"
+      : "/api/admin/directories/city-services";
+
+    setDirectoryWorking(true);
+    setError("");
+    try {
+      await api(`${base}/${item.id}/visibility`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visible: !item.visible }),
+      });
+      if (directorySelectedId === item.id) {
+        setDirectorySelectedId(null);
+        setDirectoryDraft("");
+      }
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось изменить видимость записи");
+    } finally {
+      setDirectoryWorking(false);
+    }
+  };
+
+
   return (
     <div className="min-h-[100dvh] bg-background pb-12 safe-area-pt">
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/92 backdrop-blur-xl">
