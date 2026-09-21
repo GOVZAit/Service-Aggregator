@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { BookingModal } from "@/components/booking-modal";
 import { PortfolioLightbox } from "@/components/portfolio-lightbox";
+import { ReportDialog } from "@/components/report-dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +60,7 @@ function getCallState(master: Master): CallState {
 // ── Reviews ───────────────────────────────────────────────────────────────────
 
 type DisplayReview = {
+  id?: number;
   name: string;
   avatar: string;
   rating: number;
@@ -256,6 +258,7 @@ export default function MasterProfilePage() {
 
   const isOrganization = master.providerType === "organization";
   const verifiedReviews = reviewSummary?.reviews.map((review) => ({
+    id: review.id,
     name: review.clientName,
     avatar: "",
     rating: review.rating,
@@ -295,6 +298,7 @@ export default function MasterProfilePage() {
           </Button>
           <span className="font-semibold">{isOrganization ? "Профиль организации" : "Профиль мастера"}</span>
           <div className="ml-auto flex items-center gap-1">
+            <ReportDialog targetType="provider" targetId={masterId} />
             <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Поделиться профилем" onClick={() => void shareProfile()} data-testid="button-share-profile">
               <Share2 className="w-5 h-5 text-muted-foreground" />
             </Button>
@@ -590,6 +594,11 @@ export default function MasterProfilePage() {
                       Ответ исполнителя
                     </p>
                     <p className="mt-1 text-sm leading-relaxed">{review.providerReply}</p>
+                  </div>
+                )}
+                {review.id && (
+                  <div className="flex justify-end">
+                    <ReportDialog targetType="review" targetId={review.id} compact />
                   </div>
                 )}
               </div>
