@@ -37,16 +37,16 @@ export default function DirectChatPage() {
   const { data: conversations = [] } = useQuery<DirectConversationView[]>({
     queryKey: ["/api/direct-chats"],
     enabled: !!user,
-    refetchInterval: 15_000,
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
   const conversation = conversations.find((item) => item.id === conversationId);
 
   const { data: messages = [], isLoading } = useQuery<DirectMessageView[]>({
     queryKey: ["/api/direct-chats", conversationId, "messages"],
     enabled: Number.isInteger(conversationId) && conversationId > 0 && !!user,
-    refetchInterval: 3000,
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
