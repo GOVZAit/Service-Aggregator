@@ -21,7 +21,7 @@ class RequestApiError extends Error {
   }
 }
 
-async function ensureRequestTables() {
+export async function ensureRequestTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS service_requests (
       id serial PRIMARY KEY,
@@ -352,6 +352,14 @@ export async function registerPersistentRequestRoutes(app: Express) {
           .where(eq(requestResponses.requestId, requestId));
         await tx.update(requestResponses).set({ status: "selected" })
           .where(eq(requestResponses.id, response.id));
+
+        await tx.update(requestInvitations).set({
+          status: "declined",
+          respondedAt: new Date(),
+        }).where(and(
+          eq(requestInvitations.requestId, requestId),
+          eq(requestInvitations.status, "pending"),
+        ));
 
         const [createdOrder] = await tx.insert(persistedOrders).values({
           title: request.title,
