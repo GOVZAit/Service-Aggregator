@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Home, Phone, User, Stethoscope, LayoutGrid } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useUnreadCounts } from "@/hooks/use-unread-counts";
 
 const tabs = [
   { id: 'home',     path: '/',        icon: Home,        label: 'Мастера' },
@@ -13,6 +14,7 @@ const tabs = [
 export function BottomNavigation() {
   const [location] = useLocation();
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const { totalCount } = useUnreadCounts();
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -60,7 +62,14 @@ export function BottomNavigation() {
                   : "text-muted-foreground lg:hover:bg-muted"
               )}
             >
-              <Icon className="w-6 h-6 lg:w-5 lg:h-5" />
+              <span className="relative">
+                <Icon className="w-6 h-6 lg:w-5 lg:h-5" />
+                {tab.id === "more" && totalCount > 0 && (
+                  <span className="absolute -right-2.5 -top-2 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 py-0.5 text-[9px] font-bold leading-none text-primary-foreground">
+                    {totalCount > 99 ? "99+" : totalCount}
+                  </span>
+                )}
+              </span>
               <span className="text-center text-[11px] font-medium leading-tight lg:text-sm lg:whitespace-nowrap">
                 {tab.label}
               </span>
