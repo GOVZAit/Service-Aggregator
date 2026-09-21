@@ -12,6 +12,8 @@ import { ensureDirectoryTables } from "./directory-service";
 import { registerDirectoryRoutes } from "./directory-routes";
 import { ensureCategoryTables } from "./category-service";
 import { registerCategoryRoutes } from "./category-routes";
+import { ensureProviderImportTables, startProviderImportScheduler } from "./provider-importer";
+import { registerProviderImportRoutes } from "./provider-import-routes";
 import { ensureProviderTables } from "./provider-service";
 import { initializePushService } from "./push-service";
 import { startProviderLifecycleScheduler } from "./provider-lifecycle";
@@ -123,6 +125,7 @@ app.use((req, res, next) => {
   await ensureAdminTables();
   await ensureDirectoryTables();
   await ensureCategoryTables();
+  await ensureProviderImportTables();
   await initializePushService();
   await registerPersistentRequestRoutes(app);
   await registerOrderChatRoutes(app);
@@ -134,8 +137,10 @@ app.use((req, res, next) => {
   await registerAdminRoutes(app);
   await registerDirectoryRoutes(app);
   await registerCategoryRoutes(app);
+  await registerProviderImportRoutes(app);
   await registerRoutes(httpServer, app);
   startProviderLifecycleScheduler();
+  startProviderImportScheduler();
   registerRealtimeServer(httpServer);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
