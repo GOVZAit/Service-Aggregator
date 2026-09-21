@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { z } from "zod";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "./db";
 import { storage } from "./storage";
@@ -26,6 +27,30 @@ function timeInside(from: string, to: string, now: string) {
   return from <= now && now < to;
 }
 
+const urgentSearchSchema = z.object({
+  categoryId: z.number().int().positive(),
+  city: z.string().trim().max(80).optional(),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+}).strict().superRefine((value, ctx) => {
+  if ((value.lat === undefined) !== (value.lng === undefined)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Координаты должны передаваться парой",
+    });
+  }
+});
+
+function canCallNow(provider: Awaited<ReturnType<typeof storage.getMasters>>[number], now: string) {
+  if (!provider.phone || provider.callMode === "disabled") return false;
+  if (provider.callMode === "always") return true;
+  if (provider.callMode === "online_only") return provider.isOnline;
+  if (provider.callMode === "schedule") {
+    return timeInside(provider.workingHours.from, provider.workingHours.to, now);
+  }
+  return false;
+}
+
 function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   const radius = 6371;
   const radians = (value: number) => value * Math.PI / 180;
@@ -38,18 +63,16 @@ function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
 }
 
 export async function registerUrgentRoutes(app: Express) {
-  app.get("/api/urgent/providers", async (req, res) => {
-    const categoryId = Number(req.query.categoryId);
-    if (!Number.isInteger(categoryId) || categoryId <= 0 || !getEffectiveCategory(categoryId)) {
+  app.post("/api/urgent/providers/search", async (req, res) => {
+    const parsed = urgentSearchSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+
+    const { categoryId, city = "", lat, lng } = parsed.data;
+    if (!getEffectiveCategory(categoryId)) {
       return res.status(400).json({ message: "Выберите категорию" });
     }
 
-    const city = typeof req.query.city === "string" ? req.query.city.trim() : "";
-    const lat = req.query.lat !== undefined ? Number(req.query.lat) : undefined;
-    const lng = req.query.lng !== undefined ? Number(req.query.lng) : undefined;
-    const hasCoordinates =
-      Number.isFinite(lat) && Number.isFinite(lng) &&
-      lat! >= -90 && lat! <= 90 && lng! >= -180 && lng! <= 180;
+    const hasCoordinates = lat !== undefined && lng !== undefined;
 
     const providers = (await storage.getMasters()).filter((provider) =>
       (provider.categoryIds ?? [provider.categoryId]).includes(categoryId),
@@ -114,7 +137,7 @@ export async function registerUrgentRoutes(app: Express) {
         companyName: provider.companyName,
         city: provider.city,
         district: provider.district,
-        phone: provider.callMode !== "disabled" ? provider.phone : undefined,
+        phone: canCallNow(provider, time) ? provider.phone : undefined,
         callMode: provider.callMode,
         isOnline: provider.isOnline,
         availabilitySource,
