@@ -15,6 +15,10 @@ export const orderReviews = pgTable("order_reviews", {
   comment: text("comment"),
   providerReply: text("provider_reply"),
   providerReplyAt: timestamp("provider_reply_at", { withTimezone: true }),
+  moderationStatus: text("moderation_status").$type<"visible" | "hidden">().default("visible").notNull(),
+  moderationNote: text("moderation_note"),
+  moderatedBy: integer("moderated_by").references(() => authUsers.id, { onDelete: "set null" }),
+  moderatedAt: timestamp("moderated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("order_reviews_order_unique").on(table.orderId),
