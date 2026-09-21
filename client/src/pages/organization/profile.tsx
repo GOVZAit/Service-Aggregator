@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Check, Eye, EyeOff, LogOut, Plus, Save, Trash2 } from "lucide-react";
 import OrganizationBottomNavigation from "@/components/organization-bottom-navigation";
+import { AppBrandHeader } from "@/components/app-brand-header";
 import { PushNotificationCard } from "@/components/push-notification-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,10 +88,14 @@ export default function OrganizationProfilePage() {
 
   return (
     <div className="app-page bg-background">
-      <header className="sticky top-0 z-40 border-b bg-background/95 px-4 py-4 safe-area-pt backdrop-blur-xl">
-        <div className="mx-auto max-w-lg lg:max-w-4xl">
-          <p className="text-xs text-muted-foreground">Кабинет организации</p>
-          <h1 className="text-xl font-bold">Профиль организации</h1>
+      <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
+        <div className="mx-auto max-w-lg px-4 py-4 lg:max-w-4xl">
+          <AppBrandHeader compact />
+          <div className="mt-6">
+            <p className="text-xs font-medium text-muted-foreground">Кабинет организации</p>
+            <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.04em]">Профиль организации</h1>
+            <p className="mt-1 text-xs text-muted-foreground">Управляйте категориями, услугами и видимостью.</p>
+          </div>
         </div>
       </header>
 
@@ -101,7 +106,7 @@ export default function OrganizationProfilePage() {
           </div>
         )}
 
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 premium-card p-4">
           <div className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
             <h2 className="font-semibold">Основные данные</h2>
@@ -114,7 +119,7 @@ export default function OrganizationProfilePage() {
           </div>
         </section>
 
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 premium-card p-4">
           <h2 className="font-semibold">Тип организации</h2>
           <div className="grid grid-cols-2 gap-2">
             {(Object.entries(organizationKindLabels) as Array<[OrganizationKind, string]>).map(([value, label]) => (
@@ -122,7 +127,7 @@ export default function OrganizationProfilePage() {
                 key={value}
                 type="button"
                 onClick={() => setKind(value)}
-                className={cn("min-h-11 rounded-xl border px-3 text-left text-sm", kind === value && "border-primary bg-primary/5 text-primary")}
+                className={cn("min-h-11 rounded-2xl border border-border/70 px-3 text-left text-sm", kind === value && "border-primary bg-primary/5 text-primary")}
               >
                 {label}
               </button>
@@ -130,7 +135,7 @@ export default function OrganizationProfilePage() {
           </div>
         </section>
 
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 premium-card p-4">
           <div>
             <h2 className="font-semibold">Категории услуг</h2>
             <p className="text-xs text-muted-foreground">Организация может работать в нескольких категориях.</p>
@@ -145,7 +150,7 @@ export default function OrganizationProfilePage() {
                   onClick={() => setCategoryIds((current) =>
                     selected ? current.filter((id) => id !== category.id) : [...current, category.id]
                   )}
-                  className={cn("flex min-h-11 items-center justify-between rounded-xl border px-3 text-sm", selected && "border-primary bg-primary/5 text-primary")}
+                  className={cn("flex min-h-11 items-center justify-between rounded-2xl border border-border/70 px-3 text-sm", selected && "border-primary bg-primary/5 text-primary")}
                 >
                   {category.name}{selected && <Check className="h-4 w-4" />}
                 </button>
@@ -154,7 +159,7 @@ export default function OrganizationProfilePage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border bg-card">
+        <section className="premium-card">
           <div className="border-b p-4"><h2 className="font-semibold">Услуги и цены</h2></div>
           <div className="divide-y">
             {services.map((service, index) => (
@@ -168,14 +173,14 @@ export default function OrganizationProfilePage() {
           </div>
           <div className="flex gap-2 border-t p-3">
             <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="Услуга" />
-            <Input value={servicePrice} onChange={(e) => setServicePrice(e.target.value)} placeholder="Цена" className="w-28" />
-            <Button size="icon" className="h-11 w-11" onClick={addService}><Plus className="h-4 w-4" /></Button>
+            <Input value={servicePrice} onChange={(e) => setServicePrice(e.target.value)} placeholder="Цена" className="w-28 rounded-xl" />
+            <Button size="icon" className="h-11 w-11 rounded-xl" onClick={addService}><Plus className="h-4 w-4" /></Button>
           </div>
         </section>
 
         <PushNotificationCard />
 
-        <section className="rounded-2xl border bg-card p-4">
+        <section className="premium-card p-4">
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <p className="font-semibold">Видимость в каталоге</p>
@@ -194,11 +199,11 @@ export default function OrganizationProfilePage() {
           </div>
         </section>
 
-        <Button className="h-12 w-full" disabled={saveMutation.isPending || categoryIds.length === 0 || name.trim().length < 2 || description.trim().length < 10} onClick={() => saveMutation.mutate()}>
+        <Button className="accent-gradient h-12 w-full rounded-2xl font-bold text-white" disabled={saveMutation.isPending || categoryIds.length === 0 || name.trim().length < 2 || description.trim().length < 10} onClick={() => saveMutation.mutate()}>
           <Save className="mr-2 h-4 w-4" />{saveMutation.isPending ? "Сохраняем…" : "Сохранить изменения"}
         </Button>
 
-        <Button variant="ghost" className="h-11 w-full text-destructive" onClick={async () => { await logout(); navigate("/"); }}>
+        <Button variant="ghost" className="h-11 w-full rounded-xl text-destructive" onClick={async () => { await logout(); navigate("/"); }}>
           <LogOut className="mr-2 h-4 w-4" />Выйти
         </Button>
       </main>
