@@ -5,6 +5,7 @@ import { ShoppingBag } from "lucide-react";
 import { OrderCard } from "@/components/order-card";
 import { ReviewModal } from "@/components/review-modal";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { AppBrandHeader } from "@/components/app-brand-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -12,19 +13,19 @@ import type { Order, Master } from "@shared/schema";
 
 function OrderSkeleton() {
   return (
-    <div className="rounded-2xl bg-card border border-border/60 p-4 space-y-3 animate-pulse">
+    <div className="premium-card space-y-3 p-4 animate-pulse">
       <div className="flex items-start justify-between gap-2">
         <Skeleton className="h-4 w-48" />
         <Skeleton className="h-5 w-24 rounded-full" />
       </div>
       <div className="flex gap-3">
-        <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+        <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
         <div className="flex-1 space-y-1.5">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-3 w-20" />
         </div>
       </div>
-      <Skeleton className="h-9 rounded-xl w-full" />
+      <Skeleton className="h-9 w-full rounded-xl" />
     </div>
   );
 }
@@ -33,42 +34,34 @@ export default function OrdersPage() {
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
   const [, navigate] = useLocation();
 
-  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
-    queryKey: ['/api/orders'],
-  });
-
-  const { data: masters = [] } = useQuery<Master[]>({
-    queryKey: ['/api/masters'],
-  });
-
-  const { data: reviewed = { orderIds: [] } } = useQuery<{ orderIds: number[] }>({
-    queryKey: ['/api/order-reviews/mine'],
-  });
-
+  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({ queryKey: ["/api/orders"] });
+  const { data: masters = [] } = useQuery<Master[]>({ queryKey: ["/api/masters"] });
+  const { data: reviewed = { orderIds: [] } } = useQuery<{ orderIds: number[] }>({ queryKey: ["/api/order-reviews/mine"] });
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-4 safe-area-pt">
-        <div className="max-w-lg mx-auto">
-          <h1 className="text-2xl font-bold">Мои заказы</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">История и текущие заказы</p>
+    <div className="app-page bg-background">
+      <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
+        <div className="mx-auto max-w-4xl px-4 py-4">
+          <AppBrandHeader compact />
+          <div className="mt-6">
+            <h1 className="text-3xl font-extrabold tracking-[-0.04em]">Мои заказы</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Текущие работы, история и переписка по заказам.</p>
+          </div>
         </div>
       </header>
 
-      <main className="px-4 py-4 max-w-lg mx-auto">
+      <main className="mx-auto max-w-4xl px-4 py-5">
         {ordersLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <OrderSkeleton key={i} />
-            ))}
+          <div className="grid gap-4 lg:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, index) => <OrderSkeleton key={index} />)}
           </div>
         ) : orders.length > 0 ? (
-          <div className="space-y-3">
+          <div className="grid gap-4 lg:grid-cols-2">
             {orders.map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
-                master={masters.find((m) => m.id === order.masterId)}
+                master={masters.find((master) => master.id === order.masterId)}
                 onLeaveReview={order.status === "completed" && !reviewed.orderIds.includes(order.id) ? () => setReviewOrder(order) : undefined}
                 onOpenChat={() => navigate(`/orders/${order.id}/chat`)}
               />
@@ -76,18 +69,10 @@ export default function OrdersPage() {
           </div>
         ) : (
           <EmptyState
-            icon={<ShoppingBag className="w-10 h-10" />}
+            icon={<ShoppingBag className="h-10 w-10" />}
             title="Нет заказов"
-            description="Вы ещё не делали заказов. Найдите нужного мастера и запишитесь — это займёт меньше минуты."
-            action={
-              <Button
-                className="rounded-xl"
-                onClick={() => navigate("/")}
-                data-testid="button-find-master"
-              >
-                Найти мастера
-              </Button>
-            }
+            description="Вы ещё не делали заказов. Найдите нужного мастера и оформите первый заказ."
+            action={<Button className="rounded-2xl" onClick={() => navigate("/")}>Найти мастера</Button>}
           />
         )}
       </main>
