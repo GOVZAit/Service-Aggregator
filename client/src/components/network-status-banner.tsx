@@ -1,1 +1,44 @@
-import { useEffect, useState } from "react";\nimport { CloudOff, Wifi } from "lucide-react";\nimport { cn } from "@/lib/utils";\n\nexport function NetworkStatusBanner() {\n  const [online, setOnline] = useState(() => navigator.onLine);\n  const [showRestored, setShowRestored] = useState(false);\n\n  useEffect(() => {\n    const onOffline = () => { setOnline(false); setShowRestored(false); };\n    const onOnline = () => {\n      setOnline(true);\n      setShowRestored(true);\n      window.setTimeout(() => setShowRestored(false), 2200);\n    };\n    window.addEventListener("offline", onOffline);\n    window.addEventListener("online", onOnline);\n    return () => {\n      window.removeEventListener("offline", onOffline);\n      window.removeEventListener("online", onOnline);\n    };\n  }, []);\n\n  if (online && !showRestored) return null;\n\n  return (\n    <div className="pointer-events-none fixed left-3 right-3 top-[calc(.75rem+env(safe-area-inset-top,0px))] z-[100] mx-auto max-w-md" aria-live="polite">\n      <div className={cn(\n        "flex items-center gap-3 rounded-2xl border px-4 py-3 text-white shadow-xl backdrop-blur-2xl",\n        online ? "border-emerald-500/20 bg-emerald-600/95" : "border-amber-500/20 bg-slate-950/92",\n      )}>\n        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10">\n          {online ? <Wifi className="h-4 w-4" /> : <CloudOff className="h-4 w-4" />}\n        </div>\n        <div>\n          <p className="text-sm font-extrabold">{online ? "Соединение восстановлено" : "Вы офлайн"}</p>\n          <p className="mt-0.5 text-[11px] text-white/75">\n            {online ? "GOVZA снова получает свежие данные." : "Открытые экраны доступны, новые данные загрузятся после подключения."}\n          </p>\n        </div>\n      </div>\n    </div>\n  );\n}\n
+import { useEffect, useState } from "react";
+import { CloudOff, Wifi } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export function NetworkStatusBanner() {
+  const [online, setOnline] = useState(() => navigator.onLine);
+  const [showRestored, setShowRestored] = useState(false);
+
+  useEffect(() => {
+    const onOffline = () => { setOnline(false); setShowRestored(false); };
+    const onOnline = () => {
+      setOnline(true);
+      setShowRestored(true);
+      window.setTimeout(() => setShowRestored(false), 2200);
+    };
+    window.addEventListener("offline", onOffline);
+    window.addEventListener("online", onOnline);
+    return () => {
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("online", onOnline);
+    };
+  }, []);
+
+  if (online && !showRestored) return null;
+
+  return (
+    <div className="pointer-events-none fixed left-3 right-3 top-[calc(.75rem+env(safe-area-inset-top,0px))] z-[100] mx-auto max-w-md" aria-live="polite">
+      <div className={cn(
+        "flex items-center gap-3 rounded-2xl border px-4 py-3 text-white shadow-xl backdrop-blur-2xl",
+        online ? "border-emerald-500/20 bg-emerald-600/95" : "border-amber-500/20 bg-slate-950/92",
+      )}>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10">
+          {online ? <Wifi className="h-4 w-4" /> : <CloudOff className="h-4 w-4" />}
+        </div>
+        <div>
+          <p className="text-sm font-extrabold">{online ? "Соединение восстановлено" : "Вы офлайн"}</p>
+          <p className="mt-0.5 text-[11px] text-white/75">
+            {online ? "GOVZA снова получает свежие данные." : "Открытые экраны доступны, новые данные загрузятся после подключения."}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
