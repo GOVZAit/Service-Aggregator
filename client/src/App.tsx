@@ -33,6 +33,9 @@ import MasterOnboardingPage from "@/pages/master/onboarding";
 import OrganizationOnboardingPage from "@/pages/organization/onboarding";
 import OrganizationProfilePage from "@/pages/organization/profile";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
+import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
+import { NetworkStatusBanner } from "@/components/network-status-banner";
+import { AppBootScreen } from "@/components/app-boot-screen";
 
 // Executor-only routes (executor interface)
 const MASTER_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding"];
@@ -77,7 +80,7 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, location, navigate]);
 
-  if (isLoading || (!user && isProviderRoute(location))) return null;
+  if (isLoading || (!user && isProviderRoute(location))) return <AppBootScreen />;
   return <>{children}</>;
 }
 
@@ -149,6 +152,8 @@ function App() {
           <Toaster />
           <Router />
           <PwaInstallPrompt />
+          <PwaUpdatePrompt />
+          <NetworkStatusBanner />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
