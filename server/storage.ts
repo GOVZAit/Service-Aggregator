@@ -2,6 +2,7 @@ import type { Master, ServiceRequest, Order, AuthUser, LostFoundListing, LostFou
 import { authUsers, lostFoundListings, masterSettings, passwordResetTokens, persistedOrders, userFavorites } from "@shared/schema";
 import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "./db";
+import { getEffectiveCategory } from "./category-service";
 import {
   createProviderProfile,
   getPersistentProvider,
@@ -526,7 +527,7 @@ export class MemStorage implements IStorage {
     const master: Master = {
       id,
       name: data.name,
-      category: 'Сантехника',
+      category: getEffectiveCategory(1)?.name ?? 'Сантехника',
       categoryId: 1,
       rating: 0,
       reviews: 0,
@@ -800,7 +801,12 @@ export class MemStorage implements IStorage {
 
   private async withPersistedSettings(master: Master): Promise<Master> {
     const [row] = await db.select().from(masterSettings).where(eq(masterSettings.masterId, master.id)).limit(1);
-    return row ? { ...master, ...row.settings } : master;
+    const merged = row ? { ...master, ...row.settings } : { ...master };
+    const categoryIds = merged.categoryIds?.length ? merged.categoryIds : [merged.categoryId];
+    const category = getEffectiveCategory(categoryIds[0]);
+    return category
+      ? { ...merged, category: category.name, categoryId: category.id, categoryIds }
+      : merged;
   }
 }
 
