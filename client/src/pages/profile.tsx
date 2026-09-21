@@ -1,6 +1,6 @@
 import {
   Bell, Check, ChevronRight, FileText, HelpCircle, LogIn, LogOut,
-  Moon, Pencil, Save, Sun, UserPlus, X,
+  Moon, Pencil, Save, Sun, UserPlus, X, Download, UserRound, Mail,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { PushNotificationCard } from "@/components/push-notification-card";
+import { AppBrandHeader } from "@/components/app-brand-header";
 import { OrderCard } from "@/components/order-card";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
 import type { Order, Master } from "@shared/schema";
+import { cn } from "@/lib/utils";
 
 function getInitials(name: string) {
   return name.split(" ").map((word) => word[0]).join("").toUpperCase().slice(0, 2);
@@ -82,10 +84,10 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-       <div className="app-page bg-background">
-        <main className="px-4 py-6 max-w-lg mx-auto space-y-4">
-          <Skeleton className="h-48 rounded-2xl" />
-          <Skeleton className="h-32 rounded-2xl" />
+      <div className="app-page bg-background">
+        <main className="mx-auto max-w-lg space-y-4 px-4 py-6">
+          <Skeleton className="h-24 rounded-[1.5rem]" />
+          <Skeleton className="h-48 rounded-[1.5rem]" />
         </main>
         <BottomNavigation />
       </div>
@@ -94,27 +96,27 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-       <div className="app-page bg-background">
-        <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-4 safe-area-pt">
-          <div className="max-w-lg mx-auto flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Кабинет клиента</h1>
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
+      <div className="app-page bg-background">
+        <header className="app-header-shell safe-area-pt">
+          <div className="mx-auto max-w-4xl px-4 py-4">
+            <AppBrandHeader compact />
+            <h1 className="mt-6 text-3xl font-extrabold tracking-[-0.04em]">Профиль</h1>
           </div>
         </header>
-        <main className="px-4 py-12 max-w-lg mx-auto flex flex-col items-center text-center gap-6">
-          <Avatar className="w-24 h-24 bg-muted"><AvatarFallback className="text-3xl">GM</AvatarFallback></Avatar>
-          <div>
-            <h2 className="text-xl font-bold mb-2">Войдите в аккаунт</h2>
-            <p className="text-muted-foreground text-sm">Регистрация доступна по номеру телефона или email</p>
+        <main className="mx-auto flex max-w-lg flex-col items-center px-4 py-14 text-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-primary/10 text-primary">
+            <UserRound className="h-9 w-9" />
           </div>
-          <div className="grid gap-3 w-full max-w-xs">
-            <Button className="h-12 rounded-xl" onClick={() => navigate("/auth")} data-testid="button-go-login">
-              <LogIn className="w-4 h-4 mr-2" /> Войти
+          <h2 className="mt-5 text-xl font-extrabold">Войдите в аккаунт</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Сохраняйте заявки, заказы, переписку и настройки в одном месте.
+          </p>
+          <div className="mt-6 grid w-full max-w-xs gap-3">
+            <Button className="accent-gradient h-12 rounded-2xl" onClick={() => navigate("/auth")}>
+              <LogIn className="mr-2 h-4 w-4" /> Войти
             </Button>
-            <Button variant="outline" className="h-12 rounded-xl" onClick={() => navigate("/auth?tab=register")} data-testid="button-go-register">
-              <UserPlus className="w-4 h-4 mr-2" /> Зарегистрироваться
+            <Button variant="outline" className="h-12 rounded-2xl" onClick={() => navigate("/auth?tab=register")}>
+              <UserPlus className="mr-2 h-4 w-4" /> Зарегистрироваться
             </Button>
           </div>
         </main>
@@ -127,95 +129,203 @@ export default function ProfilePage() {
 
   return (
     <div className="app-page bg-background">
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-4 safe-area-pt">
-        <div className="max-w-lg lg:max-w-4xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Кабинет клиента</h1>
-            <p className="text-xs text-muted-foreground">Ваши данные и заказы</p>
+      <header className="app-header-shell safe-area-pt">
+        <div className="mx-auto max-w-4xl px-4 py-4">
+          <AppBrandHeader compact />
+          <div className="mt-6 flex items-end justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-[-0.04em]">Кабинет клиента</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Ваши данные, заказы и настройки</p>
+            </div>
+            <Button variant="ghost" size="icon" className="h-11 w-11 rounded-2xl" onClick={toggleTheme}>
+              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
           </div>
-          <Button variant="ghost" size="icon" onClick={toggleTheme} data-testid="button-toggle-theme">
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </Button>
         </div>
       </header>
 
-      <main className="px-4 py-5 max-w-lg lg:max-w-4xl mx-auto space-y-4">
-        <Card className="p-5 flex items-center gap-4">
-          <Avatar className="w-16 h-16 bg-primary shrink-0">
-            <AvatarFallback className="bg-transparent text-white text-xl font-semibold">{getInitials(user.name)}</AvatarFallback>
+      <main className="mx-auto max-w-4xl space-y-4 px-4 py-5">
+        <section className="premium-card flex items-center gap-4 p-5">
+          <Avatar className="h-20 w-20 shrink-0 bg-gradient-to-br from-primary to-cyan-500">
+            <AvatarFallback className="bg-transparent text-2xl font-extrabold text-white">{getInitials(user.name)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold truncate">{user.name}</h2>
-            <p className="text-sm text-muted-foreground truncate">{contact}</p>
-            <p className="text-xs text-primary mt-1">Клиент · {orders.length} заказов</p>
+            <h2 className="truncate text-xl font-extrabold tracking-[-0.03em]">{user.name}</h2>
+            <p className="mt-0.5 truncate text-sm text-muted-foreground">{contact}</p>
+            <p className="mt-2 text-xs font-bold text-primary">Клиент · {orders.length} заказов</p>
           </div>
-        </Card>
+          <Button variant="outline" size="sm" className="hidden rounded-xl sm:flex" onClick={() => { setEditingName(true); setTab("account"); }}>
+            <Pencil className="mr-1.5 h-4 w-4" /> Редактировать
+          </Button>
+        </section>
 
-        <div className="grid grid-cols-3 gap-1 bg-muted rounded-2xl p-1" role="tablist">
+        <div className="grid grid-cols-3 rounded-[1.25rem] bg-muted/70 p-1">
           {([
             ["account", "Профиль"],
             ["orders", `Заказы${orders.length ? ` (${orders.length})` : ""}`],
             ["settings", "Настройки"],
           ] as const).map(([key, label]) => (
-            <button key={key} onClick={() => setTab(key)} role="tab" aria-selected={tab === key}
-              data-testid={`cabinet-tab-${key}`}
-              className={`rounded-xl py-2.5 text-xs font-semibold transition-all ${tab === key ? "bg-background shadow-sm" : "text-muted-foreground"}`}>
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={cn(
+                "min-h-11 rounded-2xl px-2 text-xs font-bold transition-all sm:text-sm",
+                tab === key ? "bg-card text-primary shadow-sm" : "text-muted-foreground",
+              )}
+            >
               {label}
             </button>
           ))}
         </div>
 
         {tab === "account" && (
-          <Card className="p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div><h2 className="font-semibold">Личные данные</h2><p className="text-xs text-muted-foreground">Данные вашего аккаунта</p></div>
-              {!editingName && <Button variant="ghost" size="sm" onClick={() => setEditingName(true)} data-testid="button-edit-profile"><Pencil className="w-4 h-4 mr-1.5" />Изменить</Button>}
-            </div>
-            {editingName ? (
-              <div className="space-y-3">
-                <label className="text-xs font-medium text-muted-foreground">Имя</label>
-                 <Input className="h-12 rounded-xl" autoComplete="name" value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} data-testid="input-profile-name" />
-                <div className="flex gap-2">
-                  <Button onClick={saveName} disabled={nameDraft.trim().length < 2} data-testid="button-save-profile"><Save className="w-4 h-4 mr-1.5" />Сохранить</Button>
-                  <Button variant="outline" onClick={() => { setNameDraft(user.name); setEditingName(false); }}><X className="w-4 h-4 mr-1.5" />Отмена</Button>
+          <>
+            <section className="premium-card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-extrabold tracking-[-0.03em]">Личные данные</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">Данные вашего аккаунта</p>
                 </div>
+                {!editingName && (
+                  <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setEditingName(true)}>
+                    <Pencil className="mr-1.5 h-4 w-4" /> Изменить
+                  </Button>
+                )}
               </div>
-            ) : (
-              <div className="divide-y divide-border rounded-xl border">
-                <div className="p-3"><p className="text-xs text-muted-foreground">Имя</p><p className="text-sm font-medium">{user.name}</p></div>
-                <div className="p-3"><p className="text-xs text-muted-foreground">Телефон или email</p><p className="text-sm font-medium">{contact}</p></div>
-              </div>
-            )}
-            <Button className="w-full rounded-xl" onClick={() => navigate("/")}><Check className="w-4 h-4 mr-2" />Найти мастера</Button>
-          </Card>
+
+              {editingName ? (
+                <div className="mt-4 space-y-3">
+                  <Input
+                    className="h-12 rounded-2xl"
+                    value={nameDraft}
+                    onChange={(event) => setNameDraft(event.target.value)}
+                    placeholder="Имя"
+                  />
+                  <div className="flex gap-2">
+                    <Button className="rounded-xl" onClick={saveName} disabled={nameDraft.trim().length < 2}>
+                      <Save className="mr-1.5 h-4 w-4" /> Сохранить
+                    </Button>
+                    <Button variant="outline" className="rounded-xl" onClick={() => { setNameDraft(user.name); setEditingName(false); }}>
+                      <X className="mr-1.5 h-4 w-4" /> Отмена
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 overflow-hidden rounded-2xl border border-border/70">
+                  <div className="flex items-center gap-3 p-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
+                      <UserRound className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">Имя</p>
+                      <p className="truncate text-sm font-bold">{user.name}</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex items-center gap-3 border-t border-border/70 p-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
+                      <Mail className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">Телефон или email</p>
+                      <p className="truncate text-sm font-bold">{contact}</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="accent-gradient flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-bold text-white shadow-md"
+            >
+              <Check className="h-5 w-5" /> Найти мастера <ChevronRight className="h-4 w-4" />
+            </button>
+          </>
         )}
 
         {tab === "orders" && (
           <section>
-            <div className="flex items-center gap-2 mb-3"><FileText className="w-5 h-5 text-primary" /><h2 className="font-semibold">Мои заказы</h2></div>
-            {ordersLoading ? <Skeleton className="h-32 rounded-xl" /> : orders.length === 0 ? (
-              <Card className="p-8 text-center"><p className="font-medium">Заказов пока нет</p><p className="text-sm text-muted-foreground mt-1 mb-4">Выберите мастера и оформите первый заказ</p><Button onClick={() => navigate("/")}>Найти мастера</Button></Card>
-            ) : <div className="grid lg:grid-cols-2 gap-3">{orders.map((order) => <OrderCard key={order.id} order={order} master={masters.find((m) => m.id === order.masterId)} />)}</div>}
+            <div className="mb-3 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <h2 className="section-title">Мои заказы</h2>
+            </div>
+            {ordersLoading ? (
+              <Skeleton className="h-32 rounded-[1.5rem]" />
+            ) : orders.length === 0 ? (
+              <div className="premium-card p-8 text-center">
+                <p className="font-bold">Заказов пока нет</p>
+                <p className="mt-1 text-sm text-muted-foreground">Выберите мастера и оформите первый заказ.</p>
+                <Button className="mt-4 rounded-xl" onClick={() => navigate("/")}>Найти мастера</Button>
+              </div>
+            ) : (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {orders.map((order) => (
+                  <OrderCard key={order.id} order={order} master={masters.find((master) => master.id === order.masterId)} />
+                ))}
+              </div>
+            )}
           </section>
         )}
 
         {tab === "settings" && (
           <div className="space-y-3">
             <PushNotificationCard />
-            <Card className="overflow-hidden divide-y divide-border">
-            <button className="w-full p-4 flex items-center gap-3 text-left" onClick={() => setNotificationPreference(!notifications)} data-testid="toggle-client-notifications">
-              <Bell className="w-5 h-5 text-primary" /><div className="flex-1"><p className="font-medium">Уведомления</p><p className="text-xs text-muted-foreground">{notifications ? "Включены на этом устройстве" : "Выключены на этом устройстве"}</p></div>
-              <div className={`w-11 h-6 rounded-full p-1 transition-colors ${notifications ? "bg-primary" : "bg-muted"}`}><div className={`w-4 h-4 rounded-full bg-white transition-transform ${notifications ? "translate-x-5" : ""}`} /></div>
-            </button>
-            <button className="w-full p-4 flex items-center gap-3 text-left" onClick={toggleTheme}>
-              {isDark ? <Sun className="w-5 h-5 text-primary" /> : <Moon className="w-5 h-5 text-primary" />}<div className="flex-1"><p className="font-medium">Оформление</p><p className="text-xs text-muted-foreground">{isDark ? "Тёмная тема" : "Светлая тема"}</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-            <a className="p-4 flex items-center gap-3" href="tel:995"><HelpCircle className="w-5 h-5 text-primary" /><div className="flex-1"><p className="font-medium">Помощь</p><p className="text-xs text-muted-foreground">Поддержка GOVZA</p></div><ChevronRight className="w-5 h-5 text-muted-foreground" /></a>
-            <button className="w-full p-4 flex items-center gap-3 text-left text-destructive" onClick={handleLogout} data-testid="button-logout"><LogOut className="w-5 h-5" /><span className="font-medium">Выйти из аккаунта</span></button>
+
+            <section className="hero-gradient rounded-[1.5rem] border border-primary/15 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Download className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-extrabold">Установить GOVZA мастера</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Быстрый доступ с главного экрана телефона.</p>
+                </div>
+                <Button size="sm" className="rounded-xl" onClick={() => window.dispatchEvent(new Event("govza:install"))}>
+                  Установить
+                </Button>
+              </div>
+            </section>
+
+            <Card className="overflow-hidden rounded-[1.5rem] border-border/70 shadow-sm">
+              <button className="flex w-full items-center gap-3 p-4 text-left" onClick={() => setNotificationPreference(!notifications)}>
+                <Bell className="h-5 w-5 text-primary" />
+                <div className="flex-1">
+                  <p className="font-bold">Внутренние уведомления</p>
+                  <p className="text-xs text-muted-foreground">{notifications ? "Включены" : "Выключены"}</p>
+                </div>
+                <div className={cn("relative h-6 w-11 rounded-full p-1 transition-colors", notifications ? "bg-primary" : "bg-muted")}>
+                  <div className={cn("h-4 w-4 rounded-full bg-white transition-transform", notifications && "translate-x-5")} />
+                </div>
+              </button>
+              <button className="flex w-full items-center gap-3 border-t border-border/70 p-4 text-left" onClick={toggleTheme}>
+                {isDark ? <Sun className="h-5 w-5 text-primary" /> : <Moon className="h-5 w-5 text-primary" />}
+                <div className="flex-1">
+                  <p className="font-bold">Оформление</p>
+                  <p className="text-xs text-muted-foreground">{isDark ? "Тёмная тема" : "Светлая тема"}</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+              <a className="flex items-center gap-3 border-t border-border/70 p-4" href="tel:995">
+                <HelpCircle className="h-5 w-5 text-primary" />
+                <div className="flex-1">
+                  <p className="font-bold">Помощь</p>
+                  <p className="text-xs text-muted-foreground">Поддержка GOVZA мастера</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </a>
+              <button className="flex w-full items-center gap-3 border-t border-border/70 p-4 text-left text-destructive" onClick={handleLogout}>
+                <LogOut className="h-5 w-5" />
+                <span className="font-bold">Выйти из аккаунта</span>
+              </button>
             </Card>
           </div>
         )}
       </main>
+
       <BottomNavigation />
     </div>
   );
