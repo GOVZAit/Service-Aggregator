@@ -217,6 +217,19 @@ export const authUsers = pgTable("auth_users", {
   uniqueIndex("auth_users_email_unique").on(table.email),
   uniqueIndex("auth_users_master_id_unique").on(table.masterId),
 ]);
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("password_reset_tokens_hash_unique").on(table.tokenHash),
+  index("password_reset_tokens_user_id_idx").on(table.userId),
+  index("password_reset_tokens_expires_at_idx").on(table.expiresAt),
+]);
+
 export const registerSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   identifier: z.string().min(5, 'Введите номер телефона или email'),
