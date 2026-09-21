@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
+    "smoke:build": "tsx script/smoke-build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "test:email": "tsx script/test-email-payloads.ts",
