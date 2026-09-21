@@ -1,6 +1,6 @@
 import type { Master, ServiceRequest, Order, ChatMessage, AuthUser, LostFoundListing, LostFoundListingInput, LostFoundStatus, UserRole } from "@shared/schema";
-import { authUsers, lostFoundListings, masterSettings, persistedOrders } from "@shared/schema";
-import { desc, eq, or, sql } from "drizzle-orm";
+import { authUsers, lostFoundListings, masterSettings, passwordResetTokens, persistedOrders } from "@shared/schema";
+import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
   createProviderProfile,
@@ -442,13 +442,6 @@ export interface IStorage {
   updateLostFoundListing(id: number, data: Partial<LostFoundListingInput> & { status?: LostFoundStatus }): Promise<LostFoundListing | undefined>;
 }
 
-interface PasswordResetRecord {
-  userId: number;
-  tokenHash: string;
-  expiresAt: number;
-  usedAt?: number;
-}
-
 export class MemStorage implements IStorage {
   private masters: Master[];
 
@@ -458,14 +451,11 @@ export class MemStorage implements IStorage {
 
   private nextRequestId: number;
 
-  private passwordResets: PasswordResetRecord[];
-
   constructor() {
     this.masters = [...mastersData];
     this.requests = [...requestsData];
     this.chatMessages = new Map();
     this.nextRequestId = requestsData.length + 1;
-    this.passwordResets = [];
   }
 
   async getMasters(): Promise<Master[]> {
@@ -727,19 +717,38 @@ export class MemStorage implements IStorage {
   }
 
   async createPasswordReset(userId: number, tokenHash: string, expiresAt: number): Promise<void> {
-    this.passwordResets = this.passwordResets.filter((record) => record.userId !== userId && record.expiresAt > Date.now());
-    this.passwordResets.push({ userId, tokenHash, expiresAt });
+    const now = new Date();
+    await db.delete(passwordResetTokens).where(
+      or(
+        eq(passwordResetTokens.userId, userId),
+        lte(passwordResetTokens.expiresAt, now),
+      ),
+    );
+    await db.insert(passwordResetTokens).values({
+      userId,
+      tokenHash,
+      expiresAt: new Date(expiresAt),
+    });
   }
 
   async consumePasswordReset(tokenHash: string, now: number): Promise<AuthUser | undefined> {
-    const record = this.passwordResets.find((item) => item.tokenHash === tokenHash);
-    if (!record || record.usedAt || record.expiresAt <= now) return undefined;
-    record.usedAt = now;
-    return this.getUserById(record.userId);
+    const claimed = await db.transaction(async (tx) => {
+      const [token] = await tx.update(passwordResetTokens)
+        .set({ usedAt: new Date(now) })
+        .where(and(
+          eq(passwordResetTokens.tokenHash, tokenHash),
+          isNull(passwordResetTokens.usedAt),
+          gt(passwordResetTokens.expiresAt, new Date(now)),
+        ))
+        .returning({ userId: passwordResetTokens.userId });
+      return token;
+    });
+
+    return claimed ? this.getUserById(claimed.userId) : undefined;
   }
 
   async revokePasswordResets(userId: number): Promise<void> {
-    this.passwordResets = this.passwordResets.filter((record) => record.userId !== userId);
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
   }
 
   async getLostFoundListings(): Promise<LostFoundListing[]> {
