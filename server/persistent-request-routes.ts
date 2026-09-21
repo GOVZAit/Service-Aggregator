@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, pool } from "./db";
 import { storage } from "./storage";
-import { authUsers, categories, insertRequestSchema, persistedOrders } from "@shared/schema";
+import { authUsers, insertRequestSchema, persistedOrders } from "@shared/schema";
+import { getEffectiveCategory } from "./category-service";
 import { getProviderOwnerUserId, getProviderOwnerUserIds } from "./provider-service";
 import { sendPushToUser } from "./push-service";
 import {
@@ -65,7 +66,7 @@ async function authenticatedUser(req: Express.Request) {
 function providerCategoryNames(provider: { category: string; categoryId: number; categoryIds?: number[] }): string[] {
   const ids = provider.categoryIds ?? [provider.categoryId];
   const names = ids.reduce<string[]>((result, id) => {
-    const category = categories.find((item) => item.id === id);
+    const category = getEffectiveCategory(id);
     if (category) result.push(category.name);
     return result;
   }, []);
