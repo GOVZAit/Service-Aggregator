@@ -37,7 +37,19 @@ const categoryTargetSchema = z.union([
 
 export const providerImportSourceSchema = z.object({
   name: z.string().trim().min(2).max(80),
-  url: z.string().url().max(2000),
+  url: z.string().url().max(2000).superRefine((value, ctx) => {
+    try {
+      const url = new URL(value);
+      if (url.protocol !== "https:") {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Import source must use HTTPS" });
+      }
+      if (url.username || url.password) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Credentials in import source URL are not allowed" });
+      }
+    } catch {
+      // z.string().url() reports malformed URLs.
+    }
+  }),
   adapter: z.enum(["json", "jsonld"]),
   enabled: z.boolean().default(true),
   providerType: z.enum(["master", "organization"]).optional(),
@@ -84,6 +96,19 @@ export const providerImportSourceSchema = z.object({
   }
 });
 
-export const providerImportSourcesSchema = z.array(providerImportSourceSchema).max(50);
+export const providerImportSourcesSchema = z.array(providerImportSourceSchema).max(50).superRefine((sources, ctx) => {
+  const seen = new Set<string>();
+  sources.forEach((source, index) => {
+    const normalized = source.name.toLocaleLowerCase("en-US");
+    if (seen.has(normalized)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [index, "name"],
+        message: "Import source names must be unique",
+      });
+    }
+    seen.add(normalized);
+  });
+});
 
 export type ProviderImportSource = z.infer<typeof providerImportSourceSchema>;
