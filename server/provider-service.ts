@@ -1,6 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, pool } from "./db";
-import { categories, type AuthUser, type Master } from "@shared/schema";
+import type { AuthUser, Master } from "@shared/schema";
+import { getEffectiveCategories, getEffectiveCategory } from "./category-service";
 import {
   providerActivity,
   providerProfiles,
@@ -66,7 +67,7 @@ export async function ensureProviderTables() {
 
 function primaryCategory(categoryIds?: number[]) {
   const id = categoryIds?.[0] ?? 1;
-  return categories.find((category) => category.id === id) ?? categories[0];
+  return getEffectiveCategory(id) ?? getEffectiveCategories()[0];
 }
 
 function effectiveData(row: typeof providerProfiles.$inferSelect): ProviderProfileData {
@@ -354,7 +355,7 @@ export async function seedProviderActivity() {
 }
 
 export async function providerIdsMatchingCategory(categoryName: string) {
-  const category = categories.find((item) => item.name === categoryName);
+  const category = getEffectiveCategories().find((item) => item.name === categoryName);
   if (!category) return [] as number[];
 
   const persistent = await db.select().from(providerProfiles);
