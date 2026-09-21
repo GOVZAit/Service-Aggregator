@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import { storage } from "./storage";
 import { emailDeliveryConfigured, sendWelcomeEmail } from "./email";
-import { categories, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema, lostFoundListingInputSchema, updateLostFoundListingSchema } from "@shared/schema";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema, lostFoundListingInputSchema, updateLostFoundListingSchema } from "@shared/schema";
 import type { AuthUser } from "@shared/schema";
 import { deliverPasswordReset, isPasswordResetDeliveryConfigured, passwordResetRateLimited } from "./password-reset";
 import { getProviderOwnerUserId, isProviderVisible, recordProviderActivity } from "./provider-service";
@@ -242,12 +242,6 @@ export async function registerRoutes(
     if (!user) return res.status(404).json({ message: "Пользователь не найден" });
     const publicUser = toPublicUser(user);
     res.json({ user: publicUser });
-  });
-
-  // ── Categories ──────────────────────────────────────────────────────────────
-
-  app.get("/api/categories", async (_req, res) => {
-    res.json(categories);
   });
 
   // ── Masters ─────────────────────────────────────────────────────────────────
