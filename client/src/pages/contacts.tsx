@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Search,
   ChevronLeft,
@@ -22,7 +23,7 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { AppBrandHeader } from "@/components/app-brand-header";
 import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
-import { cityOrganizations, getOrgDistance, type CityOrganization } from "@/lib/city-services-data";
+import { getOrgDistance, type CityOrganization } from "@/lib/city-services-data";
 
 // Only the "contacts" category
 const CONTACTS_CATEGORY_ID = 'contacts';
@@ -67,6 +68,10 @@ export default function ContactsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<number[]>([]);
 
+  const { data: cityOrganizations = [] } = useQuery<CityOrganization[]>({
+    queryKey: ["/api/directory/city-services"],
+  });
+
   const goToDetail = (org: CityOrganization) => {
     setSelectedOrg(org);
     setLevel('detail');
@@ -87,7 +92,7 @@ export default function ContactsPage() {
 
   const allContacts = useMemo(
     () => cityOrganizations.filter((o) => o.categoryId === CONTACTS_CATEGORY_ID),
-    []
+    [cityOrganizations]
   );
 
   // Derive subcategories from data
