@@ -166,7 +166,7 @@ export interface User {
 
 // ── Auth types ────────────────────────────────────────────────────────────────
 
-export type UserRole = 'client' | 'master' | 'organization';
+export type UserRole = 'client' | 'master' | 'organization' | 'admin';
 
 export interface AuthUser {
   id: number;
