@@ -4,7 +4,11 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import MasterBottomNavigation from "@/components/master-bottom-navigation";
 import OrganizationBottomNavigation from "@/components/organization-bottom-navigation";
-import { ClipboardCheck, Wallet, ChevronRight, Clock, MapPin, ToggleLeft, ToggleRight, Settings, CheckCircle2 } from "lucide-react";
+import { AppBrandHeader } from "@/components/app-brand-header";
+import {
+  CheckCircle2, ChevronRight, ClipboardCheck, Clock, MapPin, Settings,
+  ToggleLeft, ToggleRight, Wallet,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Master, Order } from "@shared/schema";
 
@@ -20,8 +24,16 @@ export default function MasterDashboardPage() {
   const isOrganization = user?.role === "organization";
   const ordersPath = isOrganization ? "/organization/orders" : "/master/orders";
   const profilePath = isOrganization ? "/organization/profile" : "/master/profile";
-  const { data: master } = useQuery<Master>({ queryKey: [`/api/masters/${masterId}`], enabled: !!masterId });
-  const { data: orders = [], isLoading } = useQuery<Order[]>({ queryKey: ["/api/orders"], enabled: !!user });
+
+  const { data: master } = useQuery<Master>({
+    queryKey: [`/api/masters/${masterId}`],
+    enabled: !!masterId,
+  });
+  const { data: orders = [], isLoading } = useQuery<Order[]>({
+    queryKey: ["/api/orders"],
+    enabled: !!user,
+  });
+
   const onlineMutation = useMutation({
     mutationFn: (isOnline: boolean) => apiRequest("PATCH", `/api/masters/${masterId}`, { isOnline }),
     onSuccess: () => {
@@ -35,32 +47,135 @@ export default function MasterDashboardPage() {
   const completed = orders.filter((order) => order.status === "completed");
   const earnings = completed.reduce((sum, order) => sum + priceNumber(order.price), 0);
   const isOnline = master?.isOnline ?? false;
-  const initials = user?.name?.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "МС";
+
   const stats = [
-    { label: "Новых заявок", value: pending.length, icon: ClipboardCheck, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-950/40" },
-    { label: "Активных", value: active.length, icon: CheckCircle2, color: "text-green-500", bg: "bg-green-50 dark:bg-green-950/40" },
-    { label: "Заработано", value: `${earnings.toLocaleString("ru-RU")} ₽`, icon: Wallet, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/40" },
+    { label: "Новых заказов", value: pending.length, icon: ClipboardCheck, tone: "bg-blue-500/10 text-blue-600" },
+    { label: "Активных", value: active.length, icon: CheckCircle2, tone: "bg-emerald-500/10 text-emerald-600" },
+    { label: "Заработано", value: `${earnings.toLocaleString("ru-RU")} ₽`, icon: Wallet, tone: "bg-orange-500/10 text-orange-600" },
   ];
 
   return (
     <div className="app-page bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/60 px-4 py-3 safe-area-pt">
-        <div className="max-w-lg lg:max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">{initials}</div><div><p className="text-xs text-muted-foreground">Добро пожаловать</p><h1 className="font-semibold text-sm">{user?.name || (isOrganization ? "Организация" : "Мастер")}</h1></div></div>
-          <button onClick={() => onlineMutation.mutate(!isOnline)} disabled={onlineMutation.isPending} aria-pressed={isOnline} data-testid="button-online-toggle" className={cn("pressable min-h-[44px] flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border transition-all", isOnline ? "border-green-300 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400" : "border-border bg-muted text-muted-foreground")}>
-            {isOnline ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}{isOnline ? "Онлайн" : "Офлайн"}
-          </button>
+      <header className="app-header-shell safe-area-pt">
+        <div className="mx-auto max-w-4xl px-4 py-4">
+          <AppBrandHeader compact />
+          <div className="mt-6 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">
+                {isOrganization ? "Кабинет организации" : "Кабинет мастера"}
+              </p>
+              <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.04em]">
+                {user?.name || (isOrganization ? "Организация" : "Мастер")}
+              </h1>
+            </div>
+            <button
+              type="button"
+              onClick={() => onlineMutation.mutate(!isOnline)}
+              disabled={onlineMutation.isPending}
+              aria-pressed={isOnline}
+              className={cn(
+                "pressable flex min-h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-bold shadow-sm",
+                isOnline
+                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                  : "border-border/70 bg-card text-muted-foreground"
+              )}
+            >
+              {isOnline ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+              {isOnline ? "Онлайн" : "Офлайн"}
+            </button>
+          </div>
         </div>
       </header>
-      <main className="max-w-lg lg:max-w-4xl mx-auto px-4 py-4 space-y-6">
-        {!isOnline && <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">Вы офлайн. Профиль остаётся доступен, но клиенты видят, что вы сейчас не в сети.</div>}
-        <section className="grid grid-cols-3 gap-3">{stats.map(({ label, value, icon: Icon, color, bg }) => <div key={label} className="rounded-2xl bg-card border border-border/60 p-3 flex flex-col gap-2"><div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", bg)}><Icon className={cn("w-4 h-4", color)} /></div><p className="text-base font-bold leading-tight">{isLoading ? "—" : value}</p><p className="text-[10px] text-muted-foreground leading-tight">{label}</p></div>)}</section>
-        <section>
-          <div className="flex items-center justify-between mb-3"><h2 className="font-semibold">Новые заказы</h2><button onClick={() => navigate(ordersPath)} className="text-primary text-sm font-medium flex items-center">Все <ChevronRight className="w-4 h-4" /></button></div>
-          {pending.length === 0 ? <div className="rounded-2xl border bg-card py-10 text-center"><p className="text-sm font-medium">Новых заказов пока нет</p><p className="text-xs text-muted-foreground mt-1">Они появятся здесь после записи клиента</p></div> : <div className="space-y-3">{pending.slice(0, 3).map((order) => <button key={order.id} onClick={() => navigate(ordersPath)} className="w-full rounded-2xl bg-card border border-border/60 p-4 text-left" data-testid={`dashboard-order-${order.id}`}><div className="flex justify-between gap-3"><h3 className="font-semibold text-sm">{order.title}</h3><span className="font-bold text-sm">{order.price}</span></div><div className="mt-2 space-y-1 text-xs text-muted-foreground"><p className="flex items-center gap-1"><Clock className="w-3 h-3" />{order.date}</p>{order.address && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />{order.address}</p>}</div></button>)}</div>}
+
+      <main className="mx-auto max-w-4xl space-y-5 px-4 py-5">
+        {!isOnline && (
+          <div className="rounded-[1.4rem] border border-amber-400/20 bg-amber-400/10 px-4 py-3">
+            <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Вы сейчас офлайн</p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-700/80 dark:text-amber-300/80">
+              Профиль остаётся доступен, но клиенты видят, что вы не в сети.
+            </p>
+          </div>
+        )}
+
+        <section className="grid grid-cols-3 gap-3">
+          {stats.map(({ label, value, icon: Icon, tone }) => (
+            <div key={label} className="premium-card min-h-[126px] p-3.5">
+              <div className={cn("flex h-9 w-9 items-center justify-center rounded-2xl", tone)}>
+                <Icon className="h-4 w-4" />
+              </div>
+              <p className="mt-4 text-lg font-extrabold leading-tight tracking-[-0.03em]">{isLoading ? "—" : value}</p>
+              <p className="mt-1 text-[10px] leading-tight text-muted-foreground">{label}</p>
+            </div>
+          ))}
         </section>
-        <button onClick={() => navigate(profilePath)} className="w-full rounded-2xl bg-primary/5 border border-primary/20 px-4 py-3 flex items-center justify-between text-left"><div><p className="text-sm font-semibold">Управление профилем</p><p className="text-xs text-muted-foreground">Услуги, расписание, документы и видимость</p></div><Settings className="w-5 h-5 text-primary" /></button>
+
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="section-title">Новые заказы</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Заявки клиентов, которые ждут решения</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(ordersPath)}
+              className="flex min-h-11 items-center gap-1 text-sm font-bold text-primary"
+            >
+              Все <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          {pending.length === 0 ? (
+            <div className="premium-card py-12 text-center">
+              <ClipboardCheck className="mx-auto h-8 w-8 text-primary/60" />
+              <p className="mt-3 text-sm font-bold">Новых заказов пока нет</p>
+              <p className="mt-1 text-xs text-muted-foreground">Они появятся здесь после выбора вашего предложения.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 lg:grid-cols-2">
+              {pending.slice(0, 4).map((order) => (
+                <button
+                  key={order.id}
+                  type="button"
+                  onClick={() => navigate(ordersPath)}
+                  className="premium-card pressable w-full p-4 text-left"
+                  data-testid={`dashboard-order-${order.id}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-extrabold">{order.title}</h3>
+                      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5 text-primary" /> {order.date}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-sm font-extrabold text-primary">{order.price}</span>
+                  </div>
+                  {order.address && (
+                    <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-muted/55 p-2.5 text-xs text-muted-foreground">
+                      <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                      {order.address}
+                    </p>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <button
+          type="button"
+          onClick={() => navigate(profilePath)}
+          className="hero-gradient flex w-full items-center justify-between gap-4 rounded-[1.5rem] border border-primary/15 p-4 text-left shadow-sm"
+        >
+          <div>
+            <p className="text-sm font-extrabold">Управление профилем</p>
+            <p className="mt-1 text-xs text-muted-foreground">Услуги, расписание, документы, уведомления и видимость</p>
+          </div>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Settings className="h-5 w-5" />
+          </div>
+        </button>
       </main>
+
       {isOrganization ? <OrganizationBottomNavigation /> : <MasterBottomNavigation />}
     </div>
   );

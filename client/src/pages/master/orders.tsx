@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import MasterBottomNavigation from "@/components/master-bottom-navigation";
 import OrganizationBottomNavigation from "@/components/organization-bottom-navigation";
+import { AppBrandHeader } from "@/components/app-brand-header";
 import {
   CheckCircle2,
   Clock,
@@ -59,7 +60,7 @@ function RequestOpportunityCard({ request }: { request: ServiceRequestView }) {
   const canSubmit = price.trim().length > 0 && message.trim().length >= 3;
 
   return (
-    <article className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm" data-testid={`master-request-${request.id}`}>
+    <article className="premium-card p-4" data-testid={`master-request-${request.id}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
@@ -76,32 +77,32 @@ function RequestOpportunityCard({ request }: { request: ServiceRequestView }) {
 
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{request.description}</p>
 
-      <div className="mt-3 grid gap-2 rounded-xl bg-muted/45 p-3 text-xs text-muted-foreground sm:grid-cols-2">
+      <div className="mt-3 grid gap-2 rounded-2xl bg-muted/55 p-3 text-xs text-muted-foreground sm:grid-cols-2">
         <span className="flex items-center gap-1.5"><Tag className="h-3.5 w-3.5 text-primary" />Бюджет: {request.budget}</span>
         <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" />{request.location}</span>
       </div>
 
       {request.hasResponded ? (
-        <div className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-green-500/10 px-3 text-sm font-semibold text-green-700 dark:text-green-400">
+        <div className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-green-500/10 px-3 text-sm font-bold text-green-700 dark:text-green-400">
           <CheckCircle2 className="h-4 w-4" /> Отклик уже отправлен
         </div>
       ) : !showForm ? (
         <button
           type="button"
           onClick={() => setShowForm(true)}
-          className="mt-3 min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-white"
+          className="mt-3 min-h-12 w-full rounded-2xl bg-primary px-4 text-sm font-bold text-white"
         >
           <Send className="mr-2 inline h-4 w-4" /> Предложить цену
         </button>
       ) : (
-        <div className="mt-3 space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-3">
+        <div className="mt-3 space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.03] p-3">
           <div>
             <label className="mb-1.5 block text-xs font-semibold">Ваша цена</label>
             <input
               value={price}
               onChange={(event) => setPrice(event.target.value)}
               placeholder="Например, 2 500 ₽"
-              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               data-testid={`response-price-${request.id}`}
             />
           </div>
@@ -112,7 +113,7 @@ function RequestOpportunityCard({ request }: { request: ServiceRequestView }) {
               onChange={(event) => setMessage(event.target.value)}
               placeholder="Когда сможете приехать, что входит в цену, есть ли гарантия…"
               rows={3}
-              className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full resize-none rounded-2xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               data-testid={`response-message-${request.id}`}
             />
           </div>
@@ -120,7 +121,7 @@ function RequestOpportunityCard({ request }: { request: ServiceRequestView }) {
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="min-h-11 flex-1 rounded-xl border border-border px-3 text-sm font-semibold"
+              className="min-h-11 flex-1 rounded-2xl border border-border px-3 text-sm font-bold"
             >
               Отмена
             </button>
@@ -128,7 +129,7 @@ function RequestOpportunityCard({ request }: { request: ServiceRequestView }) {
               type="button"
               disabled={!canSubmit || responseMutation.isPending}
               onClick={() => responseMutation.mutate()}
-              className="min-h-11 flex-[2] rounded-xl bg-primary px-3 text-sm font-semibold text-white disabled:opacity-40"
+              className="min-h-11 flex-[2] rounded-2xl bg-primary px-3 text-sm font-bold text-white disabled:opacity-40"
               data-testid={`response-submit-${request.id}`}
             >
               {responseMutation.isPending ? "Отправляем…" : "Отправить отклик"}
@@ -174,28 +175,29 @@ export default function MasterOrdersPage() {
 
   return (
     <div className="app-page bg-background">
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 safe-area-pt backdrop-blur-md">
-        <div className="mx-auto max-w-lg px-4 pt-4 lg:max-w-4xl">
-          <div className="mb-3 flex items-end justify-between gap-3">
+      <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
+        <div className="mx-auto max-w-lg px-4 pt-3 lg:max-w-4xl">
+          <AppBrandHeader compact />
+          <div className="mb-4 mt-6 flex items-end justify-between gap-3">
             <div>
-              <p className="text-xs text-muted-foreground">Кабинет исполнителя</p>
-              <h1 className="text-xl font-bold">Заявки</h1>
+              <p className="text-xs font-medium text-muted-foreground">{isOrganization ? "Кабинет организации" : "Кабинет мастера"}</p>
+              <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.04em]">Заявки</h1>
             </div>
-            <span className="text-xs text-muted-foreground">{requests.length} доступно</span>
+            <span className="rounded-full bg-primary/[0.08] px-3 py-1.5 text-xs font-bold text-primary">{requests.length} доступно</span>
           </div>
 
-          <div className="mb-3 grid grid-cols-2 rounded-2xl bg-muted/60 p-1">
+          <div className="mb-3 grid grid-cols-2 rounded-[1.25rem] bg-muted/70 p-1">
             <button
               type="button"
               onClick={() => setSection("market")}
-              className={cn("min-h-11 rounded-xl text-sm font-semibold transition-all", section === "market" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground")}
+              className={cn("min-h-11 rounded-2xl text-sm font-bold transition-all", section === "market" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground")}
             >
               Биржа заявок
             </button>
             <button
               type="button"
               onClick={() => setSection("orders")}
-              className={cn("min-h-11 rounded-xl text-sm font-semibold transition-all", section === "orders" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground")}
+              className={cn("min-h-11 rounded-2xl text-sm font-bold transition-all", section === "orders" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground")}
             >
               Мои заказы
             </button>
@@ -210,7 +212,7 @@ export default function MasterOrdersPage() {
                   data-testid={`tab-orders-${key}`}
                   className={cn(
                     "flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium",
-                    activeTab === key ? "bg-primary text-white" : "bg-muted text-muted-foreground",
+                    activeTab === key ? "bg-primary text-white shadow-sm" : "bg-muted/70 text-muted-foreground",
                   )}
                 >
                   {label}
@@ -229,13 +231,13 @@ export default function MasterOrdersPage() {
           requestsLoading ? (
             <div className="grid gap-3 lg:grid-cols-2">{[1, 2, 3, 4].map((item) => <div key={item} className="h-64 animate-pulse rounded-2xl bg-muted" />)}</div>
           ) : requestsError ? (
-            <div className="rounded-2xl border bg-card py-12 text-center">
+            <div className="premium-card py-12 text-center">
               <Inbox className="mx-auto h-8 w-8 text-muted-foreground" />
               <p className="mt-3 font-medium">Не удалось загрузить заявки</p>
               <p className="mt-1 text-sm text-muted-foreground">Обновите страницу и попробуйте ещё раз</p>
             </div>
           ) : requests.length === 0 ? (
-            <div className="rounded-2xl border bg-card py-12 text-center">
+            <div className="premium-card py-12 text-center">
               <Inbox className="mx-auto h-8 w-8 text-muted-foreground" />
               <p className="mt-3 font-medium">Новых заявок вашей категории пока нет</p>
               <p className="mt-1 text-sm text-muted-foreground">Когда клиент разместит подходящую задачу, она появится здесь</p>
@@ -248,14 +250,14 @@ export default function MasterOrdersPage() {
         ) : ordersLoading ? (
           <div className="space-y-3 py-2">{[1, 2, 3].map((item) => <div key={item} className="h-40 animate-pulse rounded-2xl bg-muted" />)}</div>
         ) : current.length === 0 ? (
-          <div className="rounded-2xl border bg-card py-12 text-center">
+          <div className="premium-card py-12 text-center">
             <p className="font-medium">Здесь пока пусто</p>
             <p className="mt-1 text-sm text-muted-foreground">После выбора вашего отклика заказ появится в разделе «Новые»</p>
           </div>
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
             {current.map((order) => (
-              <article key={order.id} className="space-y-3 rounded-2xl border border-border/60 bg-card p-4" data-testid={`master-order-${order.id}`}>
+              <article key={order.id} className="space-y-3 premium-card p-4" data-testid={`master-order-${order.id}`}>
                 <div className="flex justify-between gap-3">
                   <div>
                     <h2 className="font-semibold">{order.title}</h2>
@@ -264,14 +266,14 @@ export default function MasterOrdersPage() {
                   <span className="whitespace-nowrap font-bold">{order.price}</span>
                 </div>
 
-                <div className="space-y-1.5 rounded-xl bg-muted/50 p-3 text-sm">
+                <div className="space-y-1.5 rounded-2xl bg-muted/55 p-3 text-sm">
                   <p className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary" />{order.date}</p>
                   {order.address && <p className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 text-primary" />{order.address}</p>}
                   {order.comment && <p className="flex items-start gap-2 text-muted-foreground"><MessageSquare className="mt-0.5 h-4 w-4" />{order.comment}</p>}
                 </div>
 
                 {order.clientContact && activeTab !== "done" && (
-                  <a href={contactLink(order.clientContact)} className="flex h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 text-sm font-semibold text-primary">
+                  <a href={contactLink(order.clientContact)} className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-primary/25 text-sm font-bold text-primary">
                     {order.clientContact.includes("@") ? <Mail className="h-4 w-4" /> : <PhoneCall className="h-4 w-4" />}
                     {order.clientContact}
                   </a>
@@ -281,7 +283,7 @@ export default function MasterOrdersPage() {
                   <button
                     type="button"
                     onClick={() => navigate(`${isOrganization ? "/organization/orders" : "/master/orders"}/${order.id}/chat`)}
-                    className="h-11 w-full rounded-xl border border-primary/30 text-sm font-semibold text-primary"
+                    className="h-11 w-full rounded-2xl border border-primary/25 text-sm font-bold text-primary"
                     data-testid={`master-order-chat-${order.id}`}
                   >
                     <MessageSquare className="mr-1.5 inline h-4 w-4" />Написать клиенту
@@ -290,16 +292,16 @@ export default function MasterOrdersPage() {
 
                 {order.status === "pending" && (
                   <div className="flex gap-2">
-                    <button disabled={orderMutation.isPending} onClick={() => orderMutation.mutate({ id: order.id, status: "rejected" })} className="h-11 flex-1 rounded-xl border text-sm font-semibold text-muted-foreground">
+                    <button disabled={orderMutation.isPending} onClick={() => orderMutation.mutate({ id: order.id, status: "rejected" })} className="h-11 flex-1 rounded-2xl border text-sm font-bold text-muted-foreground">
                       <XCircle className="mr-1 inline h-4 w-4" />Отклонить
                     </button>
-                    <button disabled={orderMutation.isPending} onClick={() => orderMutation.mutate({ id: order.id, status: "in_progress" })} className="h-11 flex-[2] rounded-xl bg-primary text-sm font-semibold text-white">
+                    <button disabled={orderMutation.isPending} onClick={() => orderMutation.mutate({ id: order.id, status: "in_progress" })} className="h-11 flex-[2] rounded-2xl bg-primary text-sm font-bold text-white">
                       <CheckCircle2 className="mr-1 inline h-4 w-4" />Принять
                     </button>
                   </div>
                 )}
                 {order.status === "in_progress" && (
-                  <button disabled={orderMutation.isPending} onClick={() => orderMutation.mutate({ id: order.id, status: "completed" })} className="h-11 w-full rounded-xl bg-green-600 text-sm font-semibold text-white">
+                  <button disabled={orderMutation.isPending} onClick={() => orderMutation.mutate({ id: order.id, status: "completed" })} className="h-11 w-full rounded-2xl bg-emerald-600 text-sm font-bold text-white">
                     <CheckCircle2 className="mr-1 inline h-4 w-4" />Завершить заказ
                   </button>
                 )}

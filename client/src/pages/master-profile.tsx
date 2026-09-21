@@ -143,7 +143,7 @@ export default function MasterProfilePage() {
   if (masterLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-3 safe-area-pt">
+        <header className="sticky top-0 z-40 bg-background/92 backdrop-blur-2xl border-b border-border/70 px-4 py-3 safe-area-pt">
           <div className="flex items-center gap-4 max-w-lg mx-auto">
             <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Назад" onClick={() => navigate('/')}>
               <ArrowLeft className="w-6 h-6" />
@@ -152,9 +152,9 @@ export default function MasterProfilePage() {
           </div>
         </header>
         <div className="px-4 py-6 max-w-lg mx-auto space-y-4">
-          <div className="rounded-2xl bg-card border border-border/60 p-6 space-y-4 animate-pulse">
+          <div className="premium-card p-6 space-y-4 animate-pulse">
             <div className="flex gap-4">
-              <Skeleton className="w-20 h-20 rounded-2xl shrink-0" />
+              <Skeleton className="w-20 h-20 rounded-[1.4rem] shrink-0" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-5 w-40" />
                 <Skeleton className="h-4 w-28" />
@@ -211,7 +211,7 @@ export default function MasterProfilePage() {
     ];
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-3 safe-area-pt">
+        <header className="sticky top-0 z-40 bg-background/92 backdrop-blur-2xl border-b border-border/70 px-4 py-3 safe-area-pt">
           <div className="flex items-center gap-3 max-w-lg mx-auto">
             <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Назад" onClick={() => setShowChat(false)} data-testid="button-back-from-chat">
               <ArrowLeft className="w-6 h-6" />
@@ -288,7 +288,7 @@ export default function MasterProfilePage() {
         <BookingModal master={master} onClose={() => setShowBooking(false)} />
       )}
 
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-3 safe-area-pt">
+      <header className="sticky top-0 z-40 bg-background/92 backdrop-blur-2xl border-b border-border/70 px-4 py-3 safe-area-pt">
         <div className="flex items-center gap-4 max-w-lg mx-auto">
           <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Назад" onClick={() => navigate('/')} data-testid="button-back">
             <ArrowLeft className="w-6 h-6" />
@@ -304,15 +304,15 @@ export default function MasterProfilePage() {
 
       <main className="px-4 py-5 pb-44 max-w-lg mx-auto">
         {/* Profile card */}
-        <div className="rounded-2xl bg-card border border-border/60 p-5 mb-4">
+        <div className="premium-card p-5 mb-4">
           <div className="flex gap-4 mb-4">
-            <Avatar className="w-20 h-20 rounded-2xl shrink-0">
+            <Avatar className="w-20 h-20 rounded-[1.4rem] shrink-0">
               <AvatarImage src={master.avatar} alt={master.name} className="object-cover" />
-              <AvatarFallback className="rounded-2xl text-2xl">{master.name.slice(0, 2)}</AvatarFallback>
+              <AvatarFallback className="rounded-[1.4rem] text-2xl">{master.name.slice(0, 2)}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h1 className="text-xl font-bold truncate" data-testid="text-master-name">{master.name}</h1>
+                <h1 className="text-2xl font-extrabold tracking-[-0.04em] truncate" data-testid="text-master-name">{master.name}</h1>
                 {master.verified && <Shield className="w-4 h-4 text-green-500 shrink-0" />}
               </div>
               <p className="text-muted-foreground text-sm mb-2">{master.category}</p>
@@ -364,7 +364,7 @@ export default function MasterProfilePage() {
                 {master.certificates!.map((cert) => (
                   <div
                     key={cert.id}
-                    className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/30 p-2.5"
+                    className="flex items-center gap-3 rounded-2xl border border-border/60 bg-muted/40 p-2.5"
                     data-testid={`certificate-${cert.id}`}
                   >
                     {cert.image ? (
@@ -410,7 +410,7 @@ export default function MasterProfilePage() {
                 {master.portfolio.slice(0, 3).map((img, idx) => (
                   <div
                     key={idx}
-                    className="aspect-square rounded-lg overflow-hidden bg-muted"
+                    className="aspect-square rounded-xl overflow-hidden bg-muted"
                     data-testid={`portfolio-preview-${idx}`}
                   >
                     <img
@@ -431,7 +431,7 @@ export default function MasterProfilePage() {
               <p className="text-xs text-muted-foreground">заказов</p>
             </div>
             <div className="bg-green-500/10 rounded-xl py-3 px-2">
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">{displayRating}</p>
+              <p className="text-xl font-bold text-emerald-600 dark:text-green-400">{displayRating}</p>
               <p className="text-xs text-muted-foreground">рейтинг</p>
             </div>
             {master.showPrices !== false && (
@@ -443,7 +443,7 @@ export default function MasterProfilePage() {
           </div>
 
           {master.verified && (
-            <div className="mt-4 flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-xl px-3 py-2">
+            <div className="mt-4 flex items-center gap-2 text-xs text-emerald-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-2xl px-3 py-2">
               <BadgeCheck className="w-4 h-4 shrink-0" />
               <span>{isOrganization ? "Данные организации проверены командой GOVZA" : "Личность и профессиональные навыки проверены командой GOVZA"}</span>
             </div>
@@ -464,7 +464,7 @@ export default function MasterProfilePage() {
             {master.services.map((service, idx) => (
               <div
                 key={idx}
-                className="rounded-xl bg-card border border-border/60 p-4 flex items-center justify-between"
+                className="premium-card p-4 flex items-center justify-between"
               >
                 <span className="font-medium text-sm">{service.name}</span>
                 <span className="font-bold text-primary text-sm">{service.price}</span>
@@ -491,7 +491,7 @@ export default function MasterProfilePage() {
 
           {reviewsVisible && (
           <TabsContent value="reviews" className="mt-4 space-y-3">
-            <div className="rounded-xl bg-muted p-4 flex items-center gap-4">
+            <div className="rounded-[1.4rem] bg-muted/60 p-4 flex items-center gap-4">
               <div className="text-center">
                 <p className="text-4xl font-bold">{displayRating}</p>
                 <StarRow rating={Math.round(displayRating)} />
@@ -521,7 +521,7 @@ export default function MasterProfilePage() {
                   ["Цена", reviewSummary.priceMatch],
                   ["Вежливость", reviewSummary.courtesy],
                 ].map(([label, value]) => (
-                  <div key={String(label)} className="rounded-xl border border-border/60 bg-card p-3">
+                  <div key={String(label)} className="premium-card p-3">
                     <p className="text-xs text-muted-foreground">{label}</p>
                     <p className="mt-1 font-bold">{value} / 5</p>
                   </div>
@@ -530,7 +530,7 @@ export default function MasterProfilePage() {
             )}
 
             {reviews.map((review, idx) => (
-              <div key={idx} data-testid={`review-${idx}`} className="rounded-xl bg-card border border-border/60 p-4 space-y-2">
+              <div key={idx} data-testid={`review-${idx}`} className="premium-card p-4 space-y-2">
                 <div className="flex items-center gap-3">
                   <Avatar className="w-9 h-9">
                     {review.avatar ? (
@@ -559,11 +559,11 @@ export default function MasterProfilePage() {
       </main>
 
       {/* ── Action bar ──────────────────────────────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 safe-area-pb z-30">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border/70 bg-background/92 p-4 safe-area-pb shadow-[0_-18px_50px_-34px_hsl(var(--foreground)/0.34)] backdrop-blur-2xl">
         <div className="max-w-lg mx-auto space-y-2">
           {/* Call state banner */}
           {callState.status !== 'active' && callState.status !== 'disabled' && (
-            <div className="text-center text-xs text-muted-foreground bg-muted rounded-xl px-3 py-2">
+            <div className="text-center text-xs text-muted-foreground bg-muted rounded-2xl px-3 py-2">
               {callState.status === 'offline' && `📵 ${callState.note}`}
               {callState.status === 'outside_hours' && `🕐 ${callState.note}`}
             </div>
@@ -571,7 +571,7 @@ export default function MasterProfilePage() {
 
           {/* Primary CTA — full width */}
           <Button
-            className="w-full rounded-xl h-12 text-base font-semibold"
+            className="w-full rounded-2xl h-12 text-base font-semibold"
             onClick={() => setShowBooking(true)}
             data-testid="button-book"
           >
@@ -582,7 +582,7 @@ export default function MasterProfilePage() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              className="flex-1 rounded-xl"
+              className="flex-1 rounded-2xl"
               onClick={() => setShowChat(true)}
               data-testid="button-chat"
             >
@@ -595,7 +595,7 @@ export default function MasterProfilePage() {
                 <a
                   href={`tel:${callState.phone}`}
                   data-testid="link-call"
-                  className="flex-1 min-w-0 flex items-center justify-center gap-2 rounded-xl border border-green-600 text-green-600 text-sm font-semibold px-2"
+                  className="flex-1 min-w-0 flex items-center justify-center gap-2 rounded-2xl border border-emerald-600 text-emerald-600 text-sm font-semibold px-2"
                 >
                   <Phone className="w-4 h-4 shrink-0" />
                   <span className="truncate">{callState.phone}</span>
@@ -603,7 +603,7 @@ export default function MasterProfilePage() {
               ) : (
                 <Button
                   variant="outline"
-                  className="flex-1 rounded-xl border-green-600 text-green-600 hover:bg-green-600/10"
+                  className="flex-1 rounded-xl border-green-600 text-emerald-600 hover:bg-emerald-600/10"
                   onClick={() => setRevealPhone(true)}
                   data-testid="button-call"
                 >

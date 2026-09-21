@@ -12,7 +12,7 @@ export default function OrganizationBottomNavigation() {
   const [location] = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/60 safe-area-bottom shadow-[0_-10px_30px_hsl(var(--foreground)/0.05)] lg:bottom-5 lg:left-1/2 lg:right-auto lg:w-auto lg:-translate-x-1/2 lg:rounded-full lg:border">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/70 bg-background/92 backdrop-blur-2xl safe-area-bottom shadow-[0_-18px_50px_-34px_hsl(var(--foreground)/0.34)] lg:bottom-5 lg:left-1/2 lg:right-auto lg:w-auto lg:-translate-x-1/2 lg:rounded-full lg:border">
       <div className="flex items-center justify-around px-2 py-1.5 max-w-lg mx-auto">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active = location === href || (href !== "/organization" && location.startsWith(href));
@@ -21,8 +21,8 @@ export default function OrganizationBottomNavigation() {
               key={href}
               href={href}
               className={cn(
-                "pressable min-w-[84px] min-h-[52px] flex flex-col items-center justify-center gap-0.5 px-4 py-1.5 rounded-xl transition-all lg:flex-row",
-                active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                "pressable min-w-[84px] min-h-[52px] flex flex-col items-center justify-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all lg:flex-row",
+                active ? "text-primary bg-primary/[0.07]" : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Icon className={cn("w-6 h-6", active && "scale-110")} />
