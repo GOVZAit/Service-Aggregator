@@ -1,5 +1,5 @@
 import type { Master, ServiceRequest, Order, ChatMessage, AuthUser, LostFoundListing, LostFoundListingInput, LostFoundStatus, UserRole } from "@shared/schema";
-import { authUsers, lostFoundListings, masterSettings, passwordResetTokens, persistedOrders } from "@shared/schema";
+import { authUsers, lostFoundListings, masterSettings, passwordResetTokens, persistedOrders, userFavorites } from "@shared/schema";
 import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
@@ -436,6 +436,10 @@ export interface IStorage {
   consumePasswordReset(tokenHash: string, now: number): Promise<AuthUser | undefined>;
   revokePasswordResets(userId: number): Promise<void>;
 
+  getFavoriteMasterIds(userId: number): Promise<number[]>;
+  addFavorite(userId: number, masterId: number): Promise<void>;
+  removeFavorite(userId: number, masterId: number): Promise<void>;
+
   getLostFoundListings(): Promise<LostFoundListing[]>;
   getLostFoundListingById(id: number): Promise<LostFoundListing | undefined>;
   createLostFoundListing(authorId: number, data: LostFoundListingInput): Promise<LostFoundListing>;
@@ -749,6 +753,25 @@ export class MemStorage implements IStorage {
 
   async revokePasswordResets(userId: number): Promise<void> {
     await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
+  }
+
+  async getFavoriteMasterIds(userId: number): Promise<number[]> {
+    const rows = await db.select({ masterId: userFavorites.masterId })
+      .from(userFavorites)
+      .where(eq(userFavorites.userId, userId))
+      .orderBy(desc(userFavorites.createdAt));
+    return rows.map((row) => row.masterId);
+  }
+
+  async addFavorite(userId: number, masterId: number): Promise<void> {
+    await db.insert(userFavorites).values({ userId, masterId }).onConflictDoNothing();
+  }
+
+  async removeFavorite(userId: number, masterId: number): Promise<void> {
+    await db.delete(userFavorites).where(and(
+      eq(userFavorites.userId, userId),
+      eq(userFavorites.masterId, masterId),
+    ));
   }
 
   async getLostFoundListings(): Promise<LostFoundListing[]> {
