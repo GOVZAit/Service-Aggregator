@@ -490,17 +490,7 @@ export default function MasterProfilePage() {
                 <span className="font-medium text-sm">{service.name}</span>
                 <span className="font-bold text-primary text-sm">{service.price}</span>
               </div>
-                ))}
-              </>
-            ) : (
-              <div className="premium-card p-6 text-center">
-                <Star className="mx-auto h-7 w-7 text-muted-foreground/40" />
-                <p className="mt-3 text-sm font-bold">Проверенных отзывов пока нет</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  Отзывы появятся здесь только после завершённых заказов GOVZA.
-                </p>
-              </div>
-            )}
+            ))}
           </TabsContent>
           )}
 
@@ -538,7 +528,7 @@ export default function MasterProfilePage() {
               </div>
               <div className="flex-1 space-y-1">
                 {[5, 4, 3, 2, 1].map((stars) => {
-                  const count = reviews.filter((r) => r.rating === stars).length;
+                  const count = reviews.filter((review) => review.rating === stars).length;
                   const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
                   return (
                     <div key={stars} className="flex items-center gap-2">
@@ -591,36 +581,44 @@ export default function MasterProfilePage() {
                 </div>
 
                 {sortedReviews.map((review, idx) => (
-              <div key={idx} data-testid={`review-${idx}`} className="premium-card p-4 space-y-2">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-9 h-9">
-                    {review.avatar ? (
-                      <AvatarImage src={review.avatar} alt={review.name} className="object-cover" />
-                    ) : null}
-                    <AvatarFallback className="text-xs font-bold">{review.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">{review.name}</p>
-                      <p className="text-xs text-muted-foreground">{review.date}</p>
+                  <div key={idx} data-testid={`review-${idx}`} className="premium-card p-4 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-9 h-9">
+                        {review.avatar ? (
+                          <AvatarImage src={review.avatar} alt={review.name} className="object-cover" />
+                        ) : null}
+                        <AvatarFallback className="text-xs font-bold">{review.name.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold">{review.name}</p>
+                          <p className="text-xs text-muted-foreground">{review.date}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <StarRow rating={review.rating} />
+                          {review.service && <span className="text-xs text-muted-foreground">· {review.service}</span>}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <StarRow rating={review.rating} />
-                      {review.service && <span className="text-xs text-muted-foreground">· {review.service}</span>}
-                    </div>
+                    <p className="text-sm text-foreground/80 leading-relaxed">«{review.text}»</p>
+                    {review.providerReply && (
+                      <div className="rounded-2xl bg-primary/[0.06] p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-primary">Ответ исполнителя</p>
+                        <p className="mt-1 text-sm leading-relaxed">{review.providerReply}</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <p className="text-sm text-foreground/80 leading-relaxed">«{review.text}»</p>
-                {review.providerReply && (
-                  <div className="rounded-2xl bg-primary/[0.06] p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-primary">
-                      Ответ исполнителя
-                    </p>
-                    <p className="mt-1 text-sm leading-relaxed">{review.providerReply}</p>
-                  </div>
-                )}
+                ))}
+              </>
+            ) : (
+              <div className="premium-card p-6 text-center">
+                <Star className="mx-auto h-7 w-7 text-muted-foreground/40" />
+                <p className="mt-3 text-sm font-bold">Проверенных отзывов пока нет</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Отзывы появятся здесь только после завершённых заказов GOVZA.
+                </p>
               </div>
-            ))}
+            )}
           </TabsContent>
           )}
         </Tabs>
