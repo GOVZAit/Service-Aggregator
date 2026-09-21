@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { AppBrandHeader } from "@/components/app-brand-header";
 import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -80,14 +81,15 @@ export default function DoctorsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24 lg:pb-28">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/60">
-        <div className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-4 pb-3">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-              <Stethoscope className="w-5 h-5 text-emerald-600" />
+      <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
+        <div className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-3 pb-4">
+          <AppBrandHeader compact />
+          <div className="flex items-center gap-3 mt-5 mb-4">
+            <div className="w-11 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Stethoscope className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="font-bold text-lg leading-tight">Врачи</h1>
+              <h1 className="font-extrabold text-2xl tracking-[-0.04em] leading-tight">Врачи</h1>
               <p className="text-xs text-muted-foreground">Чеченская Республика · запись по телефону</p>
             </div>
           </div>
@@ -100,8 +102,8 @@ export default function DoctorsPage() {
                 placeholder="Врач, специальность или клиника"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 pr-10 bg-muted/60 border-0 rounded-2xl font-medium placeholder:text-muted-foreground/70"
-                style={{ height: "48px" }}
+                className="pl-12 pr-10 bg-card border border-border/60 rounded-[1.2rem] font-medium shadow-sm placeholder:text-muted-foreground/70"
+                style={{ height: "54px" }}
                 data-testid="input-doctor-search"
               />
               {searchQuery && (
@@ -122,10 +124,10 @@ export default function DoctorsPage() {
               className={cn(
                 "rounded-2xl flex items-center justify-center transition-colors relative shrink-0",
                 hasActiveFilters || showFilters
-                  ? "bg-emerald-600 text-white"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-muted/60 text-foreground hover:bg-muted"
               )}
-              style={{ width: "48px", height: "48px" }}
+              style={{ width: "54px", height: "54px" }}
             >
               <SlidersHorizontal className="w-5 h-5" />
               {hasActiveFilters && (
@@ -146,8 +148,8 @@ export default function DoctorsPage() {
                   className={cn(
                     "flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-sm font-semibold whitespace-nowrap shrink-0 transition-all active:scale-95",
                     isSelected
-                      ? "bg-emerald-600 text-white shadow-md"
-                      : "bg-muted/60 text-foreground hover:bg-muted"
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "bg-card border border-border/60 text-foreground shadow-sm"
                   )}
                 >
                   <span className="text-base leading-none">{s.emoji}</span>
@@ -158,7 +160,7 @@ export default function DoctorsPage() {
           </div>
 
           {showFilters && (
-            <div className="mt-3 rounded-2xl border border-border/60 bg-card p-4 space-y-4" data-testid="doctor-filters-panel">
+            <div className="mt-3 premium-card p-4 space-y-4" data-testid="doctor-filters-panel">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Сортировка</p>
                 <div className="flex gap-2 flex-wrap">
@@ -170,7 +172,7 @@ export default function DoctorsPage() {
                       data-testid={`doctor-sort-${opt.key}`}
                       className={cn(
                         "px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
-                        sortBy === opt.key ? "bg-emerald-600 text-white" : "bg-muted/60 hover:bg-muted"
+                        sortBy === opt.key ? "bg-primary text-primary-foreground" : "bg-muted/60 hover:bg-muted"
                       )}
                     >
                       {opt.label}
@@ -190,7 +192,7 @@ export default function DoctorsPage() {
                       data-testid={`doctor-city-${c}`}
                       className={cn(
                         "px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
-                        cityFilter === c ? "bg-emerald-600 text-white" : "bg-muted/60 hover:bg-muted"
+                        cityFilter === c ? "bg-primary text-primary-foreground" : "bg-muted/60 hover:bg-muted"
                       )}
                     >
                       {c}
@@ -206,7 +208,7 @@ export default function DoctorsPage() {
                   data-testid="doctor-filter-children"
                   className={cn(
                     "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
-                    childrenOnly ? "bg-emerald-600 text-white" : "bg-muted/60 hover:bg-muted"
+                    childrenOnly ? "bg-primary text-primary-foreground" : "bg-muted/60 hover:bg-muted"
                   )}
                 >
                   <Baby className="w-4 h-4" /> Принимает детей
@@ -217,7 +219,7 @@ export default function DoctorsPage() {
                   data-testid="doctor-filter-home-visits"
                   className={cn(
                     "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
-                    homeVisitsOnly ? "bg-emerald-600 text-white" : "bg-muted/60 hover:bg-muted"
+                    homeVisitsOnly ? "bg-primary text-primary-foreground" : "bg-muted/60 hover:bg-muted"
                   )}
                 >
                   <HomeIcon className="w-4 h-4" /> Выезд на дом
@@ -228,7 +230,7 @@ export default function DoctorsPage() {
                 <button
                   onClick={resetFilters}
                   data-testid="doctor-filters-reset"
-                  className="text-sm font-medium text-emerald-600 hover:underline"
+                  className="text-sm font-medium text-primary hover:underline"
                 >
                   Сбросить фильтры
                 </button>
@@ -243,15 +245,15 @@ export default function DoctorsPage() {
           <p className="text-sm text-muted-foreground">
             <span className="font-semibold text-foreground">{filtered.length}</span>{" "}
             {filtered.length === 1 ? "врач" : filtered.length < 5 ? "врача" : "врачей"}
-            {cityFilter && <span className="text-emerald-600 font-medium"> · {cityFilter}</span>}
+            {cityFilter && <span className="text-primary font-medium"> · {cityFilter}</span>}
           </p>
-          <div className="flex bg-muted/60 rounded-xl p-0.5">
+          <div className="flex bg-muted/70 rounded-2xl p-1">
             <button
               onClick={() => setViewMode("list")}
               aria-pressed={viewMode === "list"}
               data-testid="doctors-view-list"
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                "px-3 py-1.5 rounded-xl text-xs font-bold transition-all",
                 viewMode === "list" ? "bg-background shadow-sm" : "text-muted-foreground"
               )}
             >
@@ -262,7 +264,7 @@ export default function DoctorsPage() {
               aria-pressed={viewMode === "map"}
               data-testid="doctors-view-map"
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                "px-3 py-1.5 rounded-xl text-xs font-bold transition-all",
                 viewMode === "map" ? "bg-background shadow-sm" : "text-muted-foreground"
               )}
             >
@@ -271,7 +273,7 @@ export default function DoctorsPage() {
           </div>
         </div>
         {viewMode === "map" && filtered.length > 0 ? (
-          <div className="rounded-3xl overflow-hidden border border-border/60 h-[420px] lg:h-[540px]">
+          <div className="rounded-[1.75rem] overflow-hidden border border-border/70 shadow-sm h-[420px] lg:h-[540px]">
             <MapView
               organizations={filtered.flatMap((doc) =>
                 doc.locations
@@ -297,7 +299,7 @@ export default function DoctorsPage() {
             {(hasActiveFilters || specialty || searchQuery) && (
               <button
                 onClick={() => { resetFilters(); setSpecialty(null); setSearchQuery(""); }}
-                className="text-sm font-medium text-emerald-600 hover:underline"
+                className="text-sm font-medium text-primary hover:underline"
               >
                 Сбросить всё
               </button>
@@ -309,7 +311,7 @@ export default function DoctorsPage() {
               <div
                 key={doc.id}
                 data-testid={`doctor-card-${doc.id}`}
-                className="bg-card border border-border/60 rounded-3xl p-4 shadow-sm"
+                className="premium-card p-4"
               >
                 <div className="flex gap-3">
                   <Avatar className="w-14 h-14 rounded-2xl">
@@ -322,7 +324,7 @@ export default function DoctorsPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-bold truncate">{doc.name}</p>
-                        <p className="text-sm text-emerald-600 font-medium">{doc.specialty}</p>
+                        <p className="text-sm text-primary font-medium">{doc.specialty}</p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 bg-amber-500/10 px-2 py-1 rounded-lg">
                         <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
@@ -338,9 +340,9 @@ export default function DoctorsPage() {
 
                 <div className="mt-3 space-y-2">
                   {doc.locations.map((loc, i) => (
-                    <div key={i} className="rounded-xl bg-muted/40 px-3 py-2 text-sm">
+                    <div key={i} className="rounded-2xl bg-muted/55 px-3 py-2.5 text-sm">
                       <p className="flex items-center gap-2 font-medium">
-                        <MapPin className="w-4 h-4 shrink-0 text-emerald-600" />
+                        <MapPin className="w-4 h-4 shrink-0 text-primary" />
                         <span className="truncate">{loc.clinic}</span>
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5 ml-6">{loc.city}, {loc.address}</p>
@@ -351,7 +353,7 @@ export default function DoctorsPage() {
                     </div>
                   ))}
                   {doc.homeVisits && (
-                    <div className="rounded-xl bg-emerald-500/10 px-3 py-2 text-sm flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-medium">
+                    <div className="rounded-xl bg-emerald-500/10 px-3 py-2 text-sm flex items-center gap-2 text-primary font-medium">
                       <HomeIcon className="w-4 h-4 shrink-0" />
                       Принимает на дому — по договорённости
                     </div>
@@ -370,7 +372,7 @@ export default function DoctorsPage() {
                   <a
                     href={`tel:${doc.phone.replace(/[^+\d]/g, "")}`}
                     data-testid={`doctor-call-${doc.id}`}
-                    className="flex-1 h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                    className="flex-1 h-12 rounded-2xl bg-emerald-600 hover:bg-primary/90 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
                   >
                     <Phone className="w-4 h-4" />
                     Позвонить
@@ -378,7 +380,7 @@ export default function DoctorsPage() {
                   <button
                     onClick={() => setChatDoctor(doc)}
                     data-testid={`doctor-message-${doc.id}`}
-                    className="flex-1 h-11 rounded-2xl border-2 border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-600/10 font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                    className="flex-1 h-12 rounded-2xl border-2 border-primary/30 text-primary hover:bg-primary/10 font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
                   >
                     <MessageCircle className="w-4 h-4" />
                     Написать
@@ -433,7 +435,7 @@ function DoctorChat({ doctor, onBack }: { doctor: Doctor; onBack: () => void }) 
 
   return (
     <div className="min-h-screen bg-background flex flex-col max-w-lg lg:max-w-3xl mx-auto">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/60 px-3 py-2.5 flex items-center gap-2">
+      <header className="sticky top-0 z-40 bg-background/92 backdrop-blur-2xl border-b border-border/70 px-3 py-2.5 flex items-center gap-2">
         <button
           onClick={onBack}
           aria-label="Назад к списку врачей"
@@ -448,12 +450,12 @@ function DoctorChat({ doctor, onBack }: { doctor: Doctor; onBack: () => void }) 
         </Avatar>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-sm truncate">{doctor.name}</p>
-          <p className="text-xs text-emerald-600">{doctor.specialty} · {doctor.locations[0].clinic}</p>
+          <p className="text-xs text-primary">{doctor.specialty} · {doctor.locations[0].clinic}</p>
         </div>
         <a
           href={`tel:${doctor.phone.replace(/[^+\d]/g, "")}`}
           aria-label="Позвонить врачу"
-          className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-600/10 text-emerald-600 hover:bg-emerald-600/20"
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary hover:bg-emerald-600/20"
         >
           <Phone className="w-4 h-4" />
         </a>
@@ -474,7 +476,7 @@ function DoctorChat({ doctor, onBack }: { doctor: Doctor; onBack: () => void }) 
               className={cn(
                 "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm",
                 m.sender === "user"
-                  ? "bg-emerald-600 text-white rounded-br-md"
+                  ? "bg-primary text-primary-foreground rounded-br-md"
                   : "bg-muted rounded-bl-md"
               )}
             >
@@ -503,7 +505,7 @@ function DoctorChat({ doctor, onBack }: { doctor: Doctor; onBack: () => void }) 
           disabled={!text.trim() || sendMutation.isPending}
           aria-label="Отправить"
           data-testid="chat-send"
-          className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center disabled:opacity-40 transition-opacity shrink-0"
+          className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 transition-opacity shrink-0"
         >
           <Send className="w-4 h-4" />
         </button>
