@@ -152,7 +152,7 @@ export function InviteProviderModal({
               </div>
             ) : (
               options.map((request) => {
-                const alreadyInvited = request.invitationStatus === "pending" || request.invitationStatus === "responded";
+                const alreadyInvited = request.invitationStatus !== null;
                 return (
                   <button
                     type="button"
