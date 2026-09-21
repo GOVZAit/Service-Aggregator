@@ -56,15 +56,15 @@ export function UrgentNowModal({
 
   const searchMutation = useMutation({
     mutationFn: async () => {
-      const params = new URLSearchParams({
-        categoryId: String(categoryId),
-        city,
+      const response = await fetch("/api/urgent/providers/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryId,
+          city,
+          ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+        }),
       });
-      if (coords) {
-        params.set("lat", String(coords.lat));
-        params.set("lng", String(coords.lng));
-      }
-      const response = await fetch(`/api/urgent/providers?${params.toString()}`);
       const data = await response.json().catch(() => []);
       if (!response.ok) throw new Error(data.message || "Не удалось выполнить срочный поиск");
       return data as UrgentProvider[];
