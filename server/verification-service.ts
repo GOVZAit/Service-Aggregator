@@ -214,7 +214,7 @@ export async function listVerificationQueue() {
       phone: typeof effective.phone === "string" ? effective.phone : null,
       status: row.status,
       note: row.note,
-      documents: row.documents,
+      documentCount: Array.isArray(row.documents) ? row.documents.length : 0,
       providerComment: row.provider_comment ?? "",
       submittedAt: row.submitted_at.toISOString(),
       updatedAt: row.updated_at.toISOString(),
