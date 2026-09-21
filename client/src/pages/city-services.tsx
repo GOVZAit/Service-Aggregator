@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Search,
   ChevronLeft,
@@ -29,7 +30,7 @@ import { AppBrandHeader } from "@/components/app-brand-header";
 import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
 import {
-  cityOrganizations,
+  cityOrganizations as seededCityOrganizations,
   getOrgDistance,
   type CityOrganization,
 } from "@/lib/city-services-data";
@@ -56,6 +57,11 @@ export default function CityServicesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<number[]>([]);
 
+  const { data: cityOrganizations = seededCityOrganizations } = useQuery<CityOrganization[]>({
+    queryKey: ["/api/directory/city-services"],
+    initialData: seededCityOrganizations,
+  });
+
   const goToDetail = (org: CityOrganization) => {
     setSelectedOrg(org);
     setLevel('detail');
@@ -76,12 +82,12 @@ export default function CityServicesPage() {
 
   const allServiceOrgs = useMemo(
     () => cityOrganizations.filter((o) => SERVICE_CATEGORY_IDS.includes(o.categoryId)),
-    []
+    [cityOrganizations]
   );
 
   const emergencyOrgs = useMemo(
     () => cityOrganizations.filter((o) => o.isEmergency && o.importantNumber),
-    []
+    [cityOrganizations]
   );
 
   const filteredOrgs = useMemo(() => {

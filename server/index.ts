@@ -8,6 +8,8 @@ import { registerDirectChatRoutes } from "./direct-chat-routes";
 import { registerPushRoutes } from "./push-routes";
 import { registerProviderRoutes } from "./provider-routes";
 import { ensureAdminTables, registerAdminRoutes } from "./admin-routes";
+import { ensureDirectoryTables } from "./directory-service";
+import { registerDirectoryRoutes } from "./directory-routes";
 import { ensureProviderTables } from "./provider-service";
 import { initializePushService } from "./push-service";
 import { startProviderLifecycleScheduler } from "./provider-lifecycle";
@@ -117,6 +119,7 @@ app.use((req, res, next) => {
   // /api/requests handlers while the rest of the application continues using registerRoutes.
   await ensureProviderTables();
   await ensureAdminTables();
+  await ensureDirectoryTables();
   await initializePushService();
   await registerPersistentRequestRoutes(app);
   await registerOrderChatRoutes(app);
@@ -126,6 +129,7 @@ app.use((req, res, next) => {
   await registerPushRoutes(app);
   await registerProviderRoutes(app);
   await registerAdminRoutes(app);
+  await registerDirectoryRoutes(app);
   await registerRoutes(httpServer, app);
   startProviderLifecycleScheduler();
   registerRealtimeServer(httpServer);

@@ -12,7 +12,7 @@ import { AppBrandHeader } from "@/components/app-brand-header";
 import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
-import { doctors, doctorSpecialties, type Doctor } from "@/lib/doctors-data";
+import { doctors as seededDoctors, doctorSpecialties, type Doctor } from "@/lib/doctors-data";
 import type { ChatMessage } from "@shared/schema";
 
 type DoctorSort = "rating" | "price" | "experience";
@@ -23,7 +23,6 @@ const sortOptions: { key: DoctorSort; label: string }[] = [
   { key: "experience", label: "По стажу" },
 ];
 
-const doctorCities = Array.from(new Set(doctors.flatMap((d) => d.locations.map((l) => l.city))));
 
 // Doctor chats live in the same in-memory message store as master chats;
 // offset the id so they never collide with master ids.
@@ -41,6 +40,15 @@ export default function DoctorsPage() {
   const [childrenOnly, setChildrenOnly] = useState(false);
   const [homeVisitsOnly, setHomeVisitsOnly] = useState(false);
   const [chatDoctor, setChatDoctor] = useState<Doctor | null>(null);
+
+  const { data: doctors = seededDoctors } = useQuery<Doctor[]>({
+    queryKey: ["/api/directory/doctors"],
+    initialData: seededDoctors,
+  });
+  const doctorCities = useMemo(
+    () => Array.from(new Set(doctors.flatMap((doctor) => doctor.locations.map((location) => location.city)))),
+    [doctors],
+  );
 
   const hasActiveFilters = cityFilter !== null || childrenOnly || homeVisitsOnly || sortBy !== "rating";
 
