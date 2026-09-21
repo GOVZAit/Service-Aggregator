@@ -40,7 +40,7 @@ install -d -o serviceagg -g serviceagg -m 0750 "${release_dir}"
 tar -xzf "${archive}" -C "${release_dir}"
 chown -R serviceagg:serviceagg "${release_dir}"
 
-sudo -u serviceagg -H sh -c "cd '${release_dir}' && npm ci && npm run build"
+sudo -u serviceagg -H sh -c "cd '${release_dir}' && npm ci && npm run build && npm run smoke:build"
 
 previous_target=""
 if [[ -L "${current_link}" ]]; then
