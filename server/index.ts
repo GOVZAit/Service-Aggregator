@@ -96,7 +96,9 @@ app.use((req, res, next) => {
         !path.endsWith("/review") &&
         !path.startsWith("/api/push") &&
         !path.startsWith("/api/providers") &&
-        !path.startsWith("/api/internal/providers")
+        !path.startsWith("/api/internal/providers") &&
+        !path.startsWith("/api/admin") &&
+        !path.startsWith("/api/internal/admin")
       ) {
         // Truncate to keep uploaded document images / PII out of the logs
         const body = JSON.stringify(capturedJsonResponse);
