@@ -7,10 +7,12 @@ import {
   RefreshCw,
   Save,
   Search,
+  ShieldAlert,
   ShieldCheck,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
 import type { Doctor } from "@/lib/doctors-data";
 import type { CityOrganization } from "@/lib/city-services-data";
@@ -546,6 +548,12 @@ export default function AdminDashboardPage() {
             <h1 className="mt-1 text-xl font-extrabold tracking-[-.035em]">Управление каталогом</h1>
           </div>
           <div className="flex gap-2">
+            <Link href="/admin/moderation">
+              <Button variant="outline" size="sm">
+                <ShieldAlert className="mr-1.5 h-4 w-4" />
+                Модерация
+              </Button>
+            </Link>
             <Button variant="outline" size="sm" onClick={() => void load()}>
               <RefreshCw className="mr-1.5 h-4 w-4" />
               Обновить
