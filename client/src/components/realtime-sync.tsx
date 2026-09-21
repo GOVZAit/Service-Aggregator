@@ -105,6 +105,12 @@ export function RealtimeSync() {
       }
     };
 
+    const onServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type !== "govza:push-received") return;
+      void queryClient.invalidateQueries({ queryKey: ["/api/push/notifications"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/push/notifications/unread-count"] });
+    };
+
     const onOnline = () => void connect();
     const onVisibility = () => {
       if (document.visibilityState === "visible") void connect();
@@ -112,6 +118,7 @@ export function RealtimeSync() {
 
     window.addEventListener("online", onOnline);
     document.addEventListener("visibilitychange", onVisibility);
+    navigator.serviceWorker?.addEventListener("message", onServiceWorkerMessage);
     void connect();
 
     return () => {
@@ -119,6 +126,7 @@ export function RealtimeSync() {
       if (reconnectTimer) window.clearTimeout(reconnectTimer);
       window.removeEventListener("online", onOnline);
       document.removeEventListener("visibilitychange", onVisibility);
+      navigator.serviceWorker?.removeEventListener("message", onServiceWorkerMessage);
       socket?.close();
     };
   }, [queryClient, user?.id]);
