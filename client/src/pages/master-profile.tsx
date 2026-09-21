@@ -3,7 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Heart, MapPin, Clock, BadgeCheck, Shield,
-  MessageCircle, Phone, PhoneOff, Star, Building2, Award, Share2,
+  MessageCircle, Phone, PhoneOff, Star, Building2, Award, Share2, Send,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { BookingModal } from "@/components/booking-modal";
 import { PortfolioLightbox } from "@/components/portfolio-lightbox";
+import { InviteProviderModal } from "@/components/invite-provider-modal";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { executorTypeLabels } from "@shared/schema";
 import type { Master } from "@shared/schema";
 import type { MasterReviewSummary } from "@shared/order-review-schema";
+import type { AvailabilityDayView } from "@shared/provider-engagement-schema";
 
 // ── Call availability logic ───────────────────────────────────────────────────
 
@@ -108,6 +110,7 @@ export default function MasterProfilePage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showBooking, setShowBooking] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   const [revealPhone, setRevealPhone] = useState(false);
   const [portfolioIndex, setPortfolioIndex] = useState<number | null>(null);
   const [reviewSort, setReviewSort] = useState<"newest" | "high" | "low">("newest");
@@ -121,6 +124,24 @@ export default function MasterProfilePage() {
   const { data: reviewSummary } = useQuery<MasterReviewSummary>({
     queryKey: [`/api/masters/${masterId}/reviews`],
     enabled: Number.isInteger(masterId) && masterId > 0,
+  });
+
+  const todayKey = (() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
+
+  const { data: availability = [] } = useQuery<AvailabilityDayView[]>({
+    queryKey: ["/api/providers", masterId, "availability", todayKey],
+    enabled: Number.isInteger(masterId) && masterId > 0,
+    queryFn: async () => {
+      const response = await fetch(`/api/providers/${masterId}/availability?from=${todayKey}&days=14`);
+      if (!response.ok) return [];
+      return response.json();
+    },
   });
 
   const { data: favorites = [] } = useQuery<number[]>({
@@ -273,6 +294,8 @@ export default function MasterProfilePage() {
   const displayRating = reviewSummary && reviewSummary.count > 0 ? reviewSummary.average : master.rating;
   const displayReviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : master.reviews;
   const callState = getCallState(master);
+  const todayAvailability = availability.find((day) => day.date === todayKey);
+  const nextAvailable = availability.find((day) => day.status === "available");
   const portfolioVisible = master.showPortfolio !== false && master.portfolio.length > 0;
   const reviewsVisible = master.showReviews !== false;
   const pricesVisible = master.showPrices !== false && master.services.length > 0;
@@ -285,6 +308,9 @@ export default function MasterProfilePage() {
     <div className="min-h-screen bg-background pb-24">
       {showBooking && (
         <BookingModal master={master} onClose={() => setShowBooking(false)} />
+      )}
+      {showInvite && (
+        <InviteProviderModal master={master} onClose={() => setShowInvite(false)} />
       )}
       <PortfolioLightbox images={master.portfolio} index={portfolioIndex} onIndexChange={setPortfolioIndex} />
 
@@ -353,6 +379,16 @@ export default function MasterProfilePage() {
               <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-full px-2.5 py-1" data-testid="badge-certificate">
                 <Award className="w-3 h-3" />
                 Есть сертификат
+              </span>
+            )}
+            {todayAvailability?.status === "available" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                Свободен сегодня {todayAvailability.fromTime}–{todayAvailability.toTime}
+              </span>
+            )}
+            {todayAvailability?.status !== "available" && nextAvailable && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                Ближайшее окно: {new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(new Date(`${nextAvailable.date}T12:00:00`))}
               </span>
             )}
           </div>
@@ -609,6 +645,24 @@ export default function MasterProfilePage() {
               {callState.status === 'offline' && `📵 ${callState.note}`}
               {callState.status === 'outside_hours' && `🕐 ${callState.note}`}
             </div>
+          )}
+
+          {(user?.role === "client" || !user) && (
+            <Button
+              variant="outline"
+              className="h-11 w-full rounded-2xl border-primary/30 font-bold text-primary"
+              onClick={() => {
+                if (user?.role !== "client") {
+                  navigate("/auth");
+                  return;
+                }
+                setShowInvite(true);
+              }}
+              data-testid="button-invite-provider"
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Предложить заказ этому исполнителю
+            </Button>
           )}
 
           {/* Primary CTA — full width */}

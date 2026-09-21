@@ -23,11 +23,12 @@ import { useAuth } from "@/contexts/auth-context";
 import type { Order, OrderStatus } from "@shared/schema";
 import type { ServiceRequestView } from "@shared/request-schema";
 import type { OrderReviewView } from "@shared/order-review-schema";
+import type { InvitationView } from "@shared/provider-engagement-schema";
 
 type OrderTab = "new" | "active" | "done";
 type Section = "market" | "orders";
 
-function RequestOpportunityCard({ request }: { request: ServiceRequestView }) {
+function RequestOpportunityCard({ request, invitation }: { request: ServiceRequestView; invitation?: InvitationView }) {
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -40,7 +41,10 @@ function RequestOpportunityCard({ request }: { request: ServiceRequestView }) {
       message: message.trim(),
     }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/provider-invitations"] }),
+      ]);
       setShowForm(false);
       toast({
         title: "Отклик отправлен",
@@ -60,8 +64,38 @@ function RequestOpportunityCard({ request }: { request: ServiceRequestView }) {
 
   const canSubmit = price.trim().length > 0 && message.trim().length >= 3;
 
+  const declineMutation = useMutation({
+    mutationFn: () => {
+      if (!invitation) throw new Error("Приглашение не найдено");
+      return apiRequest("POST", `/api/provider-invitations/${invitation.id}/decline`);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/provider-invitations"] });
+      toast({ title: "Приглашение отклонено" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Не удалось отклонить приглашение", description: error.message, variant: "destructive" });
+    },
+  });
+
   return (
     <article className="premium-card p-4" data-testid={`master-request-${request.id}`}>
+      {invitation && (
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/[.06] px-3 py-2.5">
+          <div>
+            <p className="text-xs font-extrabold text-primary">Персональное приглашение</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Клиент выбрал ваш профиль и предлагает посмотреть эту заявку.</p>
+          </div>
+          <button
+            type="button"
+            disabled={declineMutation.isPending}
+            onClick={() => declineMutation.mutate()}
+            className="min-h-9 shrink-0 rounded-xl border border-border bg-background px-3 text-xs font-bold text-muted-foreground"
+          >
+            Отклонить
+          </button>
+        </div>
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
@@ -254,11 +288,23 @@ export default function MasterOrdersPage() {
   const { data: requests = [], isLoading: requestsLoading, isError: requestsError } = useQuery<ServiceRequestView[]>({
     queryKey: ["/api/requests"],
   });
+  const { data: invitations = [] } = useQuery<InvitationView[]>({
+    queryKey: ["/api/provider-invitations"],
+  });
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({ queryKey: ["/api/orders"] });
 
   const orderMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: OrderStatus }) => apiRequest("PATCH", `/api/orders/${id}`, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/orders"] }),
+  });
+
+  const pendingInvitationByRequest = new Map(
+    invitations.filter((invitation) => invitation.status === "pending").map((invitation) => [invitation.requestId, invitation]),
+  );
+  const sortedRequests = [...requests].sort((left, right) => {
+    const leftInvited = pendingInvitationByRequest.has(left.id) ? 1 : 0;
+    const rightInvited = pendingInvitationByRequest.has(right.id) ? 1 : 0;
+    return rightInvited - leftInvited;
   });
 
   const groups = {
@@ -346,7 +392,7 @@ export default function MasterOrdersPage() {
             </div>
           ) : (
             <div className="grid items-start gap-3 lg:grid-cols-2">
-              {requests.map((request) => <RequestOpportunityCard key={request.id} request={request} />)}
+              {sortedRequests.map((request) => <RequestOpportunityCard key={request.id} request={request} invitation={pendingInvitationByRequest.get(request.id)} />)}
             </div>
           )
         ) : ordersLoading ? (

@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import { registerPersistentRequestRoutes } from "./persistent-request-routes";
+import { ensureRequestTables, registerPersistentRequestRoutes } from "./persistent-request-routes";
 import { registerOrderChatRoutes } from "./order-chat-routes";
 import { registerOrderReviewRoutes } from "./order-review-routes";
 import { registerDirectChatRoutes } from "./direct-chat-routes";
@@ -14,6 +14,7 @@ import { ensureCategoryTables } from "./category-service";
 import { registerCategoryRoutes } from "./category-routes";
 import { ensureProviderImportTables, startProviderImportScheduler } from "./provider-importer";
 import { registerProviderImportRoutes } from "./provider-import-routes";
+import { ensureProviderEngagementTables, registerProviderEngagementRoutes } from "./provider-engagement-routes";
 import { ensureVerificationWorkflowTables } from "./verification-service";
 import { registerVerificationRoutes } from "./verification-routes";
 import { ensureProviderTables } from "./provider-service";
@@ -128,6 +129,8 @@ app.use((req, res, next) => {
   await ensureDirectoryTables();
   await ensureCategoryTables();
   await ensureProviderImportTables();
+  await ensureRequestTables();
+  await ensureProviderEngagementTables();
   await ensureVerificationWorkflowTables();
   await initializePushService();
   await registerPersistentRequestRoutes(app);
@@ -141,6 +144,7 @@ app.use((req, res, next) => {
   await registerDirectoryRoutes(app);
   await registerCategoryRoutes(app);
   await registerProviderImportRoutes(app);
+  await registerProviderEngagementRoutes(app);
   await registerVerificationRoutes(app);
   await registerRoutes(httpServer, app);
   startProviderLifecycleScheduler();
