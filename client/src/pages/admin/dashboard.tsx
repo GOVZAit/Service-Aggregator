@@ -117,7 +117,7 @@ interface VerificationQueueItem {
   phone: string | null;
   status: VerificationStatus;
   note: string | null;
-  documents: VerificationDocument[];
+  documentCount: number;
   providerComment: string;
   submittedAt: string;
   updatedAt: string;
@@ -866,7 +866,7 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                   <div className="mt-2 text-[11px] text-muted-foreground">
-                    Документов: {item.documents.length} · {new Date(item.submittedAt).toLocaleString("ru-RU")}
+                    Документов: {item.documentCount} · {new Date(item.submittedAt).toLocaleString("ru-RU")}
                   </div>
                 </button>
               ))}
@@ -904,7 +904,7 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-                    {verificationSelected.documents.map((document) => (
+                    {(verificationDetail?.submission?.documents ?? []).map((document) => (
                       <div key={document.id} className="overflow-hidden rounded-xl border border-border bg-background">
                         <a href={document.image} target="_blank" rel="noreferrer">
                           <img src={document.image} alt={document.title} className="aspect-[4/3] w-full object-cover" />
