@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import type { Doctor } from "@/lib/doctors-data";
+import type { CityOrganization } from "@/lib/city-services-data";
 
 type VerificationStatus = "unverified" | "pending" | "verified" | "rejected";
 
@@ -57,6 +59,16 @@ interface AuditEntry {
   createdAt: string;
 }
 
+interface AdminDirectoryItem<T> {
+  id: number;
+  visible: boolean;
+  origin: "seed" | "manual" | "override";
+  record: T;
+  updatedAt: string | null;
+}
+
+type DirectoryTab = "doctors" | "city-services";
+
 const fieldClass =
   "h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10";
 
@@ -89,6 +101,14 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<number | "create" | "edit" | null>(null);
   const [error, setError] = useState("");
+
+  const [directoryTab, setDirectoryTab] = useState<DirectoryTab>("doctors");
+  const [doctors, setDoctors] = useState<AdminDirectoryItem<Doctor>[]>([]);
+  const [cityServices, setCityServices] = useState<AdminDirectoryItem<CityOrganization>[]>([]);
+  const [directorySelectedId, setDirectorySelectedId] = useState<number | null>(null);
+  const [directoryDraft, setDirectoryDraft] = useState("");
+  const [directoryCreating, setDirectoryCreating] = useState(false);
+  const [directoryWorking, setDirectoryWorking] = useState(false);
 
   const [q, setQ] = useState("");
   const [type, setType] = useState("");
@@ -128,14 +148,18 @@ export default function AdminDashboardPage() {
     setError("");
     setLoading(true);
     try {
-      const [nextSummary, nextProviders, nextAudit] = await Promise.all([
+      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices] = await Promise.all([
         api<Summary>("/api/admin/summary"),
         api<AdminProvider[]>(`/api/admin/providers${queryString}`),
         api<AuditEntry[]>("/api/admin/audit?limit=30"),
+        api<AdminDirectoryItem<Doctor>[]>("/api/admin/directories/doctors"),
+        api<AdminDirectoryItem<CityOrganization>[]>("/api/admin/directories/city-services"),
       ]);
       setSummary(nextSummary);
       setProviders(nextProviders);
       setAudit(nextAudit);
+      setDoctors(nextDoctors);
+      setCityServices(nextCityServices);
       if (selected) {
         const refreshed = nextProviders.find((item) => item.id === selected.id);
         if (refreshed) setSelected(refreshed);
