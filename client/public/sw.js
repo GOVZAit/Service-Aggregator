@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const STATIC_CACHE = `govza-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `govza-runtime-${CACHE_VERSION}`;
 
@@ -14,19 +14,21 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys()
+    Promise.all([
+      self.registration.navigationPreload ? self.registration.navigationPreload.enable() : Promise.resolve(),
+      caches.keys()
       .then((keys) => Promise.all(
         keys
           .filter((key) => key !== STATIC_CACHE && key !== RUNTIME_CACHE)
           .map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
+    ])
   );
 });
 
@@ -44,9 +46,15 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request).catch(() => caches.match("/"))
-    );
+    event.respondWith((async () => {
+      try {
+        const preload = await event.preloadResponse;
+        if (preload) return preload;
+        return await fetch(request);
+      } catch {
+        return await caches.match("/") || Response.error();
+      }
+    })());
     return;
   }
 

@@ -33,6 +33,9 @@ import MasterOnboardingPage from "@/pages/master/onboarding";
 import OrganizationOnboardingPage from "@/pages/organization/onboarding";
 import OrganizationProfilePage from "@/pages/organization/profile";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
+import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
+import { NetworkStatusBanner } from "@/components/network-status-banner";
+import { AppBootScreen } from "@/components/app-boot-screen";
 
 // Executor-only routes (executor interface)
 const MASTER_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding"];
@@ -77,7 +80,7 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, location, navigate]);
 
-  if (isLoading || (!user && isProviderRoute(location))) return null;
+  if (isLoading || (!user && isProviderRoute(location))) return <AppBootScreen />;
   return <>{children}</>;
 }
 
@@ -125,6 +128,31 @@ function Router() {
   );
 }
 
+
+function RouteEffects() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    const title =
+      location === "/" ? "GOVZA мастера — мастера рядом" :
+      location.startsWith("/doctors") ? "Врачи — GOVZA мастера" :
+      location.startsWith("/contacts") || location === "/city" ? "Контакты — GOVZA мастера" :
+      location.startsWith("/requests") ? "Мои заявки — GOVZA мастера" :
+      location.startsWith("/orders") ? "Мои заказы — GOVZA мастера" :
+      location.startsWith("/profile") ? "Профиль — GOVZA мастера" :
+      location.startsWith("/master") ? "Кабинет мастера — GOVZA мастера" :
+      location.startsWith("/organization") ? "Кабинет организации — GOVZA мастера" :
+      location.startsWith("/lost-found") ? "Потеряно / Найдено — GOVZA мастера" :
+      "GOVZA мастера";
+
+    document.title = title;
+  }, [location]);
+
+  return null;
+}
+
 function ThemeInitializer() {
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -146,9 +174,12 @@ function App() {
       <AuthProvider>
         <TooltipProvider>
           <ThemeInitializer />
+          <RouteEffects />
           <Toaster />
           <Router />
           <PwaInstallPrompt />
+          <PwaUpdatePrompt />
+          <NetworkStatusBanner />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
