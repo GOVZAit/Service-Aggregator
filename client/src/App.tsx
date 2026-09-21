@@ -3,35 +3,36 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
 
-// Client pages
+// Keep the main catalog eager for the fastest first paint.
 import HomePage from "@/pages/home";
-import MasterProfilePage from "@/pages/master-profile";
-import RequestsPage from "@/pages/requests";
-import OrdersPage from "@/pages/orders";
-import ProfilePage from "@/pages/profile";
-import CityServicesPage from "@/pages/city-services";
-import ContactsPage from "@/pages/contacts";
-import ContactsHubPage from "@/pages/contacts-hub";
-import MorePage from "@/pages/more";
-import DoctorsPage from "@/pages/doctors";
-import LostFoundPage from "@/pages/lost-found";
-import AuthPage from "@/pages/auth";
-import ForgotPasswordPage from "@/pages/forgot-password";
-import ResetPasswordPage from "@/pages/reset-password";
-import OrderChatPage from "@/pages/order-chat";
-import PreviewWhatsApp from "@/pages/preview-whatsapp";
-import NotFound from "@/pages/not-found";
 
-// Master (executor) pages
-import MasterDashboardPage from "@/pages/master/dashboard";
-import MasterOrdersPage from "@/pages/master/orders";
-import MasterProfileEditPage from "@/pages/master/profile";
-import MasterOnboardingPage from "@/pages/master/onboarding";
-import OrganizationOnboardingPage from "@/pages/organization/onboarding";
-import OrganizationProfilePage from "@/pages/organization/profile";
+// Route-level code splitting keeps heavier sections out of the initial PWA bundle.
+const MasterProfilePage = lazy(() => import("@/pages/master-profile"));
+const RequestsPage = lazy(() => import("@/pages/requests"));
+const OrdersPage = lazy(() => import("@/pages/orders"));
+const ProfilePage = lazy(() => import("@/pages/profile"));
+const CityServicesPage = lazy(() => import("@/pages/city-services"));
+const ContactsPage = lazy(() => import("@/pages/contacts"));
+const ContactsHubPage = lazy(() => import("@/pages/contacts-hub"));
+const MorePage = lazy(() => import("@/pages/more"));
+const DoctorsPage = lazy(() => import("@/pages/doctors"));
+const LostFoundPage = lazy(() => import("@/pages/lost-found"));
+const AuthPage = lazy(() => import("@/pages/auth"));
+const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
+const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
+const OrderChatPage = lazy(() => import("@/pages/order-chat"));
+const PreviewWhatsApp = lazy(() => import("@/pages/preview-whatsapp"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+
+const MasterDashboardPage = lazy(() => import("@/pages/master/dashboard"));
+const MasterOrdersPage = lazy(() => import("@/pages/master/orders"));
+const MasterProfileEditPage = lazy(() => import("@/pages/master/profile"));
+const MasterOnboardingPage = lazy(() => import("@/pages/master/onboarding"));
+const OrganizationOnboardingPage = lazy(() => import("@/pages/organization/onboarding"));
+const OrganizationProfilePage = lazy(() => import("@/pages/organization/profile"));
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
@@ -86,8 +87,9 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
 
 function Router() {
   return (
-    <RoleGuard>
-      <Switch>
+    <Suspense fallback={<AppBootScreen />}>
+      <RoleGuard>
+        <Switch>
         {/* Executor (master) routes — declared first so /master/orders and /master/profile
             are matched before the parameterized /master/:id client route */}
         <Route path="/master" component={MasterDashboardPage} />
@@ -122,9 +124,10 @@ function Router() {
         <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/preview/whatsapp" component={PreviewWhatsApp} />
 
-        <Route component={NotFound} />
-      </Switch>
-    </RoleGuard>
+          <Route component={NotFound} />
+        </Switch>
+      </RoleGuard>
+    </Suspense>
   );
 }
 
