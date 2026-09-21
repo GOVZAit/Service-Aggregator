@@ -7,6 +7,7 @@ import { registerOrderReviewRoutes } from "./order-review-routes";
 import { registerDirectChatRoutes } from "./direct-chat-routes";
 import { registerPushRoutes } from "./push-routes";
 import { registerProviderRoutes } from "./provider-routes";
+import { ensureAdminTables, registerAdminRoutes } from "./admin-routes";
 import { ensureProviderTables } from "./provider-service";
 import { initializePushService } from "./push-service";
 import { startProviderLifecycleScheduler } from "./provider-lifecycle";
@@ -113,6 +114,7 @@ app.use((req, res, next) => {
   // Persistent request routes are registered first so they replace the legacy in-memory
   // /api/requests handlers while the rest of the application continues using registerRoutes.
   await ensureProviderTables();
+  await ensureAdminTables();
   await initializePushService();
   await registerPersistentRequestRoutes(app);
   await registerOrderChatRoutes(app);
@@ -121,6 +123,7 @@ app.use((req, res, next) => {
   registerRealtimeRoutes(app);
   await registerPushRoutes(app);
   await registerProviderRoutes(app);
+  await registerAdminRoutes(app);
   await registerRoutes(httpServer, app);
   startProviderLifecycleScheduler();
   registerRealtimeServer(httpServer);
