@@ -1,4 +1,4 @@
-import { ChevronRight, ClipboardList, Download, Heart, PackageSearch, ReceiptText } from "lucide-react";
+import { ChevronRight, ClipboardList, Download, Heart, MessageCircle, PackageSearch, ReceiptText } from "lucide-react";
 import { Link } from "wouter";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { AppBrandHeader } from "@/components/app-brand-header";
@@ -15,6 +15,12 @@ const sections = [
     icon: ReceiptText,
     title: "Мои заказы",
     description: "Следите за выбранными мастерами и статусами текущих заказов",
+  },
+  {
+    href: "/messages",
+    icon: MessageCircle,
+    title: "Сообщения",
+    description: "Прямые диалоги с мастерами и организациями GOVZA",
   },
   {
     href: "/lost-found",

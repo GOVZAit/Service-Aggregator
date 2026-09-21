@@ -1,4 +1,4 @@
-import type { Master, ServiceRequest, Order, ChatMessage, AuthUser, LostFoundListing, LostFoundListingInput, LostFoundStatus, UserRole } from "@shared/schema";
+import type { Master, ServiceRequest, Order, AuthUser, LostFoundListing, LostFoundListingInput, LostFoundStatus, UserRole } from "@shared/schema";
 import { authUsers, lostFoundListings, masterSettings, passwordResetTokens, persistedOrders, userFavorites } from "@shared/schema";
 import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "./db";
@@ -423,9 +423,6 @@ export interface IStorage {
   createOrder(data: Omit<Order, 'id'>): Promise<Order>;
   updateOrder(id: number, patch: Pick<Order, 'status'>): Promise<Order | undefined>;
 
-  getMessages(masterId: number): Promise<ChatMessage[]>;
-  addMessage(masterId: number, message: ChatMessage): Promise<ChatMessage>;
-
   // Auth
   createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: UserRole }): Promise<AuthUser>;
   getUserByIdentifier(identifier: string): Promise<AuthUser | undefined>;
@@ -451,14 +448,11 @@ export class MemStorage implements IStorage {
 
   private requests: ServiceRequest[];
 
-  private chatMessages: Map<number, ChatMessage[]>;
-
   private nextRequestId: number;
 
   constructor() {
     this.masters = [...mastersData];
     this.requests = [...requestsData];
-    this.chatMessages = new Map();
     this.nextRequestId = requestsData.length + 1;
   }
 
@@ -629,17 +623,6 @@ export class MemStorage implements IStorage {
     if (!order) return undefined;
     const { createdAt: _, ...result } = order;
     return toOrder(result);
-  }
-
-  async getMessages(masterId: number): Promise<ChatMessage[]> {
-    return this.chatMessages.get(masterId) || [];
-  }
-
-  async addMessage(masterId: number, message: ChatMessage): Promise<ChatMessage> {
-    const messages = this.chatMessages.get(masterId) || [];
-    messages.push(message);
-    this.chatMessages.set(masterId, messages);
-    return message;
   }
 
   async createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: UserRole }): Promise<AuthUser> {

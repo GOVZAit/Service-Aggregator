@@ -4,6 +4,7 @@ import connectPgSimple from "connect-pg-simple";
 import { registerPersistentRequestRoutes } from "./persistent-request-routes";
 import { registerOrderChatRoutes } from "./order-chat-routes";
 import { registerOrderReviewRoutes } from "./order-review-routes";
+import { registerDirectChatRoutes } from "./direct-chat-routes";
 import { registerPushRoutes } from "./push-routes";
 import { registerProviderRoutes } from "./provider-routes";
 import { ensureProviderTables } from "./provider-service";
@@ -87,6 +88,7 @@ app.use((req, res, next) => {
         !path.startsWith("/api/requests") &&
         !path.startsWith("/api/orders") &&
         !path.startsWith("/api/order-chats") &&
+        !path.startsWith("/api/direct-chats") &&
         !path.includes("/reviews") &&
         !path.endsWith("/review") &&
         !path.startsWith("/api/push") &&
@@ -113,6 +115,7 @@ app.use((req, res, next) => {
   await registerPersistentRequestRoutes(app);
   await registerOrderChatRoutes(app);
   await registerOrderReviewRoutes(app);
+  await registerDirectChatRoutes(app);
   await registerPushRoutes(app);
   await registerProviderRoutes(app);
   await registerRoutes(httpServer, app);

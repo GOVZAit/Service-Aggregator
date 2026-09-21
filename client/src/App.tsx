@@ -24,6 +24,8 @@ const AuthPage = lazy(() => import("@/pages/auth"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const OrderChatPage = lazy(() => import("@/pages/order-chat"));
+const DirectChatsPage = lazy(() => import("@/pages/direct-chats"));
+const DirectChatPage = lazy(() => import("@/pages/direct-chat"));
 const PreviewWhatsApp = lazy(() => import("@/pages/preview-whatsapp"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
@@ -40,16 +42,16 @@ import { AppBootScreen } from "@/components/app-boot-screen";
 import { RouteErrorBoundary } from "@/components/route-error-boundary";
 
 // Executor-only routes (executor interface)
-const MASTER_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding"];
-const ORGANIZATION_ROUTES = ["/organization", "/organization/orders", "/organization/profile", "/organization/onboarding"];
+const MASTER_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding", "/master/messages"];
+const ORGANIZATION_ROUTES = ["/organization", "/organization/orders", "/organization/profile", "/organization/onboarding", "/organization/messages"];
 const PUBLIC_AUTH_ROUTES = ["/auth", "/forgot-password", "/reset-password"];
 
 function isMasterRoute(path: string) {
-  return MASTER_ROUTES.includes(path) || path.startsWith("/master/orders/");
+  return MASTER_ROUTES.includes(path) || path.startsWith("/master/orders/") || path.startsWith("/master/messages/");
 }
 
 function isOrganizationRoute(path: string) {
-  return ORGANIZATION_ROUTES.includes(path) || path.startsWith("/organization/orders/");
+  return ORGANIZATION_ROUTES.includes(path) || path.startsWith("/organization/orders/") || path.startsWith("/organization/messages/");
 }
 
 function isProviderRoute(path: string) {
@@ -96,6 +98,8 @@ function Router() {
         <Route path="/master" component={MasterDashboardPage} />
         <Route path="/master/orders/:id/chat" component={OrderChatPage} />
         <Route path="/master/orders" component={MasterOrdersPage} />
+        <Route path="/master/messages/:id" component={DirectChatPage} />
+        <Route path="/master/messages" component={DirectChatsPage} />
         <Route path="/master/profile" component={MasterProfileEditPage} />
         <Route path="/master/onboarding" component={MasterOnboardingPage} />
 
@@ -103,6 +107,8 @@ function Router() {
         <Route path="/organization" component={MasterDashboardPage} />
         <Route path="/organization/orders/:id/chat" component={OrderChatPage} />
         <Route path="/organization/orders" component={MasterOrdersPage} />
+        <Route path="/organization/messages/:id" component={DirectChatPage} />
+        <Route path="/organization/messages" component={DirectChatsPage} />
         <Route path="/organization/profile" component={OrganizationProfilePage} />
         <Route path="/organization/onboarding" component={OrganizationOnboardingPage} />
 
@@ -112,6 +118,8 @@ function Router() {
         <Route path="/requests" component={RequestsPage} />
         <Route path="/orders/:id/chat" component={OrderChatPage} />
         <Route path="/orders" component={OrdersPage} />
+        <Route path="/messages/:id" component={DirectChatPage} />
+        <Route path="/messages" component={DirectChatsPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/city" component={CityServicesPage} />
         <Route path="/contacts/services" component={CityServicesPage} />
@@ -145,6 +153,7 @@ function RouteEffects() {
       location.startsWith("/contacts") || location === "/city" ? "Контакты — GOVZA мастера" :
       location.startsWith("/requests") ? "Мои заявки — GOVZA мастера" :
       location.startsWith("/orders") ? "Мои заказы — GOVZA мастера" :
+      location.includes("/messages") ? "Сообщения — GOVZA мастера" :
       location.startsWith("/profile") ? "Профиль — GOVZA мастера" :
       location.startsWith("/master") ? "Кабинет мастера — GOVZA мастера" :
       location.startsWith("/organization") ? "Кабинет организации — GOVZA мастера" :
