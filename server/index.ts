@@ -14,6 +14,7 @@ import { ensureCategoryTables } from "./category-service";
 import { registerCategoryRoutes } from "./category-routes";
 import { ensureProviderImportTables, startProviderImportScheduler } from "./provider-importer";
 import { registerProviderImportRoutes } from "./provider-import-routes";
+import { ensureModerationTables, registerModerationRoutes } from "./moderation-routes";
 import { ensureProviderTables } from "./provider-service";
 import { initializePushService } from "./push-service";
 import { startProviderLifecycleScheduler } from "./provider-lifecycle";
@@ -103,6 +104,7 @@ app.use((req, res, next) => {
         !path.startsWith("/api/push") &&
         !path.startsWith("/api/providers") &&
         !path.startsWith("/api/internal/providers") &&
+        !path.startsWith("/api/moderation") &&
         !path.startsWith("/api/admin") &&
         !path.startsWith("/api/internal/admin")
       ) {
@@ -126,6 +128,7 @@ app.use((req, res, next) => {
   await ensureDirectoryTables();
   await ensureCategoryTables();
   await ensureProviderImportTables();
+  await ensureModerationTables();
   await initializePushService();
   await registerPersistentRequestRoutes(app);
   await registerOrderChatRoutes(app);
@@ -138,6 +141,7 @@ app.use((req, res, next) => {
   await registerDirectoryRoutes(app);
   await registerCategoryRoutes(app);
   await registerProviderImportRoutes(app);
+  await registerModerationRoutes(app);
   await registerRoutes(httpServer, app);
   startProviderLifecycleScheduler();
   startProviderImportScheduler();

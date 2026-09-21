@@ -36,6 +36,7 @@ const MasterOnboardingPage = lazy(() => import("@/pages/master/onboarding"));
 const OrganizationOnboardingPage = lazy(() => import("@/pages/organization/onboarding"));
 const OrganizationProfilePage = lazy(() => import("@/pages/organization/profile"));
 const AdminDashboardPage = lazy(() => import("@/pages/admin/dashboard"));
+const AdminModerationPage = lazy(() => import("@/pages/admin/moderation"));
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
 import { NetworkStatusBanner } from "@/components/network-status-banner";
@@ -132,6 +133,7 @@ function Router() {
         <Route path="/organization/onboarding" component={OrganizationOnboardingPage} />
 
         {/* Admin routes */}
+        <Route path="/admin/moderation" component={AdminModerationPage} />
         <Route path="/admin" component={AdminDashboardPage} />
 
         {/* Client routes */}

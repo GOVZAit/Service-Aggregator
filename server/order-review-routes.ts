@@ -1,5 +1,5 @@
 import type { Express } from "express";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db, pool } from "./db";
 import { storage } from "./storage";
 import { sendPushToUser } from "./push-service";
@@ -30,6 +30,10 @@ async function ensureOrderReviewTable() {
     );
     ALTER TABLE order_reviews ADD COLUMN IF NOT EXISTS provider_reply text;
     ALTER TABLE order_reviews ADD COLUMN IF NOT EXISTS provider_reply_at timestamptz;
+    ALTER TABLE order_reviews ADD COLUMN IF NOT EXISTS moderation_status text NOT NULL DEFAULT 'visible';
+    ALTER TABLE order_reviews ADD COLUMN IF NOT EXISTS moderation_note text;
+    ALTER TABLE order_reviews ADD COLUMN IF NOT EXISTS moderated_by integer REFERENCES auth_users(id) ON DELETE SET NULL;
+    ALTER TABLE order_reviews ADD COLUMN IF NOT EXISTS moderated_at timestamptz;
     CREATE UNIQUE INDEX IF NOT EXISTS order_reviews_order_unique ON order_reviews(order_id);
     CREATE INDEX IF NOT EXISTS order_reviews_master_id_idx ON order_reviews(master_id);
     CREATE INDEX IF NOT EXISTS order_reviews_client_id_idx ON order_reviews(client_id);
@@ -97,7 +101,10 @@ export async function registerOrderReviewRoutes(app: Express) {
     }
 
     const rows = await db.select().from(orderReviews)
-      .where(eq(orderReviews.masterId, masterId))
+      .where(and(
+        eq(orderReviews.masterId, masterId),
+        eq(orderReviews.moderationStatus, "visible"),
+      ))
       .orderBy(asc(orderReviews.createdAt));
     const reviews = await Promise.all(rows.map(reviewView));
 
