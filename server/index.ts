@@ -11,6 +11,7 @@ import { ensureProviderTables } from "./provider-service";
 import { initializePushService } from "./push-service";
 import { startProviderLifecycleScheduler } from "./provider-lifecycle";
 import { registerRoutes } from "./routes";
+import { registerRealtimeRoutes, registerRealtimeServer } from "./realtime";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { pool } from "./db";
@@ -89,6 +90,7 @@ app.use((req, res, next) => {
         !path.startsWith("/api/orders") &&
         !path.startsWith("/api/order-chats") &&
         !path.startsWith("/api/direct-chats") &&
+        !path.startsWith("/api/realtime-token") &&
         !path.includes("/reviews") &&
         !path.endsWith("/review") &&
         !path.startsWith("/api/push") &&
@@ -116,10 +118,12 @@ app.use((req, res, next) => {
   await registerOrderChatRoutes(app);
   await registerOrderReviewRoutes(app);
   await registerDirectChatRoutes(app);
+  registerRealtimeRoutes(app);
   await registerPushRoutes(app);
   await registerProviderRoutes(app);
   await registerRoutes(httpServer, app);
   startProviderLifecycleScheduler();
+  registerRealtimeServer(httpServer);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

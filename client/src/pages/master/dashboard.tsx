@@ -38,8 +38,8 @@ export default function MasterDashboardPage() {
   const { data: conversations = [] } = useQuery<DirectConversationView[]>({
     queryKey: ["/api/direct-chats"],
     enabled: !!user,
-    refetchInterval: 15_000,
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const onlineMutation = useMutation({
