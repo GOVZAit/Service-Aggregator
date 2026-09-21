@@ -120,13 +120,14 @@ export async function registerVerificationRoutes(app: Express) {
 
     const ownerUserId = await getProviderOwnerUserId(providerId);
     if (ownerUserId) {
+      const owner = await storage.getUserById(ownerUserId);
       const verified = parsed.data.status === "verified";
       void sendPushToUser(ownerUserId, {
         title: verified ? "Профиль GOVZA подтверждён" : "Верификация требует изменений",
         body: verified
           ? "Статус «Проверен» активирован."
           : (parsed.data.note || "Откройте профиль и проверьте комментарий администратора."),
-        url: "/master/profile",
+        url: owner?.role === "organization" ? "/organization/profile" : "/master/profile",
         tag: `verification-result-${providerId}`,
       });
     }
