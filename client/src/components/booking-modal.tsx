@@ -10,6 +10,10 @@ import { useLocation } from "wouter";
 interface BookingModalProps {
   master: Master;
   onClose: () => void;
+  initialService?: string;
+  initialAddress?: string;
+  initialComment?: string;
+  heading?: string;
 }
 
 const timeSlots = [
@@ -29,15 +33,25 @@ function formatDate(d: Date) {
   return { day: d.getDate(), weekday: days[d.getDay()] };
 }
 
-export function BookingModal({ master, onClose }: BookingModalProps) {
+export function BookingModal({
+  master,
+  onClose,
+  initialService,
+  initialAddress = "",
+  initialComment = "",
+  heading = "Записаться к мастеру",
+}: BookingModalProps) {
   const [step, setStep] = useState<"form" | "success">("form");
   const [selectedDate, setSelectedDate] = useState<number>(0);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedService, setSelectedService] = useState<string | null>(
-    master.services[0]?.name ?? null
-  );
-  const [address, setAddress] = useState("");
-  const [comment, setComment] = useState("");
+  const [selectedService, setSelectedService] = useState<string | null>(() => {
+    if (initialService && master.services.some((service) => service.name === initialService)) {
+      return initialService;
+    }
+    return master.services[0]?.name ?? null;
+  });
+  const [address, setAddress] = useState(initialAddress);
+  const [comment, setComment] = useState(initialComment);
   const [showServices, setShowServices] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -121,7 +135,7 @@ export function BookingModal({ master, onClose }: BookingModalProps) {
           <>
             <div className="px-5 pb-3 pt-1 shrink-0 flex items-center justify-between border-b border-border/60">
               <div>
-                <h2 className="font-bold text-lg">Записаться к мастеру</h2>
+                <h2 className="font-bold text-lg">{heading}</h2>
                 <p className="text-xs text-muted-foreground">{master.name} · {master.category}</p>
               </div>
               <button onClick={onClose} aria-label="Закрыть" className="w-11 h-11 -mr-2 rounded-full flex items-center justify-center" data-testid="button-close-booking">
