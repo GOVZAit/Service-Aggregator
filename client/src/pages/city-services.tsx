@@ -30,6 +30,7 @@ import { AppBrandHeader } from "@/components/app-brand-header";
 import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
 import {
+  cityOrganizations as seededCityOrganizations,
   getOrgDistance,
   type CityOrganization,
 } from "@/lib/city-services-data";
@@ -56,8 +57,9 @@ export default function CityServicesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<number[]>([]);
 
-  const { data: cityOrganizations = [] } = useQuery<CityOrganization[]>({
+  const { data: cityOrganizations = seededCityOrganizations } = useQuery<CityOrganization[]>({
     queryKey: ["/api/directory/city-services"],
+    initialData: seededCityOrganizations,
   });
 
   const goToDetail = (org: CityOrganization) => {
