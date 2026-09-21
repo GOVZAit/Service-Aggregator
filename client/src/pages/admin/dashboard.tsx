@@ -285,7 +285,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const directoryItems = directoryTab === "doctors" ? doctors : cityServices;
+  const directoryItems: Array<AdminDirectoryItem<Doctor> | AdminDirectoryItem<CityOrganization>> = directoryTab === "doctors" ? doctors : cityServices;
 
   const selectDirectoryItem = (item: AdminDirectoryItem<Doctor> | AdminDirectoryItem<CityOrganization>) => {
     setDirectoryCreating(false);
