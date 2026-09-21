@@ -9,6 +9,7 @@ import type { AuthUser } from "@shared/schema";
 import { deliverPasswordReset, isPasswordResetDeliveryConfigured, passwordResetRateLimited } from "./password-reset";
 import { getProviderOwnerUserId, isProviderVisible, recordProviderActivity } from "./provider-service";
 import { sendPushToUser } from "./push-service";
+import { categoryIdsExist } from "./category-service";
 
 function normalizeIdentifier(value: string) {
   if (value.includes("@")) return value.trim().toLowerCase();
@@ -283,6 +284,11 @@ export async function registerRoutes(
     const result = masterSettingsSchema.safeParse(req.body);
     if (!result.success) {
       return res.status(400).json({ message: result.error.issues[0].message });
+    }
+    const selectedCategoryIds = result.data.categoryIds
+      ?? (result.data.categoryId ? [result.data.categoryId] : undefined);
+    if (selectedCategoryIds && !categoryIdsExist(selectedCategoryIds)) {
+      return res.status(400).json({ message: "Выбрана несуществующая категория" });
     }
     const updated = await storage.updateMaster(Number(req.params.id), result.data);
     if (!updated) return res.status(404).json({ error: "Master not found" });
