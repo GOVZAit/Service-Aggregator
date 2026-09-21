@@ -91,7 +91,7 @@ export function providerRowToMaster(row: typeof providerProfiles.$inferSelect): 
     reviews: 0,
     price: data.price ?? "Цена по договорённости",
     avatar: data.avatar ?? "",
-    verified: false,
+    verified: data.verified ?? false,
     distance: "",
     responseTime: "~30 мин",
     completedOrders: 0,
