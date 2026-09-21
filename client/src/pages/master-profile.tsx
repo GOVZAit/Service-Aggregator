@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { BookingModal } from "@/components/booking-modal";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { executorTypeLabels } from "@shared/schema";
 import type { Master, ChatMessage } from "@shared/schema";
@@ -94,7 +95,7 @@ export default function MasterProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { user } = useAuth();
   const [showChat, setShowChat] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [newMessage, setNewMessage] = useState("");
@@ -110,6 +111,42 @@ export default function MasterProfilePage() {
     queryKey: [`/api/masters/${masterId}/reviews`],
     enabled: Number.isInteger(masterId) && masterId > 0,
   });
+
+  const { data: favorites = [] } = useQuery<number[]>({
+    queryKey: ["/api/favorites"],
+    enabled: user?.role === "client",
+  });
+  const isFavorite = favorites.includes(masterId);
+
+  const favoriteMutation = useMutation({
+    mutationFn: async (remove: boolean) => {
+      await apiRequest(remove ? "DELETE" : "POST", `/api/favorites/${masterId}`);
+      return remove;
+    },
+    onMutate: async (remove) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/favorites"] });
+      const previous = queryClient.getQueryData<number[]>(["/api/favorites"]) ?? [];
+      queryClient.setQueryData<number[]>(
+        ["/api/favorites"],
+        remove ? previous.filter((id) => id !== masterId) : [...new Set([...previous, masterId])],
+      );
+      return { previous };
+    },
+    onError: (_error, _remove, context) => {
+      if (context?.previous) queryClient.setQueryData(["/api/favorites"], context.previous);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+    },
+  });
+
+  const toggleFavorite = () => {
+    if (user?.role !== "client") {
+      navigate("/auth");
+      return;
+    }
+    favoriteMutation.mutate(isFavorite);
+  };
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<ChatMessage[]>({
     queryKey: [`/api/messages/${masterId}`],
@@ -295,7 +332,7 @@ export default function MasterProfilePage() {
           </Button>
           <span className="font-semibold">{isOrganization ? "Профиль организации" : "Профиль мастера"}</span>
           <div className="ml-auto flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} aria-pressed={isFavorite} onClick={() => setIsFavorite(!isFavorite)} data-testid="button-favorite-profile">
+            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} aria-pressed={isFavorite} onClick={toggleFavorite} data-testid="button-favorite-profile">
               <Heart className={`w-5 h-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'text-muted-foreground'}`} />
             </Button>
           </div>
