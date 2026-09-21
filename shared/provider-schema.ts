@@ -40,6 +40,7 @@ export interface ProviderProfileData {
   workingHours?: { from: string; to: string };
   isOnline?: boolean;
   hasCertificate?: boolean;
+  verified?: boolean;
   executorType?: "private" | "self_employed" | "company";
   showPortfolio?: boolean;
   showReviews?: boolean;
