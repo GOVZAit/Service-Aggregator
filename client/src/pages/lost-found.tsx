@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarDays, Camera, CheckCircle2, MapPin, PackageSearch, Pencil, Plus, Search, X } from "lucide-react";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { AppBrandHeader } from "@/components/app-brand-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -103,18 +104,23 @@ export default function LostFoundPage() {
 
   return (
     <div className="app-page bg-background">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-xl safe-area-pt">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-4 py-4 lg:max-w-5xl lg:px-6">
-          <div>
-            <p className="text-xs text-muted-foreground">Чеченская Республика</p>
-            <h1 className="mt-0.5 text-xl font-bold">Потеряно / Найдено</h1>
+      <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
+        <div className="mx-auto max-w-5xl px-4 py-4 lg:px-6">
+          <AppBrandHeader compact />
+          <div className="mt-6 flex items-end justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-[-0.04em]">Потеряно / Найдено</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Объявления о вещах, документах и животных.</p>
+            </div>
+            <Button size="sm" className="h-11 rounded-2xl px-4 font-bold" onClick={openCreate}>
+              <Plus className="mr-1.5 h-4 w-4" />Добавить
+            </Button>
           </div>
-          <Button size="sm" onClick={openCreate}><Plus className="mr-1 h-4 w-4" />Добавить</Button>
         </div>
       </header>
 
       <main className="mx-auto max-w-lg px-4 py-5 pb-28 lg:max-w-5xl lg:px-6 lg:pb-32">
-        <section className="rounded-3xl border border-primary/20 bg-primary/5 p-5 lg:flex lg:items-center lg:gap-5">
+        <section className="hero-gradient rounded-[1.75rem] border border-primary/15 p-5 shadow-sm lg:flex lg:items-center lg:gap-5">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
             <PackageSearch className="h-6 w-6" />
           </div>
@@ -129,7 +135,7 @@ export default function LostFoundPage() {
         <section className="mt-5 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по объявлениям" className="pl-9" />
+            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по объявлениям" className="h-12 rounded-2xl border-border/70 bg-card pl-10 shadow-sm" />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {([["all", "Все"], ["lost", "Потеряно"], ["found", "Найдено"]] as const).map(([value, label]) => (
@@ -142,7 +148,7 @@ export default function LostFoundPage() {
         {isLoading ? (
           <p className="py-12 text-center text-sm text-muted-foreground">Загружаем объявления…</p>
         ) : filtered.length === 0 ? (
-          <div className="mt-6 rounded-3xl border border-dashed p-8 text-center">
+          <div className="mt-6 rounded-[1.75rem] border border-dashed p-8 text-center">
             <PackageSearch className="mx-auto h-9 w-9 text-muted-foreground" />
             <p className="mt-3 font-semibold">Объявлений пока нет</p>
             <p className="mt-1 text-sm text-muted-foreground">Измените фильтр или опубликуйте первое объявление.</p>
@@ -150,7 +156,7 @@ export default function LostFoundPage() {
         ) : (
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((listing) => (
-              <button key={listing.id} onClick={() => setSelected(listing)} className="overflow-hidden rounded-3xl border bg-card text-left shadow-sm transition hover:border-primary/40">
+              <button key={listing.id} onClick={() => setSelected(listing)} className="overflow-hidden premium-card text-left shadow-sm transition hover:border-primary/40">
                 {listing.image && <img src={listing.image} alt="" className="h-44 w-full object-cover" />}
                 <div className="p-4">
                   <div className="flex items-center justify-between gap-2">
@@ -188,7 +194,7 @@ function ListingDialog({ listing, currentUserId, onClose, onEdit, onCloseListing
   const own = listing.authorId === currentUserId;
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[1.75rem] sm:max-w-lg">
         <DialogHeader>
           <div className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${listing.type === "lost" ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
             {listing.type === "lost" ? "Потеряно" : "Найдено"}{listing.status === "closed" ? " · закрыто" : ""}
@@ -237,7 +243,7 @@ function ListingFormDialog({ open, editing, form, setForm, onOpenChange, onSubmi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[92vh] overflow-y-auto rounded-[1.75rem] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{editing ? "Изменить объявление" : "Новое объявление"}</DialogTitle>
           <DialogDescription>Заполните детали, чтобы с вами было проще связаться.</DialogDescription>
@@ -259,10 +265,10 @@ function ListingFormDialog({ open, editing, form, setForm, onOpenChange, onSubmi
             {form.image ? (
               <div className="relative"><img src={form.image} alt="" className="h-40 w-full rounded-2xl object-cover" /><Button type="button" size="icon" variant="secondary" className="absolute right-2 top-2" onClick={() => update("image", "")}><X className="h-4 w-4" /></Button></div>
             ) : (
-              <Button type="button" variant="outline" className="w-full" onClick={() => fileRef.current?.click()}><Camera className="mr-2 h-4 w-4" />Выбрать фото</Button>
+              <Button type="button" variant="outline" className="w-full rounded-xl" onClick={() => fileRef.current?.click()}><Camera className="mr-2 h-4 w-4" />Выбрать фото</Button>
             )}
           </Field>
-          <Button type="submit" className="w-full" disabled={!valid || saving}>{saving ? "Сохраняем…" : editing ? "Сохранить изменения" : "Опубликовать"}</Button>
+          <Button type="submit" className="w-full rounded-xl" disabled={!valid || saving}>{saving ? "Сохраняем…" : editing ? "Сохранить изменения" : "Опубликовать"}</Button>
         </form>
       </DialogContent>
     </Dialog>
