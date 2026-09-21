@@ -51,17 +51,45 @@ rm -f -- "${app_root}/current.next"
 ln -s "${release_dir}" "${app_root}/current.next"
 mv -Tf "${app_root}/current.next" "${current_link}"
 
-if ! systemctl restart service-aggregator.service || \
-   ! curl --fail --silent --show-error --retry 10 --retry-delay 1 \
-      --retry-connrefused \
-      --output /dev/null http://127.0.0.1:8081/; then
+runtime_smoke() {
+  local base="http://127.0.0.1:8081"
+
+  curl --fail --silent --show-error --retry 10 --retry-delay 1 \
+    --retry-connrefused --output /dev/null "${base}/" || return 1
+
+  for path in \
+    "/manifest.webmanifest" \
+    "/sw.js" \
+    "/offline.html" \
+    "/api/categories" \
+    "/api/masters" \
+    "/api/directory/doctors" \
+    "/api/directory/city-services"; do
+    curl --fail --silent --show-error --output /dev/null "${base}${path}" || return 1
+  done
+
+  curl --fail --silent --show-error \
+    --header "Content-Type: application/json" \
+    --data '{"categoryId":1,"city":"Грозный"}' \
+    --output /dev/null "${base}/api/urgent/providers/search" || return 1
+
+  local auth_status
+  auth_status="$(curl --silent --output /dev/null --write-out '%{http_code}' "${base}/api/auth/me")"
+  [[ "${auth_status}" == "401" ]] || return 1
+}
+
+rollback_release() {
   if [[ -n "${previous_target}" && -d "${previous_target}" ]]; then
     rm -f -- "${app_root}/current.rollback"
     ln -s "${previous_target}" "${app_root}/current.rollback"
     mv -Tf "${app_root}/current.rollback" "${current_link}"
     systemctl restart service-aggregator.service
   fi
-  echo "Deployment failed; previous release restored" >&2
+}
+
+if ! systemctl restart service-aggregator.service || ! runtime_smoke; then
+  rollback_release
+  echo "Deployment failed runtime smoke checks; previous release restored" >&2
   exit 1
 fi
 
