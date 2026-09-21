@@ -8,24 +8,24 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { executorTypeLabels } from "@shared/schema";
-import type { ExecutorType, MasterSettingsInput } from "@shared/schema";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Category, ExecutorType, MasterSettingsInput } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { PushNotificationCard } from "@/components/push-notification-card";
 import { AppBrandHeader } from "@/components/app-brand-header";
 
 type Step = "welcome" | "category" | "details" | "description" | "done";
 
-const categories: { name: string; icon: LucideIcon; color: string }[] = [
-  { name: "Сантехника", icon: Wrench, color: "#007AFF" },
-  { name: "Электрика", icon: Zap, color: "#FF9500" },
-  { name: "Уборка", icon: Sparkles, color: "#34C759" },
-  { name: "Ремонт", icon: Hammer, color: "#FF3B30" },
-  { name: "Красота", icon: Palette, color: "#FF2D55" },
-  { name: "Авто", icon: Car, color: "#5856D6" },
-  { name: "Доставка", icon: Package, color: "#AF52DE" },
-  { name: "Репетиторы", icon: BookOpen, color: "#00C7BE" },
-];
+const categoryIcons: Record<string, LucideIcon> = {
+  Wrench,
+  Zap,
+  Sparkles,
+  Hammer,
+  Palette,
+  Car,
+  Package,
+  BookOpen,
+};
 
 const steps: { key: Step; icon: LucideIcon; label: string }[] = [
   { key: "category", icon: Briefcase, label: "Категория" },
@@ -44,6 +44,9 @@ export default function MasterOnboardingPage() {
   const [hasCertificate, setHasCertificate] = useState(false);
   const [saveError, setSaveError] = useState("");
   const queryClient = useQueryClient();
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+  });
   const saveProfile = useMutation({
     mutationFn: (patch: MasterSettingsInput) => apiRequest("PATCH", `/api/masters/${user?.masterId}`, patch),
     onSuccess: async () => {
@@ -56,10 +59,11 @@ export default function MasterOnboardingPage() {
 
   const completeOnboarding = (includeDescription = true) => {
     if (!selectedCategory || !executorType) return;
-    const categoryId = categories.findIndex((item) => item.name === selectedCategory) + 1;
+    const selected = categories.find((item) => item.name === selectedCategory);
+    if (!selected) return;
     saveProfile.mutate({
-      category: selectedCategory,
-      categoryId,
+      category: selected.name,
+      categoryId: selected.id,
       executorType,
       hasCertificate,
       ...(includeDescription && description.trim() ? { description: description.trim() } : {}),
@@ -200,7 +204,9 @@ export default function MasterOnboardingPage() {
             <h2 className="text-xl font-bold mb-1">Ваша специализация</h2>
             <p className="text-muted-foreground text-sm mb-5">Выберите основную категорию услуг</p>
             <div className="grid grid-cols-2 gap-3">
-              {categories.map(({ name, icon: Icon, color }) => (
+              {categories.map(({ name, iconName, color }) => {
+                const Icon = categoryIcons[iconName] ?? Briefcase;
+                return (
                 <button
                   key={name}
                   onClick={() => setSelectedCategory(name)}
@@ -220,7 +226,8 @@ export default function MasterOnboardingPage() {
                   </div>
                   <p className={cn("text-sm font-medium", selectedCategory === name && "text-primary")}>{name}</p>
                 </button>
-              ))}
+                );
+              })}
             </div>
           </>
         )}

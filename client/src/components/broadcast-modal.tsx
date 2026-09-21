@@ -1,22 +1,12 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, Zap, ChevronRight, CheckCircle2, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import type { InsertRequest } from "@shared/schema";
-
-const categoryOptions = [
-  { id: "Сантехника", label: "Сантехника", emoji: "🔧" },
-  { id: "Электрика", label: "Электрика", emoji: "⚡" },
-  { id: "Уборка", label: "Уборка", emoji: "✨" },
-  { id: "Ремонт", label: "Ремонт", emoji: "🔨" },
-  { id: "Красота", label: "Красота", emoji: "💅" },
-  { id: "Авто", label: "Авто", emoji: "🚗" },
-  { id: "Доставка", label: "Доставка", emoji: "📦" },
-  { id: "Репетиторы", label: "Репетиторы", emoji: "📚" },
-];
+import { categories as seededCategories } from "@shared/schema";
+import type { Category, InsertRequest } from "@shared/schema";
 
 const budgetOptions = [
   "до 1 000 ₽",
@@ -38,6 +28,11 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: categoryOptions = seededCategories } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+    initialData: seededCategories,
+  });
 
   const [step, setStep] = useState<Step>(initialCategory ? 'details' : 'category');
   const [category, setCategory] = useState(initialCategory ?? "");
@@ -132,16 +127,16 @@ export function BroadcastModal({ initialCategory, onClose }: Props) {
                   <button
                     key={cat.id}
                     data-testid={`category-${cat.id}`}
-                    onClick={() => setCategory(cat.id)}
+                    onClick={() => setCategory(cat.name)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition-all",
-                      category === cat.id
+                      category === cat.name
                         ? "border-primary bg-primary/10 text-primary font-semibold"
                         : "border-border bg-card text-foreground hover:border-primary/50"
                     )}
                   >
                     <span className="text-xl">{cat.emoji}</span>
-                    <span className="text-sm font-medium">{cat.label}</span>
+                    <span className="text-sm font-medium">{cat.name}</span>
                   </button>
                 ))}
               </div>

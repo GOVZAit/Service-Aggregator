@@ -4,11 +4,12 @@ import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import { storage } from "./storage";
 import { emailDeliveryConfigured, sendWelcomeEmail } from "./email";
-import { categories, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema, lostFoundListingInputSchema, updateLostFoundListingSchema } from "@shared/schema";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema, lostFoundListingInputSchema, updateLostFoundListingSchema } from "@shared/schema";
 import type { AuthUser } from "@shared/schema";
 import { deliverPasswordReset, isPasswordResetDeliveryConfigured, passwordResetRateLimited } from "./password-reset";
 import { getProviderOwnerUserId, isProviderVisible, recordProviderActivity } from "./provider-service";
 import { sendPushToUser } from "./push-service";
+import { categoryIdsExist } from "./category-service";
 
 function normalizeIdentifier(value: string) {
   if (value.includes("@")) return value.trim().toLowerCase();
@@ -244,12 +245,6 @@ export async function registerRoutes(
     res.json({ user: publicUser });
   });
 
-  // ── Categories ──────────────────────────────────────────────────────────────
-
-  app.get("/api/categories", async (_req, res) => {
-    res.json(categories);
-  });
-
   // ── Masters ─────────────────────────────────────────────────────────────────
 
   app.get("/api/masters", async (req, res) => {
@@ -289,6 +284,11 @@ export async function registerRoutes(
     const result = masterSettingsSchema.safeParse(req.body);
     if (!result.success) {
       return res.status(400).json({ message: result.error.issues[0].message });
+    }
+    const selectedCategoryIds = result.data.categoryIds
+      ?? (result.data.categoryId ? [result.data.categoryId] : undefined);
+    if (selectedCategoryIds && !categoryIdsExist(selectedCategoryIds)) {
+      return res.status(400).json({ message: "Выбрана несуществующая категория" });
     }
     const updated = await storage.updateMaster(Number(req.params.id), result.data);
     if (!updated) return res.status(404).json({ error: "Master not found" });

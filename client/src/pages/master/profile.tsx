@@ -10,8 +10,8 @@ import { Award, Briefcase, Building2, Camera, Check, Clock, LogOut, Moon, Phone,
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { categories, cities, executorTypeLabels } from "@shared/schema";
-import type { CallMode, Certificate, ExecutorType, Master, MasterSettingsInput, Service } from "@shared/schema";
+import { cities, executorTypeLabels } from "@shared/schema";
+import type { CallMode, Category, Certificate, ExecutorType, Master, MasterSettingsInput, Service } from "@shared/schema";
 
 const callModes: { id: CallMode; label: string }[] = [
   { id: "always", label: "Всегда доступен" },
@@ -25,6 +25,7 @@ export default function MasterProfilePage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const masterId = user?.masterId;
+  const { data: categories = [] } = useQuery<Category[]>({ queryKey: ["/api/categories"] });
   const { data: master, isLoading } = useQuery<Master>({ queryKey: [`/api/masters/${masterId}`], enabled: !!masterId });
   const [description, setDescription] = useState("");
   const [companyName, setCompanyName] = useState("");

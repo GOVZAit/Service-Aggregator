@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import type { Doctor } from "@/lib/doctors-data";
 import type { CityOrganization } from "@/lib/city-services-data";
+import type { Category } from "@shared/schema";
 
 type VerificationStatus = "unverified" | "pending" | "verified" | "rejected";
 
@@ -102,6 +103,17 @@ export default function AdminDashboardPage() {
   const [working, setWorking] = useState<number | "create" | "edit" | null>(null);
   const [error, setError] = useState("");
 
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryEditingId, setCategoryEditingId] = useState<number | null>(null);
+  const [categoryCreating, setCategoryCreating] = useState(false);
+  const [categoryWorking, setCategoryWorking] = useState(false);
+  const [categoryForm, setCategoryForm] = useState({
+    name: "",
+    iconName: "Wrench",
+    emoji: "🔧",
+    color: "#0B8FB6",
+  });
+
   const [directoryTab, setDirectoryTab] = useState<DirectoryTab>("doctors");
   const [doctors, setDoctors] = useState<AdminDirectoryItem<Doctor>[]>([]);
   const [cityServices, setCityServices] = useState<AdminDirectoryItem<CityOrganization>[]>([]);
@@ -148,18 +160,20 @@ export default function AdminDashboardPage() {
     setError("");
     setLoading(true);
     try {
-      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices] = await Promise.all([
+      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories] = await Promise.all([
         api<Summary>("/api/admin/summary"),
         api<AdminProvider[]>(`/api/admin/providers${queryString}`),
         api<AuditEntry[]>("/api/admin/audit?limit=30"),
         api<AdminDirectoryItem<Doctor>[]>("/api/admin/directories/doctors"),
         api<AdminDirectoryItem<CityOrganization>[]>("/api/admin/directories/city-services"),
+        api<Category[]>("/api/admin/categories"),
       ]);
       setSummary(nextSummary);
       setProviders(nextProviders);
       setAudit(nextAudit);
       setDoctors(nextDoctors);
       setCityServices(nextCityServices);
+      setCategories(nextCategories);
       if (selected) {
         const refreshed = nextProviders.find((item) => item.id === selected.id);
         if (refreshed) setSelected(refreshed);
@@ -284,6 +298,61 @@ export default function AdminDashboardPage() {
       setWorking(null);
     }
   };
+
+  const startCategoryCreate = () => {
+    setCategoryEditingId(null);
+    setCategoryCreating(true);
+    setCategoryForm({
+      name: "",
+      iconName: "Wrench",
+      emoji: "🔧",
+      color: "#0B8FB6",
+    });
+  };
+
+  const startCategoryEdit = (category: Category) => {
+    setCategoryCreating(false);
+    setCategoryEditingId(category.id);
+    setCategoryForm({
+      name: category.name,
+      iconName: category.iconName,
+      emoji: category.emoji,
+      color: category.color,
+    });
+  };
+
+  const cancelCategoryEdit = () => {
+    setCategoryCreating(false);
+    setCategoryEditingId(null);
+  };
+
+  const saveCategory = async () => {
+    const payload = {
+      name: categoryForm.name.trim(),
+      iconName: categoryForm.iconName,
+      emoji: categoryForm.emoji.trim(),
+      color: categoryForm.color.trim(),
+    };
+    setCategoryWorking(true);
+    setError("");
+    try {
+      await api(
+        categoryCreating ? "/api/admin/categories" : `/api/admin/categories/${categoryEditingId}`,
+        {
+          method: categoryCreating ? "POST" : "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      cancelCategoryEdit();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось сохранить категорию");
+    } finally {
+      setCategoryWorking(false);
+    }
+  };
+
 
   const directoryItems: Array<AdminDirectoryItem<Doctor> | AdminDirectoryItem<CityOrganization>> = directoryTab === "doctors" ? doctors : cityServices;
 
@@ -608,6 +677,90 @@ export default function AdminDashboardPage() {
               )}
             </div>
           </aside>
+        </section>
+
+        <section className="premium-card p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">Категории услуг</div>
+              <h2 className="mt-1 text-lg font-extrabold">Управление категориями мастеров</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                ID категории стабилен. Переименование автоматически применяется к профилям и открытым заявкам.
+              </p>
+            </div>
+            <Button variant="outline" onClick={startCategoryCreate}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Добавить категорию
+            </Button>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {categories.map((category) => (
+              <button
+                type="button"
+                key={category.id}
+                onClick={() => startCategoryEdit(category)}
+                className={`rounded-2xl border p-4 text-left transition hover:border-primary/30 ${categoryEditingId === category.id ? "border-primary/50 bg-primary/[.035]" : "border-border/70"}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-xl"
+                    style={{ backgroundColor: `${category.color}18` }}
+                  >
+                    {category.emoji}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate font-extrabold">{category.name}</div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      #{category.id} · {category.iconName} · {category.color}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {(categoryCreating || categoryEditingId !== null) && (
+            <div className="mt-4 rounded-2xl border border-primary/15 bg-primary/[.035] p-4">
+              <div className="grid gap-3 md:grid-cols-[1.4fr_1fr_.7fr_.8fr_auto]">
+                <input
+                  className={fieldClass}
+                  placeholder="Название категории"
+                  value={categoryForm.name}
+                  onChange={(event) => setCategoryForm((value) => ({ ...value, name: event.target.value }))}
+                />
+                <select
+                  className={fieldClass}
+                  value={categoryForm.iconName}
+                  onChange={(event) => setCategoryForm((value) => ({ ...value, iconName: event.target.value }))}
+                >
+                  {["Wrench", "Zap", "Sparkles", "Hammer", "Palette", "Car", "Package", "BookOpen"].map((icon) => (
+                    <option key={icon} value={icon}>{icon}</option>
+                  ))}
+                </select>
+                <input
+                  className={fieldClass}
+                  placeholder="Emoji"
+                  value={categoryForm.emoji}
+                  onChange={(event) => setCategoryForm((value) => ({ ...value, emoji: event.target.value }))}
+                />
+                <input
+                  className={fieldClass}
+                  placeholder="#0B8FB6"
+                  value={categoryForm.color}
+                  onChange={(event) => setCategoryForm((value) => ({ ...value, color: event.target.value }))}
+                />
+                <div className="flex gap-2">
+                  <Button disabled={categoryWorking} onClick={() => void saveCategory()}>
+                    <Save className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" disabled={categoryWorking} onClick={cancelCategoryEdit}>
+                    Отмена
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="premium-card p-5">
