@@ -380,6 +380,7 @@ export default function AdminDashboardPage() {
 
   const openVerification = async (item: VerificationQueueItem) => {
     setVerificationSelected(item);
+    setVerificationDetail(null);
     setVerificationNote(item.note ?? "");
     setError("");
     try {
