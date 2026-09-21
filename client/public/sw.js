@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "__GOVZA_BUILD_VERSION__";
 const STATIC_CACHE = `govza-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `govza-runtime-${CACHE_VERSION}`;
 
