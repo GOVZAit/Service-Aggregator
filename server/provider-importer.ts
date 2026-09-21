@@ -1,4 +1,7 @@
 import { desc, eq } from "drizzle-orm";
+import { lookup as dnsLookup } from "node:dns/promises";
+import { request as httpsRequest } from "node:https";
+import { isIP } from "node:net";
 import { db, pool } from "./db";
 import {
   providerImportRuns,
@@ -98,7 +101,7 @@ export function getProviderImportConfiguration() {
     runOnStartup: process.env.PROVIDER_IMPORT_RUN_ON_STARTUP === "true",
     sources: configuredSources.map((source) => ({
       name: source.name,
-      url: source.url,
+      url: redactUrl(source.url),
       adapter: source.adapter,
       enabled: source.enabled,
       providerType: source.providerType ?? null,
@@ -150,78 +153,195 @@ function cleanUrl(value: string | undefined, baseUrl: string) {
 }
 
 function exactCategoryIds(source: ProviderImportSource, externalCategory?: string) {
+  if (externalCategory) {
+    const normalized = externalCategory.trim().toLocaleLowerCase("ru-RU");
+    const configuredEntry = Object.entries(source.categoryMap).find(
+      ([key]) => key.trim().toLocaleLowerCase("ru-RU") === normalized,
+    );
+    if (configuredEntry) {
+      const target = configuredEntry[1];
+      const ids = Array.isArray(target) ? target : [target];
+      return categoryIdsExist(ids) ? ids : undefined;
+    }
+
+    const exactInternal = getEffectiveCategories().find(
+      (category) => category.name.trim().toLocaleLowerCase("ru-RU") === normalized,
+    );
+    if (exactInternal) return [exactInternal.id];
+  }
+
   if (source.defaultCategoryIds) {
     return categoryIdsExist(source.defaultCategoryIds) ? source.defaultCategoryIds : undefined;
   }
-  if (!externalCategory) return undefined;
-
-  const normalized = externalCategory.trim().toLocaleLowerCase("ru-RU");
-  const configuredEntry = Object.entries(source.categoryMap).find(
-    ([key]) => key.trim().toLocaleLowerCase("ru-RU") === normalized,
-  );
-  if (configuredEntry) {
-    const target = configuredEntry[1];
-    const ids = Array.isArray(target) ? target : [target];
-    return categoryIdsExist(ids) ? ids : undefined;
-  }
-
-  const exactInternal = getEffectiveCategories().find(
-    (category) => category.name.trim().toLocaleLowerCase("ru-RU") === normalized,
-  );
-  return exactInternal ? [exactInternal.id] : undefined;
+  return undefined;
 }
 
-async function readTextLimited(response: Response) {
-  if (!response.body) return "";
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let total = 0;
-  let output = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    total += value.byteLength;
-    if (total > MAX_RESPONSE_BYTES) {
-      await reader.cancel();
-      throw new Error(`Source response exceeds ${MAX_RESPONSE_BYTES} bytes`);
-    }
-    output += decoder.decode(value, { stream: true });
+function redactUrl(value: string) {
+  try {
+    const url = new URL(value);
+    url.username = "";
+    url.password = "";
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return "[invalid-url]";
   }
-  output += decoder.decode();
-  return output;
+}
+
+function isPublicIpv4(address: string) {
+  const parts = address.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+  const [a, b, c] = parts;
+  if (a === 0 || a === 10 || a === 127 || a >= 224) return false;
+  if (a === 100 && b >= 64 && b <= 127) return false;
+  if (a === 169 && b === 254) return false;
+  if (a === 172 && b >= 16 && b <= 31) return false;
+  if (a === 192 && b === 168) return false;
+  if (a === 192 && b === 0 && (c === 0 || c === 2)) return false;
+  if (a === 198 && (b === 18 || b === 19)) return false;
+  if (a === 198 && b === 51 && c === 100) return false;
+  if (a === 203 && b === 0 && c === 113) return false;
+  return true;
+}
+
+function isPublicIp(address: string) {
+  const family = isIP(address);
+  if (family === 4) return isPublicIpv4(address);
+  if (family !== 6) return false;
+
+  const normalized = address.toLocaleLowerCase("en-US");
+  if (normalized === "::" || normalized === "::1") return false;
+  if (normalized.startsWith("fc") || normalized.startsWith("fd")) return false;
+  if (/^fe[89ab]/.test(normalized)) return false;
+  if (normalized.startsWith("ff")) return false;
+  if (normalized.startsWith("::ffff:")) {
+    const mapped = normalized.slice("::ffff:".length);
+    return isIP(mapped) === 4 ? isPublicIpv4(mapped) : false;
+  }
+  return true;
+}
+
+async function resolvePublicAddress(url: URL) {
+  const hostname = url.hostname.toLocaleLowerCase("en-US");
+  if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname.endsWith(".local") || hostname.endsWith(".internal")) {
+    throw new Error("Import source hostname is not public");
+  }
+
+  if (isIP(hostname)) {
+    if (!isPublicIp(hostname)) throw new Error("Import source IP is not public");
+    return { address: hostname, family: isIP(hostname) };
+  }
+
+  const addresses = await dnsLookup(hostname, { all: true, verbatim: true });
+  const publicAddress = addresses.find((entry) => isPublicIp(entry.address));
+  if (!publicAddress) throw new Error("Import source did not resolve to a public IP");
+  return publicAddress;
+}
+
+function safeSourceHeaders(source: ProviderImportSource, includeCustomHeaders: boolean) {
+  const headers: Record<string, string> = {
+    Accept: source.adapter === "json"
+      ? "application/json, text/json;q=0.9, */*;q=0.5"
+      : "text/html, application/xhtml+xml;q=0.9, */*;q=0.5",
+    "User-Agent": "GOVZA-Provider-Importer/1.0 (+https://govza.pro)",
+    "Accept-Encoding": "identity",
+  };
+
+  if (!includeCustomHeaders) return headers;
+
+  const forbidden = new Set([
+    "host", "content-length", "connection", "transfer-encoding", "accept-encoding",
+  ]);
+  for (const [key, value] of Object.entries(source.headers ?? {})) {
+    if (!forbidden.has(key.toLocaleLowerCase("en-US"))) headers[key] = value;
+  }
+  return headers;
+}
+
+async function requestText(
+  source: ProviderImportSource,
+  targetUrl: URL,
+  originalOrigin: string,
+  redirectsRemaining: number,
+): Promise<string> {
+  if (targetUrl.protocol !== "https:") {
+    throw new Error("Import source and redirects must use HTTPS");
+  }
+
+  const resolved = await resolvePublicAddress(targetUrl);
+  const headers = safeSourceHeaders(source, targetUrl.origin === originalOrigin);
+
+  return new Promise<string>((resolve, reject) => {
+    const request = httpsRequest(targetUrl, {
+      method: "GET",
+      headers,
+      lookup: ((_hostname: string, _options: unknown, callback: (error: NodeJS.ErrnoException | null, address: string, family: number) => void) => {
+        callback(null, resolved.address, resolved.family);
+      }) as any,
+    }, (response) => {
+      const status = response.statusCode ?? 0;
+      const location = response.headers.location;
+
+      if (status >= 300 && status < 400 && location) {
+        response.resume();
+        if (redirectsRemaining <= 0) {
+          reject(new Error("Import source exceeded redirect limit"));
+          return;
+        }
+        let redirected: URL;
+        try {
+          redirected = new URL(location, targetUrl);
+        } catch {
+          reject(new Error("Import source returned an invalid redirect URL"));
+          return;
+        }
+        requestText(source, redirected, originalOrigin, redirectsRemaining - 1).then(resolve, reject);
+        return;
+      }
+
+      if (status < 200 || status >= 300) {
+        response.resume();
+        reject(new Error(`HTTP ${status} from import source`));
+        return;
+      }
+
+      const declaredLength = Number(response.headers["content-length"]);
+      if (Number.isFinite(declaredLength) && declaredLength > MAX_RESPONSE_BYTES) {
+        response.resume();
+        reject(new Error(`Source response exceeds ${MAX_RESPONSE_BYTES} bytes`));
+        return;
+      }
+
+      const chunks: Buffer[] = [];
+      let total = 0;
+      response.on("data", (chunk: Buffer | string) => {
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        total += buffer.byteLength;
+        if (total > MAX_RESPONSE_BYTES) {
+          request.destroy(new Error(`Source response exceeds ${MAX_RESPONSE_BYTES} bytes`));
+          return;
+        }
+        chunks.push(buffer);
+      });
+      response.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      response.on("error", reject);
+    });
+
+    request.setTimeout(source.timeoutMs, () => {
+      request.destroy(new Error("Import source request timed out"));
+    });
+    request.on("error", reject);
+    request.end();
+  });
 }
 
 async function fetchSource(source: ProviderImportSource) {
   const sourceUrl = new URL(source.url);
-  if (sourceUrl.protocol !== "https:" && sourceUrl.protocol !== "http:") {
-    throw new Error("Only http/https import sources are supported");
+  if (sourceUrl.protocol !== "https:") {
+    throw new Error("Only HTTPS import sources are supported");
   }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), source.timeoutMs);
-  try {
-    const response = await fetch(source.url, {
-      method: "GET",
-      headers: {
-        Accept: source.adapter === "json" ? "application/json, text/json;q=0.9, */*;q=0.5" : "text/html, application/xhtml+xml;q=0.9, */*;q=0.5",
-        "User-Agent": "GOVZA-Provider-Importer/1.0 (+https://govza.pro)",
-        ...(source.headers ?? {}),
-      },
-      redirect: "follow",
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} from import source`);
-    }
-    const finalUrl = new URL(response.url || source.url);
-    if (finalUrl.protocol !== "https:" && finalUrl.protocol !== "http:") {
-      throw new Error("Import source redirected to unsupported protocol");
-    }
-    return await readTextLimited(response);
-  } finally {
-    clearTimeout(timeout);
-  }
+  return requestText(source, sourceUrl, sourceUrl.origin, 5);
 }
 
 function parseJsonCandidates(source: ProviderImportSource, text: string): { rawCount: number; candidates: ImportCandidate[]; errors: string[] } {
@@ -389,7 +509,7 @@ async function createRun(source: ProviderImportSource, trigger: ProviderImportTr
     status: "running",
     details: {
       adapter: source.adapter,
-      url: source.url,
+      url: redactUrl(source.url),
     },
   }).returning();
   return run;
@@ -488,7 +608,7 @@ export async function runProviderImportSource(
     };
     await finishRun(run.id, result, {
       adapter: source.adapter,
-      url: source.url,
+      url: redactUrl(source.url),
       durationMs: Date.now() - started,
     });
     return result;
@@ -506,7 +626,7 @@ export async function runProviderImportSource(
     };
     await finishRun(run.id, result, {
       adapter: source.adapter,
-      url: source.url,
+      url: redactUrl(source.url),
       durationMs: Date.now() - started,
     });
     return result;
