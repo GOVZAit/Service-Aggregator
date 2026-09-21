@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/auth-context";
 import type { Doctor } from "@/lib/doctors-data";
 import type { CityOrganization } from "@/lib/city-services-data";
 import type { Category } from "@shared/schema";
+import type { VerificationDocument } from "@shared/verification-schema";
 
 type VerificationStatus = "unverified" | "pending" | "verified" | "rejected";
 
@@ -107,6 +108,42 @@ interface ImportRun {
   finishedAt: string | null;
 }
 
+interface VerificationQueueItem {
+  providerId: number;
+  providerType: "master" | "organization";
+  ownerUserId: number | null;
+  name: string;
+  companyName: string | null;
+  phone: string | null;
+  status: VerificationStatus;
+  note: string | null;
+  documents: VerificationDocument[];
+  providerComment: string;
+  submittedAt: string;
+  updatedAt: string;
+}
+
+interface VerificationEventDetail {
+  id: number;
+  actorRole: "provider" | "admin" | "system";
+  action: "submitted" | "resubmitted" | "verified" | "rejected" | "reset";
+  note: string | null;
+  createdAt: string;
+}
+
+interface VerificationDetail {
+  status: VerificationStatus;
+  note: string | null;
+  updatedAt: string | null;
+  submission: {
+    documents: VerificationDocument[];
+    providerComment: string;
+    submittedAt: string;
+    updatedAt: string;
+  } | null;
+  events: VerificationEventDetail[];
+}
+
 const fieldClass =
   "h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10";
 
@@ -139,6 +176,12 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<number | "create" | "edit" | null>(null);
   const [error, setError] = useState("");
+
+  const [verificationQueue, setVerificationQueue] = useState<VerificationQueueItem[]>([]);
+  const [verificationSelected, setVerificationSelected] = useState<VerificationQueueItem | null>(null);
+  const [verificationDetail, setVerificationDetail] = useState<VerificationDetail | null>(null);
+  const [verificationNote, setVerificationNote] = useState("");
+  const [verificationWorking, setVerificationWorking] = useState(false);
 
   const [importConfig, setImportConfig] = useState<ImportConfig | null>(null);
   const [importRuns, setImportRuns] = useState<ImportRun[]>([]);
@@ -201,7 +244,7 @@ export default function AdminDashboardPage() {
     setError("");
     setLoading(true);
     try {
-      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories, nextImportConfig, nextImportRuns] = await Promise.all([
+      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories, nextImportConfig, nextImportRuns, nextVerificationQueue] = await Promise.all([
         api<Summary>("/api/admin/summary"),
         api<AdminProvider[]>(`/api/admin/providers${queryString}`),
         api<AuditEntry[]>("/api/admin/audit?limit=30"),
@@ -210,6 +253,7 @@ export default function AdminDashboardPage() {
         api<Category[]>("/api/admin/categories"),
         api<ImportConfig>("/api/admin/import/config"),
         api<ImportRun[]>("/api/admin/import/runs?limit=30"),
+        api<VerificationQueueItem[]>("/api/admin/verifications"),
       ]);
       setSummary(nextSummary);
       setProviders(nextProviders);
@@ -219,6 +263,11 @@ export default function AdminDashboardPage() {
       setCategories(nextCategories);
       setImportConfig(nextImportConfig);
       setImportRuns(nextImportRuns);
+      setVerificationQueue(nextVerificationQueue);
+      if (verificationSelected) {
+        const refreshedVerification = nextVerificationQueue.find((item) => item.providerId === verificationSelected.providerId);
+        if (refreshedVerification) setVerificationSelected(refreshedVerification);
+      }
       if (selected) {
         const refreshed = nextProviders.find((item) => item.id === selected.id);
         if (refreshed) setSelected(refreshed);
@@ -341,6 +390,46 @@ export default function AdminDashboardPage() {
       setError(err instanceof Error ? err.message : "Не удалось сохранить изменения");
     } finally {
       setWorking(null);
+    }
+  };
+
+
+
+  const openVerification = async (item: VerificationQueueItem) => {
+    setVerificationSelected(item);
+    setVerificationNote(item.note ?? "");
+    setError("");
+    try {
+      const detail = await api<VerificationDetail>(`/api/admin/verifications/${item.providerId}`);
+      setVerificationDetail(detail);
+    } catch (err) {
+      setVerificationDetail(null);
+      setError(err instanceof Error ? err.message : "Не удалось открыть документы");
+    }
+  };
+
+  const reviewVerification = async (status: "verified" | "rejected") => {
+    if (!verificationSelected) return;
+    setVerificationWorking(true);
+    setError("");
+    try {
+      const detail = await api<VerificationDetail>(
+        `/api/admin/verifications/${verificationSelected.providerId}/review`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status,
+            ...(verificationNote.trim() ? { note: verificationNote.trim() } : {}),
+          }),
+        },
+      );
+      setVerificationDetail(detail);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось сохранить решение");
+    } finally {
+      setVerificationWorking(false);
     }
   };
 
