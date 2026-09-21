@@ -295,6 +295,48 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  // ── Favorites ───────────────────────────────────────────────────────────────
+
+  app.get("/api/favorites", async (req, res) => {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if (user.role !== "client") return res.status(403).json({ message: "Избранное доступно клиентам" });
+    res.json(await storage.getFavoriteMasterIds(user.id));
+  });
+
+  app.post("/api/favorites/:masterId", async (req, res) => {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Войдите, чтобы добавить в избранное" });
+    if (user.role !== "client") return res.status(403).json({ message: "Избранное доступно клиентам" });
+
+    const masterId = Number(req.params.masterId);
+    if (!Number.isInteger(masterId) || masterId <= 0) {
+      return res.status(400).json({ message: "Некорректный мастер" });
+    }
+
+    const master = await storage.getMasterById(masterId);
+    if (!master || !(await isProviderVisible(masterId))) {
+      return res.status(404).json({ message: "Мастер не найден" });
+    }
+
+    await storage.addFavorite(user.id, masterId);
+    res.status(201).json({ masterId });
+  });
+
+  app.delete("/api/favorites/:masterId", async (req, res) => {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if (user.role !== "client") return res.status(403).json({ message: "Избранное доступно клиентам" });
+
+    const masterId = Number(req.params.masterId);
+    if (!Number.isInteger(masterId) || masterId <= 0) {
+      return res.status(400).json({ message: "Некорректный мастер" });
+    }
+
+    await storage.removeFavorite(user.id, masterId);
+    res.json({ masterId });
+  });
+
   // ── Service Requests ────────────────────────────────────────────────────────
 
   app.get("/api/requests", async (_req, res) => {

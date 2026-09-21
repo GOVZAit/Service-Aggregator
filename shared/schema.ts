@@ -217,6 +217,16 @@ export const authUsers = pgTable("auth_users", {
   uniqueIndex("auth_users_email_unique").on(table.email),
   uniqueIndex("auth_users_master_id_unique").on(table.masterId),
 ]);
+export const userFavorites = pgTable("user_favorites", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  masterId: integer("master_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("user_favorites_user_master_unique").on(table.userId, table.masterId),
+  index("user_favorites_user_id_idx").on(table.userId),
+]);
+
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),

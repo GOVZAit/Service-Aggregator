@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck, Car, Check, ChevronDown, ChevronRight, Droplets, GraduationCap,
   Hammer, MapPin, Palette, PlugZap, Search, SlidersHorizontal, Sparkles,
@@ -20,6 +20,7 @@ import { BroadcastModal } from "@/components/broadcast-modal";
 import { WelcomeOnboarding, useWelcomeOnboarding } from "@/components/welcome-onboarding";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
+import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { cities } from "@shared/schema";
 import type { Category, Master } from "@shared/schema";
@@ -66,7 +67,6 @@ export default function HomePage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const [favorites, setFavorites] = useState<number[]>([]);
   const [showFilter, setShowFilter] = useState(false);
   const [filterState, setFilterState] = useState<FilterState>(defaultFilterState);
   const [showBroadcast, setShowBroadcast] = useState(false);
@@ -75,6 +75,7 @@ export default function HomePage() {
   const [showLocation, setShowLocation] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOnboarding();
 
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -86,10 +87,46 @@ export default function HomePage() {
     queryKey: ["/api/masters"],
   });
 
+  const { data: favorites = [] } = useQuery<number[]>({
+    queryKey: ["/api/favorites"],
+    enabled: user?.role === "client",
+  });
+
+  const favoriteMutation = useMutation({
+    mutationFn: async ({ masterId, remove }: { masterId: number; remove: boolean }) => {
+      await apiRequest(remove ? "DELETE" : "POST", `/api/favorites/${masterId}`);
+      return { masterId, remove };
+    },
+    onMutate: async ({ masterId, remove }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/favorites"] });
+      const previous = queryClient.getQueryData<number[]>(["/api/favorites"]) ?? [];
+      queryClient.setQueryData<number[]>(
+        ["/api/favorites"],
+        remove ? previous.filter((id) => id !== masterId) : [...new Set([...previous, masterId])],
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) queryClient.setQueryData(["/api/favorites"], context.previous);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+    },
+  });
+
   const toggleFavorite = (masterId: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setFavorites((prev) => prev.includes(masterId) ? prev.filter((id) => id !== masterId) : [...prev, masterId]);
+
+    if (user?.role !== "client") {
+      navigate("/auth");
+      return;
+    }
+
+    favoriteMutation.mutate({
+      masterId,
+      remove: favorites.includes(masterId),
+    });
   };
 
   const baseMasters = useMemo(() => {
