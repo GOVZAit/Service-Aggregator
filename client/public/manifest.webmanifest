@@ -15,6 +15,10 @@
   "theme_color": "#0B8FB6",
   "lang": "ru",
   "dir": "ltr",
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "categories": [
     "business",
     "lifestyle",
@@ -34,9 +38,9 @@
       "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "maskable"
     }
   ],
@@ -48,7 +52,8 @@
       "icons": [
         {
           "src": "/icon-192.png",
-          "sizes": "192x192"
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -59,7 +64,8 @@
       "icons": [
         {
           "src": "/icon-192.png",
-          "sizes": "192x192"
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -70,7 +76,8 @@
       "icons": [
         {
           "src": "/icon-192.png",
-          "sizes": "192x192"
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }

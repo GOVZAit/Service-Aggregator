@@ -4,10 +4,12 @@ const RUNTIME_CACHE = `govza-runtime-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
   "/",
+  "/offline.html",
   "/manifest.webmanifest",
   "/favicon.png",
   "/icon-192.png",
   "/icon-512.png",
+  "/maskable-icon.svg",
 ];
 
 self.addEventListener("install", (event) => {
@@ -22,12 +24,12 @@ self.addEventListener("activate", (event) => {
     Promise.all([
       self.registration.navigationPreload ? self.registration.navigationPreload.enable() : Promise.resolve(),
       caches.keys()
-      .then((keys) => Promise.all(
-        keys
-          .filter((key) => key !== STATIC_CACHE && key !== RUNTIME_CACHE)
-          .map((key) => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
+        .then((keys) => Promise.all(
+          keys
+            .filter((key) => key !== STATIC_CACHE && key !== RUNTIME_CACHE)
+            .map((key) => caches.delete(key))
+        ))
+        .then(() => self.clients.claim())
     ])
   );
 });
@@ -52,7 +54,11 @@ self.addEventListener("fetch", (event) => {
         if (preload) return preload;
         return await fetch(request);
       } catch {
-        return await caches.match("/") || Response.error();
+        const cachedShell = await caches.match("/");
+        if (cachedShell) return cachedShell;
+
+        const offlineFallback = await caches.match("/offline.html");
+        return offlineFallback || Response.error();
       }
     })());
     return;
@@ -61,10 +67,15 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
+
       return fetch(request).then((response) => {
         if (!response || response.status !== 200 || response.type !== "basic") return response;
+
         const copy = response.clone();
-        caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy)).catch(() => {});
+        caches.open(RUNTIME_CACHE)
+          .then((cache) => cache.put(request, copy))
+          .catch(() => {});
+
         return response;
       });
     })
