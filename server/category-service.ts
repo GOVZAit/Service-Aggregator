@@ -65,6 +65,11 @@ export function getEffectiveCategory(id: number) {
   return effectiveCategories.find((category) => category.id === id);
 }
 
+export function categoryIdsExist(ids: number[]) {
+  const available = new Set(effectiveCategories.map((category) => category.id));
+  return ids.length > 0 && ids.every((id) => available.has(id));
+}
+
 export async function nextCategoryId() {
   const rows = await db.select({ categoryId: categoryRecords.categoryId }).from(categoryRecords);
   return Math.max(0, ...seedCategories.map((category) => category.id), ...rows.map((row) => row.categoryId)) + 1;
