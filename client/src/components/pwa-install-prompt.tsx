@@ -31,16 +31,22 @@ export function PwaInstallPrompt() {
       setEvent(raw as BeforeInstallPromptEvent);
       setVisible(true);
     };
+    const openListener = () => setVisible(true);
     window.addEventListener("beforeinstallprompt", listener);
+    window.addEventListener("govza:install", openListener);
 
     if (isIos()) {
       const timer = window.setTimeout(() => setVisible(true), 1800);
       return () => {
         window.clearTimeout(timer);
         window.removeEventListener("beforeinstallprompt", listener);
+        window.removeEventListener("govza:install", openListener);
       };
     }
-    return () => window.removeEventListener("beforeinstallprompt", listener);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", listener);
+      window.removeEventListener("govza:install", openListener);
+    };
   }, []);
 
   const dismiss = () => {
@@ -59,17 +65,17 @@ export function PwaInstallPrompt() {
   if (!visible || isStandalone()) return null;
 
   return (
-    <div className="fixed bottom-20 left-3 right-3 z-[70] mx-auto max-w-md rounded-2xl border bg-background/95 p-4 shadow-2xl backdrop-blur-xl lg:bottom-6">
+    <div className="fixed bottom-20 left-3 right-3 z-[70] mx-auto max-w-md rounded-[1.5rem] border border-primary/15 bg-background/95 p-4 shadow-2xl backdrop-blur-2xl lg:bottom-6">
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           {ios ? <Share2 className="h-5 w-5" /> : <Download className="h-5 w-5" />}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">Установить GOVZA</p>
+          <p className="font-semibold">Установить GOVZA мастера</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {ios
               ? "В Safari нажмите «Поделиться» → «На экран Домой»."
-              : "Откройте GOVZA как обычное приложение с главного экрана."}
+              : "Добавьте GOVZA мастера на главный экран для быстрого доступа."}
           </p>
           {!ios && event && (
             <Button size="sm" className="mt-3" onClick={install}>Установить</Button>
