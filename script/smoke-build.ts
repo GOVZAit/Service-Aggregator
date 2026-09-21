@@ -17,23 +17,36 @@ async function main() {
   const indexPath = path.join(publicDir, "index.html");
   const swPath = path.join(publicDir, "sw.js");
   const manifestPath = path.join(publicDir, "manifest.webmanifest");
+  const offlinePath = path.join(publicDir, "offline.html");
   const serverPath = path.join(root, "dist", "index.cjs");
 
   await Promise.all([
     assertFile(indexPath, "Client index"),
     assertFile(swPath, "Service Worker"),
     assertFile(manifestPath, "PWA manifest"),
+    assertFile(offlinePath, "Offline fallback"),
     assertFile(serverPath, "Server bundle"),
   ]);
 
-  const [indexHtml, serviceWorker, manifestText] = await Promise.all([
+  const [indexHtml, serviceWorker, manifestText, offlineHtml] = await Promise.all([
     readFile(indexPath, "utf8"),
     readFile(swPath, "utf8"),
     readFile(manifestPath, "utf8"),
+    readFile(offlinePath, "utf8"),
   ]);
 
   if (indexHtml.includes("/src/main.tsx")) {
     throw new Error("Production index still references the Vite source entry");
+  }
+
+  if (!indexHtml.includes("viewport-fit=cover")) {
+    throw new Error("Production index is missing viewport-fit=cover for safe-area PWA layouts");
+  }
+  if (!indexHtml.includes('rel="manifest"') || !indexHtml.includes('name="theme-color"')) {
+    throw new Error("Production index is missing required PWA metadata");
+  }
+  if (!indexHtml.includes("govza-initial-boot")) {
+    throw new Error("Production index is missing branded pre-React boot UI");
   }
 
   const assetRefs = [...indexHtml.matchAll(/(?:src|href)="(\/assets\/[^"]+\.(?:js|css))"/g)]
@@ -54,11 +67,24 @@ async function main() {
     throw new Error("Service Worker does not contain a valid production build version");
   }
 
+  for (const required of ['"/offline.html"', '"SKIP_WAITING"', 'caches.match("/")']) {
+    if (!serviceWorker.includes(required)) {
+      throw new Error(`Service Worker is missing required PWA behavior: ${required}`);
+    }
+  }
+  if (!offlineHtml.includes("Сейчас нет сети") || !offlineHtml.includes("location.reload()")) {
+    throw new Error("Offline fallback does not contain the expected recovery UI");
+  }
+
   const manifest = JSON.parse(manifestText) as {
     name?: string;
     short_name?: string;
     start_url?: string;
-    icons?: Array<{ src?: string }>;
+    scope?: string;
+    display?: string;
+    theme_color?: string;
+    background_color?: string;
+    icons?: Array<{ src?: string; purpose?: string }>;
   };
 
   if (manifest.name !== "GOVZA мастера" || manifest.short_name !== "GOVZA мастера") {
@@ -67,8 +93,17 @@ async function main() {
   if (!manifest.start_url?.startsWith("/")) {
     throw new Error("PWA manifest start_url is missing or invalid");
   }
+  if (manifest.scope !== "/" || manifest.display !== "standalone") {
+    throw new Error("PWA manifest scope/display configuration is invalid");
+  }
+  if (!manifest.theme_color || !manifest.background_color) {
+    throw new Error("PWA manifest colors are missing");
+  }
   if (!manifest.icons?.length) {
     throw new Error("PWA manifest has no icons");
+  }
+  if (!manifest.icons.some((icon) => icon.purpose?.split(/\s+/).includes("maskable"))) {
+    throw new Error("PWA manifest has no maskable icon");
   }
 
   for (const icon of manifest.icons) {
