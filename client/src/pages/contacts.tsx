@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BottomNavigation } from "@/components/bottom-navigation";
+import { AppBrandHeader } from "@/components/app-brand-header";
 import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
 import { cityOrganizations, getOrgDistance, type CityOrganization } from "@/lib/city-services-data";
@@ -116,8 +117,8 @@ export default function ContactsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border safe-area-pt">
-        <div className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-4 pb-3">
+      <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
+        <div className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-3 pb-4">
           {level === 'detail' ? (
             <div className="flex items-center gap-3">
               <Button
@@ -136,7 +137,8 @@ export default function ContactsPage() {
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between mb-3">
+              <AppBrandHeader compact />
+              <div className="flex items-center justify-between mt-5 mb-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Грозный, Чечня</p>
                   <div className="flex items-center gap-1 font-semibold">
@@ -144,12 +146,12 @@ export default function ContactsPage() {
                     <span>Полезные контакты</span>
                   </div>
                 </div>
-                <div className="flex items-center rounded-xl border border-border overflow-hidden">
+                <div className="flex items-center rounded-2xl border border-border/70 bg-card p-1 shadow-sm overflow-hidden">
                   <button
                     onClick={() => setViewMode('list')}
                     data-testid="button-contacts-view-list"
                     className={cn(
-                      "flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors",
+                      "flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-xl transition-colors",
                       viewMode === 'list'
                         ? "bg-primary text-primary-foreground"
                         : "bg-background text-muted-foreground hover:bg-muted"
@@ -162,7 +164,7 @@ export default function ContactsPage() {
                     onClick={() => setViewMode('map')}
                     data-testid="button-contacts-view-map"
                     className={cn(
-                      "flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors",
+                      "flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-xl transition-colors",
                       viewMode === 'map'
                         ? "bg-primary text-primary-foreground"
                         : "bg-background text-muted-foreground hover:bg-muted"
@@ -181,7 +183,7 @@ export default function ContactsPage() {
                   placeholder="Банки, отели, АЗС, нотариусы..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-10 bg-muted/50"
+                  className="pl-10 h-12 rounded-2xl border-border/70 bg-card shadow-sm"
                   data-testid="input-contacts-search"
                 />
                 {searchQuery && (
@@ -200,7 +202,7 @@ export default function ContactsPage() {
                   onClick={() => setSelectedSubcategory(null)}
                   data-testid="pill-contacts-all"
                   className={cn(
-                    "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors border",
+                    "shrink-0 rounded-2xl px-4 py-2 text-sm font-bold transition-colors border shadow-sm",
                     selectedSubcategory === null
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-background text-muted-foreground border-border hover:border-primary/40"
@@ -216,7 +218,7 @@ export default function ContactsPage() {
                       onClick={() => setSelectedSubcategory(sub === selectedSubcategory ? null : sub)}
                       data-testid={`pill-contacts-${sub}`}
                       className={cn(
-                        "shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors border",
+                        "shrink-0 inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-sm font-bold transition-colors border shadow-sm",
                         selectedSubcategory === sub
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background text-muted-foreground border-border hover:border-primary/40"
@@ -243,7 +245,7 @@ export default function ContactsPage() {
 
       {/* LIST LEVEL */}
       {level === 'list' && viewMode === 'list' && (
-        <main className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-4 space-y-3">
+        <main className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-5 space-y-4">
           {/* Stats bar */}
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
             <span className="font-semibold text-foreground">{filteredContacts.length}</span>
@@ -325,7 +327,7 @@ function ContactCard({
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
       data-testid={`card-contact-${org.id}`}
-      className="w-full flex flex-col gap-2.5 rounded-2xl border border-border bg-card p-4 text-left transition-all active:scale-[0.98] hover:shadow-md hover:border-primary/20 cursor-pointer"
+      className="premium-card pressable w-full flex flex-col gap-3 p-4 text-left transition-transform active:scale-[0.99] cursor-pointer"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-3 flex-1 min-w-0">
