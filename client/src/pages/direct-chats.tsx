@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, MessageCircle, ChevronRight } from "lucide-react";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/auth-context";
+import MasterBottomNavigation from "@/components/master-bottom-navigation";
+import OrganizationBottomNavigation from "@/components/organization-bottom-navigation";
 import type { DirectConversationView } from "@shared/direct-chat-schema";
 
 function formatWhen(value?: string) {
@@ -19,8 +21,12 @@ function formatWhen(value?: string) {
 }
 
 export default function DirectChatsPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth");
+  }, [authLoading, user, navigate]);
 
   const { data: conversations = [], isLoading } = useQuery<DirectConversationView[]>({
     queryKey: ["/api/direct-chats"],
@@ -127,6 +133,9 @@ export default function DirectChatsPage() {
           ))
         )}
       </main>
+
+      {user?.role === "master" && <MasterBottomNavigation />}
+      {user?.role === "organization" && <OrganizationBottomNavigation />}
     </div>
   );
 }
