@@ -26,14 +26,14 @@ import { cities } from "@shared/schema";
 import type { Category, Master } from "@shared/schema";
 
 const categoryIcons: Record<string, typeof PlugZap> = {
-  "Сантехника": Droplets,
-  "Электрика": PlugZap,
-  "Уборка": Sparkles,
-  "Ремонт": Hammer,
-  "Красота": Palette,
-  "Авто": Car,
-  "Доставка": Truck,
-  "Репетиторы": GraduationCap,
+  Wrench: Droplets,
+  Zap: PlugZap,
+  Sparkles,
+  Hammer,
+  Palette,
+  Car,
+  Package: Truck,
+  BookOpen: GraduationCap,
 };
 
 function MasterCardSkeleton() {
@@ -248,7 +248,7 @@ export default function HomePage() {
               Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-11 w-28 shrink-0 rounded-2xl" />)
             ) : (
               categories.slice(0, 8).map((category) => {
-                const Icon = categoryIcons[category.name] ?? Zap;
+                const Icon = categoryIcons[category.iconName] ?? Zap;
                 const active = selectedCategory === category.id;
                 return (
                   <button
@@ -317,7 +317,7 @@ export default function HomePage() {
                 </div>
                 <div className="scrollbar-none -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
                   {categories.slice(0, 8).map((category) => {
-                    const Icon = categoryIcons[category.name] ?? Zap;
+                    const Icon = categoryIcons[category.iconName] ?? Zap;
                     const count = allMasters.filter((master) => (master.categoryIds ?? [master.categoryId]).includes(category.id)).length;
                     return (
                       <button
