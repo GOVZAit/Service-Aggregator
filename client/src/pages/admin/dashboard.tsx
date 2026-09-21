@@ -70,6 +70,43 @@ interface AdminDirectoryItem<T> {
 
 type DirectoryTab = "doctors" | "city-services";
 
+interface ImportSourceView {
+  name: string;
+  url: string;
+  adapter: "json" | "jsonld";
+  enabled: boolean;
+  providerType: "master" | "organization" | null;
+  organizationKind: string | null;
+  defaultCategoryIds: number[] | null;
+  categoryMappings: number;
+  hasCustomHeaders: boolean;
+  timeoutMs: number;
+  maxItems: number;
+}
+
+interface ImportConfig {
+  enabled: boolean;
+  configurationError: string | null;
+  intervalMinutes: number;
+  runOnStartup: boolean;
+  sources: ImportSourceView[];
+}
+
+interface ImportRun {
+  id: number;
+  sourceName: string;
+  trigger: "scheduler" | "admin" | "startup";
+  status: "running" | "success" | "partial" | "failed";
+  fetched: number;
+  parsed: number;
+  imported: number;
+  skipped: number;
+  errors: string[];
+  details: Record<string, unknown>;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
 const fieldClass =
   "h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10";
 
@@ -102,6 +139,10 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<number | "create" | "edit" | null>(null);
   const [error, setError] = useState("");
+
+  const [importConfig, setImportConfig] = useState<ImportConfig | null>(null);
+  const [importRuns, setImportRuns] = useState<ImportRun[]>([]);
+  const [importWorking, setImportWorking] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryEditingId, setCategoryEditingId] = useState<number | null>(null);
@@ -160,13 +201,15 @@ export default function AdminDashboardPage() {
     setError("");
     setLoading(true);
     try {
-      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories] = await Promise.all([
+      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories, nextImportConfig, nextImportRuns] = await Promise.all([
         api<Summary>("/api/admin/summary"),
         api<AdminProvider[]>(`/api/admin/providers${queryString}`),
         api<AuditEntry[]>("/api/admin/audit?limit=30"),
         api<AdminDirectoryItem<Doctor>[]>("/api/admin/directories/doctors"),
         api<AdminDirectoryItem<CityOrganization>[]>("/api/admin/directories/city-services"),
         api<Category[]>("/api/admin/categories"),
+        api<ImportConfig>("/api/admin/import/config"),
+        api<ImportRun[]>("/api/admin/import/runs?limit=30"),
       ]);
       setSummary(nextSummary);
       setProviders(nextProviders);
@@ -174,6 +217,8 @@ export default function AdminDashboardPage() {
       setDoctors(nextDoctors);
       setCityServices(nextCityServices);
       setCategories(nextCategories);
+      setImportConfig(nextImportConfig);
+      setImportRuns(nextImportRuns);
       if (selected) {
         const refreshed = nextProviders.find((item) => item.id === selected.id);
         if (refreshed) setSelected(refreshed);
@@ -296,6 +341,39 @@ export default function AdminDashboardPage() {
       setError(err instanceof Error ? err.message : "Не удалось сохранить изменения");
     } finally {
       setWorking(null);
+    }
+  };
+
+
+  const runImport = async (sourceName?: string) => {
+    const key = sourceName ?? "all";
+    setImportWorking(key);
+    setError("");
+    try {
+      await api<{ results: Array<{ sourceName: string; status: string; imported: number; skipped: number }> }>("/api/admin/import/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sourceName ? { sourceName } : {}),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось запустить импорт");
+    } finally {
+      setImportWorking(null);
+    }
+  };
+
+  const reloadImportConfig = async () => {
+    setImportWorking("reload");
+    setError("");
+    try {
+      const config = await api<ImportConfig>("/api/admin/import/reload", { method: "POST" });
+      setImportConfig(config);
+      setImportRuns(await api<ImportRun[]>("/api/admin/import/runs?limit=30"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось перечитать конфигурацию импорта");
+    } finally {
+      setImportWorking(null);
     }
   };
 
