@@ -3,7 +3,6 @@ import {
   BadgeCheck,
   Box,
   Building2,
-  CarFront,
   ChevronRight,
   MapPin,
   PackageSearch,
@@ -126,15 +125,9 @@ export default function AutoPartsPage() {
       <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
         <div className="mx-auto max-w-6xl px-4 pb-4 pt-3 lg:px-6">
           <AppBrandHeader compact />
-          <div className="mt-6">
-            <div className="flex items-center gap-2 text-primary">
-              <CarFront className="h-5 w-5" />
-              <span className="text-xs font-extrabold uppercase tracking-[.14em]">Автозапчасти</span>
-            </div>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.04em]">Найти запчасть</h1>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Автомагазины и авторазборы. Новые и Б/У запчасти — отдельно от каталога мастеров.
-            </p>
+          <div className="-mt-10 pr-28">
+            <h1 className="text-2xl font-bold tracking-tight">Автозапчасти</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Магазины и авторазборы</p>
           </div>
 
           <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_180px_180px]">
@@ -145,7 +138,7 @@ export default function AutoPartsPage() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Деталь, OEM, магазин…"
-                className="h-13 rounded-2xl pl-12"
+                className="h-12 rounded-xl pl-12"
                 data-testid="auto-parts-search"
               />
             </div>
@@ -153,13 +146,13 @@ export default function AutoPartsPage() {
               value={brand}
               onChange={(event) => setBrand(event.target.value)}
               placeholder="Марка авто"
-              className="h-13 rounded-2xl"
+              className="h-12 rounded-xl"
               data-testid="auto-parts-brand"
             />
             <select
               value={city}
               onChange={(event) => setCity(event.target.value)}
-              className="h-13 rounded-2xl border border-border bg-background px-3 text-sm font-semibold"
+              className="h-12 rounded-xl border border-border bg-background px-3 text-sm font-semibold"
             >
               {cities.map((item) => <option key={item}>{item}</option>)}
             </select>
@@ -242,42 +235,22 @@ export default function AutoPartsPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-5 pb-28 lg:px-6">
-        <section className="hero-gradient relative overflow-hidden rounded-[1.75rem] border border-primary/20 p-5 shadow-sm">
-          <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <section className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="contents">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[.12em] text-primary">Цены и наличие</p>
-              <h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em]">Не нашли нужную запчасть?</h2>
+              <p className="text-xs font-semibold text-primary">Цены и наличие</p>
+              <h2 className="mt-1 text-base font-bold">Не нашли нужную запчасть?</h2>
               <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
                 Отправьте один запрос — подходящие автомагазины и авторазборы ответят ценой, наличием и сроком.
               </p>
             </div>
             <Button
-              className="accent-gradient min-h-12 shrink-0 rounded-2xl px-5 font-extrabold text-white"
+              className="min-h-11 shrink-0 rounded-xl px-4 font-bold"
               onClick={() => navigate(`/auto-parts/requests?section=${supplierType}`)}
             >
               <PackageSearch className="mr-2 h-5 w-5" />
               Запросить запчасть
             </Button>
-          </div>
-        </section>
-
-        <section className="hero-gradient relative mt-5 overflow-hidden rounded-[1.75rem] border border-primary/15 p-5 shadow-sm">
-          <div className="relative z-10 flex items-start gap-4">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-              <PackageSearch className="h-6 w-6" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-extrabold tracking-[-0.03em]">Как искать точнее</h2>
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Укажите марку автомобиля и название детали. Если знаете OEM/артикул — добавьте его в строку поиска.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold text-muted-foreground">
-                <span className="rounded-full bg-background/70 px-2.5 py-1">Марка</span>
-                <span className="rounded-full bg-background/70 px-2.5 py-1">Модель</span>
-                <span className="rounded-full bg-background/70 px-2.5 py-1">Год</span>
-                <span className="rounded-full bg-background/70 px-2.5 py-1">OEM / артикул</span>
-              </div>
-            </div>
           </div>
         </section>
 

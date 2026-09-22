@@ -2,9 +2,9 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  BadgeCheck, Car, CarFront, Check, ChevronDown, ChevronRight, Droplets, GraduationCap,
-  Hammer, LayoutGrid, MapPin, Palette, PlugZap, Search, SlidersHorizontal, Sparkles,
-  Stethoscope, Truck, X, Zap,
+  BadgeCheck, Car, Check, ChevronDown, ChevronRight, Droplets, GraduationCap,
+  Hammer, MapPin, Palette, PlugZap, Search, SlidersHorizontal, Sparkles,
+  Truck, X, Zap,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
 import FilterSheet, { FilterPanel, applyMasterFilters, type FilterState, defaultFilterState } from "@/components/filter-sheet";
 import { BroadcastModal } from "@/components/broadcast-modal";
-import { UrgentNowModal } from "@/components/urgent-now-modal";
 import { WelcomeOnboarding, useWelcomeOnboarding } from "@/components/welcome-onboarding";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
@@ -71,7 +70,6 @@ export default function HomePage() {
   const [showFilter, setShowFilter] = useState(false);
   const [filterState, setFilterState] = useState<FilterState>(defaultFilterState);
   const [showBroadcast, setShowBroadcast] = useState(false);
-  const [showUrgent, setShowUrgent] = useState(false);
   const [broadcastCategory, setBroadcastCategory] = useState<string | undefined>();
   const [city, setCity] = useState<string>(DEFAULT_CITY);
   const [showLocation, setShowLocation] = useState(false);
@@ -214,7 +212,7 @@ export default function HomePage() {
                 placeholder="Какая услуга нужна?"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="h-14 rounded-[1.25rem] border-border/55 bg-card pl-12 pr-11 text-base font-medium shadow-sm placeholder:text-muted-foreground/75"
+                className="h-12 rounded-2xl border-border/70 bg-background pl-11 pr-10 text-base font-medium placeholder:text-muted-foreground/75"
                 data-testid="input-search"
               />
               {searchQuery && (
@@ -234,7 +232,7 @@ export default function HomePage() {
               aria-label="Фильтры и сортировка"
               data-testid="button-filter"
               className={cn(
-                "pressable relative flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.25rem] border shadow-sm lg:hidden",
+                "pressable relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border lg:hidden",
                 hasActiveFilters
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border/55 bg-card text-foreground"
@@ -258,10 +256,10 @@ export default function HomePage() {
                     type="button"
                     onClick={() => setSelectedCategory((current) => current === category.id ? null : category.id)}
                     className={cn(
-                      "pressable flex min-h-11 shrink-0 items-center gap-2 rounded-2xl px-3.5 text-sm font-semibold",
+                      "pressable flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 text-sm font-semibold",
                       active
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "border border-border/55 bg-card text-foreground shadow-sm"
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border/70 bg-background text-foreground"
                     )}
                     data-testid={`category-chip-${category.id}`}
                   >
@@ -276,63 +274,6 @@ export default function HomePage() {
       </header>
 
       <main className="mx-auto max-w-lg px-4 py-5 lg:max-w-6xl lg:px-6">
-        <section className="mb-6">
-          <div className="mb-3">
-            <h2 className="section-title">Разделы GOVZA pro</h2>
-            <p className="mt-1 text-xs text-muted-foreground">Выберите, что вам нужно</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <button
-              type="button"
-              onClick={() => { clearFilters(); setSearchQuery(""); }}
-              className="premium-card pressable min-h-[126px] border-primary/25 bg-primary/[0.045] p-4 text-left"
-              aria-current="page"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Hammer className="h-5 w-5" />
-              </div>
-              <p className="mt-4 font-extrabold">Мастера</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Услуги и специалисты</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/auto-parts")}
-              className="premium-card pressable min-h-[126px] p-4 text-left"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-600">
-                <CarFront className="h-5 w-5" />
-              </div>
-              <p className="mt-4 font-extrabold">Автозапчасти</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Новые, Б/У, авторазборы</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/doctors")}
-              className="premium-card pressable min-h-[126px] p-4 text-left"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
-                <Stethoscope className="h-5 w-5" />
-              </div>
-              <p className="mt-4 font-extrabold">Врачи</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Врачи и медицина</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/more")}
-              className="premium-card pressable min-h-[126px] p-4 text-left"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-foreground">
-                <LayoutGrid className="h-5 w-5" />
-              </div>
-              <p className="mt-4 font-extrabold">Ещё</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Город, контакты и сервисы</p>
-            </button>
-          </div>
-        </section>
-
         <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-8">
           <aside className="sticky top-[185px] hidden lg:block">
             <div className="premium-card p-5">
@@ -342,79 +283,32 @@ export default function HomePage() {
           </aside>
 
           <div className="min-w-0">
-            <section className="hero-gradient relative overflow-hidden rounded-[1.75rem] border border-primary/15 p-5 shadow-sm sm:p-6">
-              <div className="pointer-events-none absolute -right-8 -top-12 h-44 w-44 rounded-full bg-cyan-300/25 blur-2xl" />
-              <div className="pointer-events-none absolute -bottom-16 right-20 h-36 w-36 rounded-full bg-primary/15 blur-2xl" />
-              <div className="relative z-10 flex items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Zap className="h-6 w-6" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-lg font-extrabold tracking-[-0.03em]">Нужен мастер срочно?</p>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    Оставьте заявку — получите предложения подходящих мастеров и выберите лучшего.
-                  </p>
-                </div>
+            <section className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Zap className="h-5 w-5" />
               </div>
-              <div className="relative z-10 mt-4 grid gap-2 sm:flex">
-                <button
-                  type="button"
-                  onClick={() => setShowUrgent(true)}
-                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-orange-600 px-4 text-sm font-extrabold text-white shadow-md sm:w-auto sm:min-w-44"
-                  data-testid="button-urgent-now"
-                >
-                  <Zap className="h-4 w-4 fill-current" /> Нужен сейчас
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setBroadcastCategory(selectedCategoryName ?? undefined); setShowBroadcast(true); }}
-                  className="accent-gradient flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white shadow-md sm:w-auto sm:min-w-44"
-                  data-testid="button-broadcast"
-                >
-                  Обычная заявка <ChevronRight className="h-4 w-4" />
-                </button>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold">Нужен мастер?</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Оставьте заявку и сравните предложения.</p>
               </div>
+              <button
+                type="button"
+                onClick={() => { setBroadcastCategory(selectedCategoryName ?? undefined); setShowBroadcast(true); }}
+                className="min-h-10 shrink-0 rounded-xl bg-primary px-3.5 text-xs font-bold text-primary-foreground"
+                data-testid="button-broadcast"
+              >
+                Создать
+              </button>
             </section>
 
-            {!selectedCategory && !searchQuery && (
-              <section className="mt-7">
-                <div className="mb-3 flex items-end justify-between gap-3">
-                  <div>
-                    <h2 className="section-title">Все категории</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">Выберите направление за пару секунд</p>
-                  </div>
-                </div>
-                <div className="scrollbar-none -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-                  {categories.slice(0, 8).map((category) => {
-                    const Icon = categoryIcons[category.iconName] ?? Zap;
-                    const count = allMasters.filter((master) => (master.categoryIds ?? [master.categoryId]).includes(category.id)).length;
-                    return (
-                      <button
-                        type="button"
-                        key={category.id}
-                        onClick={() => setSelectedCategory(category.id)}
-                        className="premium-card pressable min-w-[132px] p-4 text-left"
-                      >
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/[0.08] text-primary">
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <p className="mt-4 text-sm font-bold">{category.name}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{count || "Новые"} специалистов</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            <section className="mt-7">
+            <section className="mt-5">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
                     <BadgeCheck className="h-5 w-5 text-primary" />
-                    <h2 className="section-title">{selectedCategoryName || "Проверенные мастера"}</h2>
+                    <h2 className="section-title">{selectedCategoryName || "Мастера"}</h2>
                   </div>
-                  {!selectedCategoryName && <p className="mt-1 text-xs text-muted-foreground">Надёжные специалисты с рейтингом и отзывами</p>}
+                  {!selectedCategoryName && <p className="mt-1 text-xs text-muted-foreground">Проверенные специалисты рядом</p>}
                 </div>
                 {(selectedCategory || hasActiveFilters || city !== DEFAULT_CITY) && (
                   <Button variant="ghost" size="sm" onClick={clearFilters} className="shrink-0 text-xs text-primary">
@@ -511,13 +405,6 @@ export default function HomePage() {
         <BroadcastModal
           initialCategory={broadcastCategory}
           onClose={() => { setShowBroadcast(false); setBroadcastCategory(undefined); }}
-        />
-      )}
-
-      {showUrgent && (
-        <UrgentNowModal
-          initialCategoryId={selectedCategory}
-          onClose={() => setShowUrgent(false)}
         />
       )}
 

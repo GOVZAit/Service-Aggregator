@@ -91,7 +91,7 @@ export default function ProfilePage() {
         <header className="app-header-shell safe-area-pt">
           <div className="mx-auto max-w-4xl px-4 py-4">
             <AppBrandHeader compact />
-            <h1 className="mt-6 text-3xl font-extrabold tracking-[-0.04em]">Профиль</h1>
+            <h1 className="-mt-10 pr-28 text-2xl font-bold tracking-tight">Профиль</h1>
           </div>
         </header>
         <main className="mx-auto flex max-w-lg flex-col items-center px-4 py-14 text-center">
@@ -123,10 +123,10 @@ export default function ProfilePage() {
       <header className="app-header-shell safe-area-pt">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <AppBrandHeader compact />
-          <div className="mt-6 flex items-end justify-between gap-3">
+          <div className="-mt-10 flex items-end justify-between gap-3 pr-14">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-[-0.04em]">Кабинет клиента</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Ваши данные, заказы и настройки</p>
+              <h1 className="text-2xl font-bold tracking-tight">Профиль</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Данные и настройки</p>
             </div>
             <Button variant="ghost" size="icon" className="h-11 w-11 rounded-2xl" onClick={toggleTheme}>
               {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -135,22 +135,22 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl space-y-4 px-4 py-5">
-        <section className="premium-card flex items-center gap-4 p-5">
-          <Avatar className="h-20 w-20 shrink-0 bg-gradient-to-br from-primary to-cyan-500">
-            <AvatarFallback className="bg-transparent text-2xl font-extrabold text-white">{getInitials(user.name)}</AvatarFallback>
+      <main className="mx-auto max-w-4xl space-y-3 px-4 py-4">
+        <section className="flex items-center gap-3 py-2">
+          <Avatar className="h-14 w-14 shrink-0 bg-primary">
+            <AvatarFallback className="bg-transparent text-lg font-bold text-white">{getInitials(user.name)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-xl font-extrabold tracking-[-0.03em]">{user.name}</h2>
+            <h2 className="truncate text-lg font-bold">{user.name}</h2>
             <p className="mt-0.5 truncate text-sm text-muted-foreground">{contact}</p>
-            <p className="mt-2 text-xs font-bold text-primary">Клиент · {orders.length} заказов</p>
+            <p className="mt-1 text-xs font-semibold text-primary">Клиент · {orders.length} заказов</p>
           </div>
           <Button variant="outline" size="sm" className="hidden rounded-xl sm:flex" onClick={() => { setEditingName(true); setTab("account"); }}>
             <Pencil className="mr-1.5 h-4 w-4" /> Редактировать
           </Button>
         </section>
 
-        <div className="grid grid-cols-3 rounded-[1.25rem] bg-muted/70 p-1">
+        <div className="grid grid-cols-3 border-b border-border/70">
           {([
             ["account", "Профиль"],
             ["orders", `Заказы${orders.length ? ` (${orders.length})` : ""}`],
@@ -161,8 +161,8 @@ export default function ProfilePage() {
               type="button"
               onClick={() => setTab(key)}
               className={cn(
-                "min-h-11 rounded-2xl px-2 text-xs font-bold transition-all sm:text-sm",
-                tab === key ? "bg-card text-primary shadow-sm" : "text-muted-foreground",
+                "min-h-11 border-b-2 px-2 text-xs font-semibold transition-colors sm:text-sm",
+                tab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground",
               )}
             >
               {label}
@@ -172,10 +172,10 @@ export default function ProfilePage() {
 
         {tab === "account" && (
           <>
-            <section className="premium-card p-5">
+            <section className="py-2">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-extrabold tracking-[-0.03em]">Личные данные</h2>
+                  <h2 className="text-base font-bold">Личные данные</h2>
                   <p className="mt-1 text-xs text-muted-foreground">Данные вашего аккаунта</p>
                 </div>
                 {!editingName && (
@@ -203,8 +203,8 @@ export default function ProfilePage() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-4 overflow-hidden rounded-2xl border border-border/70">
-                  <div className="flex items-center gap-3 p-4">
+                <div className="mt-3 divide-y divide-border/70">
+                  <div className="flex items-center gap-3 py-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
                       <UserRound className="h-5 w-5" />
                     </div>
@@ -214,7 +214,7 @@ export default function ProfilePage() {
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="flex items-center gap-3 border-t border-border/70 p-4">
+                  <div className="flex items-center gap-3 py-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
                       <Mail className="h-5 w-5" />
                     </div>
@@ -231,7 +231,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="accent-gradient flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-bold text-white shadow-md"
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-primary-foreground"
             >
               <Check className="h-5 w-5" /> Найти мастера <ChevronRight className="h-4 w-4" />
             </button>
@@ -266,7 +266,7 @@ export default function ProfilePage() {
           <div className="space-y-3">
             <PushNotificationCard />
 
-            <section className="hero-gradient rounded-[1.5rem] border border-primary/15 p-4">
+            <section className="rounded-xl bg-muted/70 p-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <Download className="h-5 w-5" />
@@ -281,7 +281,7 @@ export default function ProfilePage() {
               </div>
             </section>
 
-            <Card className="overflow-hidden rounded-[1.5rem] border-border/70 shadow-sm">
+            <Card className="overflow-hidden rounded-xl border-border/70 shadow-none">
               <button className="flex w-full items-center gap-3 p-4 text-left" onClick={toggleTheme}>
                 {isDark ? <Sun className="h-5 w-5 text-primary" /> : <Moon className="h-5 w-5 text-primary" />}
                 <div className="flex-1">
@@ -290,7 +290,7 @@ export default function ProfilePage() {
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
-              <a className="flex items-center gap-3 border-t border-border/70 p-4" href="tel:995">
+              <a className="flex items-center gap-3 py-3" href="tel:995">
                 <HelpCircle className="h-5 w-5 text-primary" />
                 <div className="flex-1">
                   <p className="font-bold">Помощь</p>

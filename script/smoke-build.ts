@@ -61,7 +61,7 @@ async function main() {
     icons?: Array<{ src?: string }>;
   };
 
-  if (manifest.name !== "GOVZA pro" || manifest.short_name !== "GOVZA pro") {
+  if (manifest.name !== "GOVZA мастера" || manifest.short_name !== "GOVZA мастера") {
     throw new Error("PWA manifest has an unexpected application name");
   }
   if (!manifest.start_url?.startsWith("/")) {

@@ -51,14 +51,16 @@ export function AppBrandHeader({
 
   return (
     <>
-      <div className={cn("flex items-center justify-between gap-3", className)}>
+      <div className={cn(compact ? "flex items-center justify-end gap-2" : "flex items-center justify-between gap-3", className)}>
         <div className="min-w-0">
-          <div className={cn("flex items-baseline gap-1.5 whitespace-nowrap", compact ? "text-xl" : "text-[1.65rem] sm:text-3xl")}>
-            <span className="display-face font-bold text-[#07132f] dark:text-white">GOVZA</span>
-            <span className="font-extrabold tracking-[-0.04em] text-primary">pro</span>
-          </div>
           {!compact && (
-            <p className="mt-0.5 truncate text-xs font-medium text-muted-foreground sm:text-sm">{subtitle}</p>
+            <>
+              <div className="flex items-baseline gap-1.5 whitespace-nowrap text-[1.6rem] sm:text-3xl">
+                <span className="display-face font-bold text-[#07132f] dark:text-white">GOVZA</span>
+                <span className="font-extrabold tracking-[-0.04em] text-primary">мастера</span>
+              </div>
+              <p className="mt-0.5 truncate text-xs font-medium text-muted-foreground sm:text-sm">{subtitle}</p>
+            </>
           )}
         </div>
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search, Phone, MapPin, Clock, Star, Baby, Home as HomeIcon, X,
-  Stethoscope, SlidersHorizontal, ChevronLeft, Send, MessageCircle,
+  SlidersHorizontal, ChevronLeft, Send, MessageCircle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -92,14 +92,9 @@ export default function DoctorsPage() {
       <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
         <div className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-3 pb-4">
           <AppBrandHeader compact />
-          <div className="flex items-center gap-3 mt-5 mb-4">
-            <div className="w-11 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Stethoscope className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="font-extrabold text-2xl tracking-[-0.04em] leading-tight">Врачи</h1>
-              <p className="text-xs text-muted-foreground">Чеченская Республика · запись по телефону</p>
-            </div>
+          <div className="-mt-10 pr-28 mb-3">
+            <h1 className="text-2xl font-bold tracking-tight">Врачи</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Специалисты и клиники</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -111,7 +106,7 @@ export default function DoctorsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 pr-10 bg-card border border-border/60 rounded-[1.2rem] font-medium shadow-sm placeholder:text-muted-foreground/70"
-                style={{ height: "54px" }}
+                style={{ height: "48px" }}
                 data-testid="input-doctor-search"
               />
               {searchQuery && (
@@ -135,7 +130,7 @@ export default function DoctorsPage() {
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/60 text-foreground hover:bg-muted"
               )}
-              style={{ width: "54px", height: "54px" }}
+              style={{ width: "48px", height: "48px" }}
             >
               <SlidersHorizontal className="w-5 h-5" />
               {hasActiveFilters && (
@@ -154,10 +149,10 @@ export default function DoctorsPage() {
                   aria-pressed={isSelected}
                   data-testid={`specialty-chip-${s.id}`}
                   className={cn(
-                    "flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-sm font-semibold whitespace-nowrap shrink-0 transition-all active:scale-95",
+                    "flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-colors",
                     isSelected
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "bg-card border border-border/60 text-foreground shadow-sm"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background border border-border/70 text-foreground"
                   )}
                 >
                   <span className="text-base leading-none">{s.emoji}</span>
