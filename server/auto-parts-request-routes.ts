@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { storage } from "./storage";
 import { sendPushToUser } from "./push-service";
+import { listOwnedAutoPartsSuppliers } from "./auto-parts-service";
 import {
   createAutoPartRequestSchema,
   submitAutoPartOfferSchema,
@@ -83,6 +84,15 @@ export async function registerAutoPartsRequestRoutes(app: Express) {
     const updated = await closeAutoPartRequest(user.id, id);
     if (!updated) return res.status(404).json({ message: "Запрос не найден" });
     res.json({ status: "closed" });
+  });
+
+  app.get("/api/auto-parts/store/profile", async (req, res) => {
+    const user = await authenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if (user.role !== "organization") {
+      return res.status(403).json({ message: "Недоступно" });
+    }
+    res.json(await listOwnedAutoPartsSuppliers(user.id));
   });
 
   app.get("/api/auto-parts/store/requests", async (req, res) => {
