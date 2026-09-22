@@ -20,6 +20,8 @@ const ContactsHubPage = lazy(() => import("@/pages/contacts-hub"));
 const MorePage = lazy(() => import("@/pages/more"));
 const DoctorsPage = lazy(() => import("@/pages/doctors"));
 const AutoPartsPage = lazy(() => import("@/pages/auto-parts"));
+const AutoPartsRequestsPage = lazy(() => import("@/pages/auto-parts-requests"));
+const AutoPartsRequestDetailPage = lazy(() => import("@/pages/auto-parts-request-detail"));
 const LostFoundPage = lazy(() => import("@/pages/lost-found"));
 const AuthPage = lazy(() => import("@/pages/auth"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
@@ -36,6 +38,7 @@ const MasterProfileEditPage = lazy(() => import("@/pages/master/profile"));
 const MasterOnboardingPage = lazy(() => import("@/pages/master/onboarding"));
 const OrganizationOnboardingPage = lazy(() => import("@/pages/organization/onboarding"));
 const OrganizationProfilePage = lazy(() => import("@/pages/organization/profile"));
+const OrganizationPartsRequestsPage = lazy(() => import("@/pages/organization/parts-requests"));
 const AdminDashboardPage = lazy(() => import("@/pages/admin/dashboard"));
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
@@ -47,7 +50,7 @@ import { PullToRefresh } from "@/components/pull-to-refresh";
 
 // Executor-only routes (executor interface)
 const MASTER_ROUTES = ["/master", "/master/orders", "/master/profile", "/master/onboarding", "/master/messages"];
-const ORGANIZATION_ROUTES = ["/organization", "/organization/orders", "/organization/profile", "/organization/onboarding", "/organization/messages"];
+const ORGANIZATION_ROUTES = ["/organization", "/organization/orders", "/organization/profile", "/organization/onboarding", "/organization/messages", "/organization/parts-requests"];
 const PUBLIC_AUTH_ROUTES = ["/auth", "/forgot-password", "/reset-password"];
 const ADMIN_ROUTES = ["/admin"];
 
@@ -130,6 +133,7 @@ function Router() {
         <Route path="/organization/messages/:id" component={DirectChatPage} />
         <Route path="/organization/messages" component={DirectChatsPage} />
         <Route path="/organization/profile" component={OrganizationProfilePage} />
+        <Route path="/organization/parts-requests" component={OrganizationPartsRequestsPage} />
         <Route path="/organization/onboarding" component={OrganizationOnboardingPage} />
 
         {/* Admin routes */}
@@ -147,6 +151,8 @@ function Router() {
         <Route path="/city" component={CityServicesPage} />
         <Route path="/contacts/services" component={CityServicesPage} />
         <Route path="/contacts/useful" component={ContactsPage} />
+        <Route path="/auto-parts/requests/:id" component={AutoPartsRequestDetailPage} />
+        <Route path="/auto-parts/requests" component={AutoPartsRequestsPage} />
         <Route path="/auto-parts" component={AutoPartsPage} />
         <Route path="/doctors" component={DoctorsPage} />
         <Route path="/contacts" component={ContactsHubPage} />
