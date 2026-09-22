@@ -74,7 +74,7 @@ export default function AutoPartsRequestsPage() {
     },
     onSuccess: async (request) => {
       await queryClient.invalidateQueries({ queryKey: ["/api/auto-parts/requests"] });
-      navigate(\`/auto-parts/requests/\${request.id}\`);
+      navigate(`/auto-parts/requests/${request.id}`);
     },
   });
 
@@ -226,7 +226,7 @@ export default function AutoPartsRequestsPage() {
                 <button
                   key={request.id}
                   type="button"
-                  onClick={() => navigate(\`/auto-parts/requests/\${request.id}\`)}
+                  onClick={() => navigate(`/auto-parts/requests/${request.id}`)}
                   className="premium-card pressable flex w-full items-center gap-3 p-4 text-left"
                 >
                   <div className="min-w-0 flex-1">
