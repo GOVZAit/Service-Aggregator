@@ -139,7 +139,7 @@ export function PwaUpdatePrompt() {
             <Sparkles className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-extrabold">Доступно обновление GOVZA мастера</p>
+            <p className="text-sm font-extrabold">Доступно обновление GOVZA pro</p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Обновите приложение, чтобы получить последнюю версию интерфейса и функций.</p>
             <Button size="sm" className="mt-3 rounded-xl font-bold" onClick={applyUpdate}>
               <RefreshCw className="mr-1.5 h-4 w-4" /> Обновить
