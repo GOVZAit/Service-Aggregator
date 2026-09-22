@@ -17,7 +17,6 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
 import FilterSheet, { FilterPanel, applyMasterFilters, type FilterState, defaultFilterState } from "@/components/filter-sheet";
 import { BroadcastModal } from "@/components/broadcast-modal";
-import { UrgentNowModal } from "@/components/urgent-now-modal";
 import { WelcomeOnboarding, useWelcomeOnboarding } from "@/components/welcome-onboarding";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth-context";
@@ -71,7 +70,6 @@ export default function HomePage() {
   const [showFilter, setShowFilter] = useState(false);
   const [filterState, setFilterState] = useState<FilterState>(defaultFilterState);
   const [showBroadcast, setShowBroadcast] = useState(false);
-  const [showUrgent, setShowUrgent] = useState(false);
   const [broadcastCategory, setBroadcastCategory] = useState<string | undefined>();
   const [city, setCity] = useState<string>(DEFAULT_CITY);
   const [showLocation, setShowLocation] = useState(false);
@@ -437,13 +435,6 @@ export default function HomePage() {
         <BroadcastModal
           initialCategory={broadcastCategory}
           onClose={() => { setShowBroadcast(false); setBroadcastCategory(undefined); }}
-        />
-      )}
-
-      {showUrgent && (
-        <UrgentNowModal
-          initialCategoryId={selectedCategory}
-          onClose={() => setShowUrgent(false)}
         />
       )}
 
