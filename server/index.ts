@@ -16,7 +16,7 @@ import { ensureProviderImportTables, startProviderImportScheduler } from "./prov
 import { registerProviderImportRoutes } from "./provider-import-routes";
 import { ensureProviderEngagementTables, registerProviderEngagementRoutes } from "./provider-engagement-routes";
 import { registerUrgentRoutes } from "./urgent-routes";
-import { ensureAutoPartsTables } from "./auto-parts-service";
+import { ensureAutoPartsTables, seedCuratedAutoPartsSuppliers } from "./auto-parts-service";
 import { registerAutoPartsRoutes } from "./auto-parts-routes";
 import { ensureVerificationWorkflowTables } from "./verification-service";
 import { registerVerificationRoutes } from "./verification-routes";
@@ -134,6 +134,7 @@ app.use((req, res, next) => {
   await ensureAdminTables();
   await ensureDirectoryTables();
   await ensureAutoPartsTables();
+  await seedCuratedAutoPartsSuppliers();
   await ensureCategoryTables();
   await ensureProviderImportTables();
   await ensureRequestTables();
