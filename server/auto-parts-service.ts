@@ -36,6 +36,8 @@ export function autoPartsRowToView(row: typeof autoPartsSuppliers.$inferSelect):
     description: data.description,
     brands: normalizeList(data.brands),
     partGroups: normalizeList(data.partGroups),
+    vehicleTypes: data.vehicleTypes ?? [],
+    vehicleOrigins: data.vehicleOrigins ?? [],
     delivery: data.delivery ?? false,
     pickup: data.pickup ?? true,
     verified: data.verified ?? false,
