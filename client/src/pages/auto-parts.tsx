@@ -3,7 +3,6 @@ import {
   BadgeCheck,
   Box,
   Building2,
-  CarFront,
   ChevronRight,
   MapPin,
   PackageSearch,
