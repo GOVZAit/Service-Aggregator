@@ -14,7 +14,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "public-directory",
     sourceExternalId: "grozny-exist-chervlennaya-2a",
     sourceUrl: "https://chit-kody.ru/groznyj",
-    providerType: "organization" as never,
     data: {
       name: "Exist.ru",
       supplierType: "store",
@@ -36,7 +35,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "public-directory",
     sourceExternalId: "grozny-daimzap-neftyanik-1-line",
     sourceUrl: "https://pk-kondor.ru/groznyj",
-    providerType: "organization" as never,
     data: {
       name: "DaimZap",
       supplierType: "store",
@@ -58,7 +56,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "grozny-toyota-grozny-argun-11zh",
     sourceUrl: GROZNY_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "TOYOTA",
       supplierType: "store",
@@ -80,7 +77,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "grozny-focus-kadyrova-10",
     sourceUrl: GROZNY_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "ФОКУС",
       supplierType: "store",
@@ -102,7 +98,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "grozny-ertin-motors-petropavlovskiy-44-2",
     sourceUrl: GROZNY_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "Ertin Motors",
       supplierType: "store",
@@ -124,7 +119,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "grozny-daytona-petropavlovskoe-22-1",
     sourceUrl: GROZNY_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "Daytona",
       supplierType: "store",
@@ -146,7 +140,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "grozny-avtoritet-irtyshskaya-2",
     sourceUrl: GROZNY_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "Авторитет",
       supplierType: "store",
@@ -168,7 +161,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "grozny-trek-uzueva-89a",
     sourceUrl: GROZNY_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "Trek",
       supplierType: "store",
@@ -290,7 +282,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "grozny-avto-parts-95-lermontova-129",
     sourceUrl: GROZNY_ACCESSORIES,
-    providerType: "organization" as never,
     data: {
       name: "AVTO PARTS 95",
       supplierType: "store",
@@ -391,7 +382,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "grozny-kamaz-razbor-aldy",
     sourceUrl: "https://argun.spravker.ru/avtorazbor-iaponskikh-avtomobilei/",
-    providerType: "organization" as never,
     data: {
       name: "КАМАЗ разбор",
       supplierType: "dismantler",
@@ -413,7 +403,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "argun-exist-shosseynaya-111",
     sourceUrl: ARGUN_PARTS,
-    providerType: "organization" as never,
     data: {
       name: "Exist.ru",
       supplierType: "store",
@@ -435,7 +424,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "argun-pit-stop-dudaeva-1a",
     sourceUrl: ARGUN_PARTS,
-    providerType: "organization" as never,
     data: {
       name: "Пит Стоп",
       supplierType: "store",
@@ -457,7 +445,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "argun-infiniti-shosseynaya-110v",
     sourceUrl: ARGUN_PARTS,
-    providerType: "organization" as never,
     data: {
       name: "Инфинити",
       supplierType: "store",
@@ -479,7 +466,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "argun-avtomagazin-osmanova-2",
     sourceUrl: ARGUN_PARTS,
-    providerType: "organization" as never,
     data: {
       name: "Автомагазин",
       supplierType: "store",
@@ -501,7 +487,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "argun-vag-audi-kadyrova-111",
     sourceUrl: ARGUN_PARTS,
-    providerType: "organization" as never,
     data: {
       name: "Vag audi",
       supplierType: "store",
@@ -522,7 +507,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "mesker-yurt-gold-argunskaya-40",
     sourceUrl: ARGUN_DISMANTLERS,
-    providerType: "organization" as never,
     data: {
       name: "Gold",
       supplierType: "dismantler",
@@ -544,7 +528,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "djalka-auto-razbor-mamakaeva",
     sourceUrl: ARGUN_DISMANTLERS,
-    providerType: "organization" as never,
     data: {
       name: "Авторазбор",
       supplierType: "dismantler",
@@ -565,7 +548,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "gudermes-umarova-23",
     sourceUrl: GUDERMES_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "Магазин автозапчастей",
       supplierType: "store",
@@ -587,7 +569,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "gudermes-detal-r217-688-1",
     sourceUrl: GUDERMES_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "Деталь",
       supplierType: "store",
@@ -609,7 +590,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "gudermes-111-kirova-66a",
     sourceUrl: GUDERMES_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "111",
       supplierType: "store",
@@ -631,7 +611,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "gudermes-charto-amirova-3a",
     sourceUrl: GUDERMES_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "Чарто",
       supplierType: "store",
@@ -653,7 +632,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "gudermes-samara-hataeva-25a",
     sourceUrl: GUDERMES_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "Самара",
       supplierType: "store",
@@ -675,7 +653,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "mestam.info",
     sourceExternalId: "gudermes-lider-titova-144",
     sourceUrl: GUDERMES_FOREIGN,
-    providerType: "organization" as never,
     data: {
       name: "Лидер",
       supplierType: "store",
@@ -697,7 +674,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "public-directory",
     sourceExternalId: "gudermes-toyota-parts-taysumova-27",
     sourceUrl: "https://oskarkuchera.ru/gudermes",
-    providerType: "organization" as never,
     data: {
       name: "Toyota Parts",
       supplierType: "store",
@@ -719,7 +695,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "gudermes-best-auto-95",
     sourceUrl: ARGUN_DISMANTLERS,
-    providerType: "organization" as never,
     data: {
       name: "Best-Auto 95",
       supplierType: "dismantler",
@@ -741,7 +716,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "urus-vaz-gaz-sheripova-68",
     sourceUrl: URUS_PARTS,
-    providerType: "organization" as never,
     data: {
       name: "Ваз-Газ",
       supplierType: "store",
@@ -763,7 +737,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "urus-lecar-usamova-1b",
     sourceUrl: URUS_PARTS,
-    providerType: "organization" as never,
     data: {
       name: "Lecar Store",
       supplierType: "store",
@@ -785,7 +758,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "urus-lada-detail-sportivnaya-132",
     sourceUrl: URUS_PARTS,
-    providerType: "organization" as never,
     data: {
       name: "Lada Dеталь",
       supplierType: "store",
@@ -806,7 +778,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "urus-sulim-lomonosova-121",
     sourceUrl: URUS_PARTS,
-    providerType: "organization" as never,
     data: {
       name: "Сулим",
       supplierType: "store",
@@ -828,7 +799,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "urus-autodetal-usamova",
     sourceUrl: URUS_PARTS,
-    providerType: "organization" as never,
     data: {
       name: "АвтоДеталь",
       supplierType: "store",
@@ -850,7 +820,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "public-directory",
     sourceExternalId: "urus-kia-badueva-72-2",
     sourceUrl: URUS_KIA,
-    providerType: "organization" as never,
     data: {
       name: "Kia. Urus",
       supplierType: "store",
@@ -872,7 +841,6 @@ export const curatedChechnyaAutoPartsSeeds: AutoPartsSupplierImportInput[] = [
     sourceName: "spravker",
     sourceExternalId: "urus-bitstop-aprelskaya-54",
     sourceUrl: URUS_DISMANTLERS,
-    providerType: "organization" as never,
     data: {
       name: "Bitstop",
       supplierType: "dismantler",
