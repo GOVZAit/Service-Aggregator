@@ -55,7 +55,7 @@ export function AppBrandHeader({
         <div className="min-w-0">
           <div className={cn("flex items-baseline gap-1.5 whitespace-nowrap", compact ? "text-xl" : "text-[1.65rem] sm:text-3xl")}>
             <span className="display-face font-bold text-[#07132f] dark:text-white">GOVZA</span>
-            <span className="font-extrabold tracking-[-0.04em] text-primary">мастера</span>
+            <span className="font-extrabold tracking-[-0.04em] text-primary">pro</span>
           </div>
           {!compact && (
             <p className="mt-0.5 truncate text-xs font-medium text-muted-foreground sm:text-sm">{subtitle}</p>
