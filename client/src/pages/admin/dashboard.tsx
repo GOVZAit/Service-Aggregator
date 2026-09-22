@@ -16,6 +16,7 @@ import type { Doctor } from "@/lib/doctors-data";
 import type { CityOrganization } from "@/lib/city-services-data";
 import type { Category } from "@shared/schema";
 import type { VerificationDocument } from "@shared/verification-schema";
+import type { AutoPartsSupplierView } from "@shared/auto-parts-schema";
 
 type VerificationStatus = "unverified" | "pending" | "verified" | "rejected";
 
@@ -187,6 +188,22 @@ export default function AdminDashboardPage() {
   const [importRuns, setImportRuns] = useState<ImportRun[]>([]);
   const [importWorking, setImportWorking] = useState<string | null>(null);
 
+  const [autoPartsSuppliers, setAutoPartsSuppliers] = useState<AutoPartsSupplierView[]>([]);
+  const [autoPartsOpen, setAutoPartsOpen] = useState(false);
+  const [autoPartsWorking, setAutoPartsWorking] = useState<number | "create" | null>(null);
+  const [autoPartsForm, setAutoPartsForm] = useState({
+    name: "",
+    supplierType: "store",
+    partsCondition: "mixed",
+    salesType: "retail",
+    city: "Грозный",
+    phone: "",
+    brands: "",
+    partGroups: "",
+    delivery: false,
+    pickup: true,
+  });
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryEditingId, setCategoryEditingId] = useState<number | null>(null);
   const [categoryCreating, setCategoryCreating] = useState(false);
@@ -244,7 +261,7 @@ export default function AdminDashboardPage() {
     setError("");
     setLoading(true);
     try {
-      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories, nextImportConfig, nextImportRuns, nextVerificationQueue] = await Promise.all([
+      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories, nextImportConfig, nextImportRuns, nextVerificationQueue, nextAutoPartsSuppliers] = await Promise.all([
         api<Summary>("/api/admin/summary"),
         api<AdminProvider[]>(`/api/admin/providers${queryString}`),
         api<AuditEntry[]>("/api/admin/audit?limit=30"),
@@ -254,6 +271,7 @@ export default function AdminDashboardPage() {
         api<ImportConfig>("/api/admin/import/config"),
         api<ImportRun[]>("/api/admin/import/runs?limit=30"),
         api<VerificationQueueItem[]>("/api/admin/verifications"),
+        api<AutoPartsSupplierView[]>("/api/admin/auto-parts/suppliers"),
       ]);
       setSummary(nextSummary);
       setProviders(nextProviders);
@@ -264,6 +282,7 @@ export default function AdminDashboardPage() {
       setImportConfig(nextImportConfig);
       setImportRuns(nextImportRuns);
       setVerificationQueue(nextVerificationQueue);
+      setAutoPartsSuppliers(nextAutoPartsSuppliers);
       if (verificationSelected) {
         const refreshedVerification = nextVerificationQueue.find((item) => item.providerId === verificationSelected.providerId);
         if (refreshedVerification) setVerificationSelected(refreshedVerification);
@@ -376,6 +395,65 @@ export default function AdminDashboardPage() {
     }
   };
 
+
+
+  const createAutoPartsSupplier = async () => {
+    setAutoPartsWorking("create");
+    setError("");
+    try {
+      await api("/api/admin/auto-parts/suppliers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: autoPartsForm.name.trim(),
+          supplierType: autoPartsForm.supplierType,
+          partsCondition: autoPartsForm.partsCondition,
+          salesType: autoPartsForm.salesType,
+          city: autoPartsForm.city.trim(),
+          ...(autoPartsForm.phone.trim() ? { phone: autoPartsForm.phone.trim() } : {}),
+          brands: autoPartsForm.brands.split(",").map((item) => item.trim()).filter(Boolean),
+          partGroups: autoPartsForm.partGroups.split(",").map((item) => item.trim()).filter(Boolean),
+          delivery: autoPartsForm.delivery,
+          pickup: autoPartsForm.pickup,
+        }),
+      });
+      setAutoPartsForm({
+        name: "",
+        supplierType: "store",
+        partsCondition: "mixed",
+        salesType: "retail",
+        city: "Грозный",
+        phone: "",
+        brands: "",
+        partGroups: "",
+        delivery: false,
+        pickup: true,
+      });
+      setAutoPartsOpen(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось добавить магазин автозапчастей");
+    } finally {
+      setAutoPartsWorking(null);
+    }
+  };
+
+  const toggleAutoPartsVisibility = async (supplier: AutoPartsSupplierView) => {
+    setAutoPartsWorking(supplier.id);
+    setError("");
+    try {
+      await api(`/api/admin/auto-parts/suppliers/${supplier.id}/visibility`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visible: !supplier.visible }),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось изменить видимость магазина");
+    } finally {
+      setAutoPartsWorking(null);
+    }
+  };
 
 
   const openVerification = async (item: VerificationQueueItem) => {
@@ -826,6 +904,92 @@ export default function AdminDashboardPage() {
               )}
             </div>
           </aside>
+        </section>
+
+        <section className="premium-card p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">Автозапчасти</div>
+              <h2 className="mt-1 text-lg font-extrabold">Магазины и поставщики</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Отдельный каталог: магазины, поставщики и авторазборы не смешиваются с мастерами.
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => setAutoPartsOpen((value) => !value)}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Добавить магазин
+            </Button>
+          </div>
+
+          {autoPartsOpen && (
+            <div className="mt-4 grid gap-3 rounded-2xl border border-primary/15 bg-primary/[.035] p-4 md:grid-cols-2 xl:grid-cols-4">
+              <input className={fieldClass} placeholder="Название" value={autoPartsForm.name} onChange={(event) => setAutoPartsForm((value) => ({ ...value, name: event.target.value }))} />
+              <select className={fieldClass} value={autoPartsForm.supplierType} onChange={(event) => setAutoPartsForm((value) => ({ ...value, supplierType: event.target.value }))}>
+                <option value="store">Магазин</option>
+                <option value="supplier">Поставщик</option>
+                <option value="dismantler">Авторазбор</option>
+              </select>
+              <select className={fieldClass} value={autoPartsForm.partsCondition} onChange={(event) => setAutoPartsForm((value) => ({ ...value, partsCondition: event.target.value }))}>
+                <option value="mixed">Новые и Б/У</option>
+                <option value="new">Только новые</option>
+                <option value="used">Только Б/У</option>
+              </select>
+              <select className={fieldClass} value={autoPartsForm.salesType} onChange={(event) => setAutoPartsForm((value) => ({ ...value, salesType: event.target.value }))}>
+                <option value="retail">Розница</option>
+                <option value="wholesale">Опт</option>
+                <option value="both">Опт и розница</option>
+              </select>
+              <input className={fieldClass} placeholder="Город" value={autoPartsForm.city} onChange={(event) => setAutoPartsForm((value) => ({ ...value, city: event.target.value }))} />
+              <input className={fieldClass} placeholder="Телефон" value={autoPartsForm.phone} onChange={(event) => setAutoPartsForm((value) => ({ ...value, phone: event.target.value }))} />
+              <input className={fieldClass} placeholder="Марки: Toyota, BMW, Lada" value={autoPartsForm.brands} onChange={(event) => setAutoPartsForm((value) => ({ ...value, brands: event.target.value }))} />
+              <input className={fieldClass} placeholder="Группы: кузов, оптика, двигатель" value={autoPartsForm.partGroups} onChange={(event) => setAutoPartsForm((value) => ({ ...value, partGroups: event.target.value }))} />
+              <label className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm">
+                <input type="checkbox" checked={autoPartsForm.delivery} onChange={(event) => setAutoPartsForm((value) => ({ ...value, delivery: event.target.checked }))} />
+                Доставка
+              </label>
+              <label className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm">
+                <input type="checkbox" checked={autoPartsForm.pickup} onChange={(event) => setAutoPartsForm((value) => ({ ...value, pickup: event.target.checked }))} />
+                Самовывоз
+              </label>
+              <Button className="xl:col-span-2" disabled={autoPartsWorking === "create" || autoPartsForm.name.trim().length < 2} onClick={() => void createAutoPartsSupplier()}>
+                <Save className="mr-1.5 h-4 w-4" />
+                Сохранить магазин
+              </Button>
+            </div>
+          )}
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {autoPartsSuppliers.map((supplier) => (
+              <div key={supplier.id} className="rounded-2xl border border-border/70 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="truncate font-extrabold">{supplier.name}</h3>
+                      {!supplier.visible && <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold uppercase text-destructive">скрыт</span>}
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">{supplier.dataSource}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      #{supplier.id} · {supplier.supplierType} · {supplier.partsCondition} · {supplier.city || "город не указан"}
+                    </p>
+                    {supplier.brands.length > 0 && <p className="mt-2 line-clamp-2 text-[11px] text-muted-foreground">{supplier.brands.join(", ")}</p>}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={supplier.visible ? "ghost" : "outline"}
+                    disabled={autoPartsWorking === supplier.id}
+                    onClick={() => void toggleAutoPartsVisibility(supplier)}
+                  >
+                    {supplier.visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {autoPartsSuppliers.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground md:col-span-2 xl:col-span-3">
+                Магазинов пока нет. Добавьте первый вручную или загрузите через import API.
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="premium-card p-5">

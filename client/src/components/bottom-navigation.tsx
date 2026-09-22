@@ -1,14 +1,14 @@
 import { useEffect, useRef } from "react";
-import { Home, Phone, User, Stethoscope, LayoutGrid } from "lucide-react";
+import { CarFront, Home, User, Stethoscope, LayoutGrid } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useUnreadCounts } from "@/hooks/use-unread-counts";
 
 const tabs = [
-  { id: 'home',     path: '/',        icon: Home,        label: 'Мастера' },
-  { id: 'doctors',  path: '/doctors', icon: Stethoscope, label: 'Врачи' },
-  { id: 'contacts', path: '/contacts', icon: Phone,       label: 'Контакты' },
-  { id: 'more',     path: '/more',     icon: LayoutGrid,  label: 'Ещё' },
+  { id: 'home',       path: '/',           icon: Home,        label: 'Мастера' },
+  { id: 'auto-parts', path: '/auto-parts', icon: CarFront,    label: 'Автозапчасти' },
+  { id: 'doctors',    path: '/doctors',    icon: Stethoscope, label: 'Врачи' },
+  { id: 'more',       path: '/more',       icon: LayoutGrid,  label: 'Ещё' },
 ] as const;
 
 export function BottomNavigation() {
@@ -42,10 +42,13 @@ export function BottomNavigation() {
           className="scrollbar-none flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto overscroll-x-contain py-1.5 pl-2 pr-1 lg:gap-1 lg:pl-3"
         >
           {tabs.map((tab) => {
-          const isActive = tab.id === "contacts"
-            ? location.startsWith("/contacts") || location.startsWith("/city")
-            : tab.id === "more"
-              ? location.startsWith("/more") || location.startsWith("/lost-found")
+          const isActive = tab.id === "more"
+            ? location.startsWith("/more") ||
+              location.startsWith("/lost-found") ||
+              location.startsWith("/contacts") ||
+              location.startsWith("/city")
+            : tab.id === "auto-parts"
+              ? location.startsWith("/auto-parts")
               : location === tab.path || (tab.path === "/" && location === "");
           const Icon = tab.icon;
 

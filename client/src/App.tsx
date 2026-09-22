@@ -19,6 +19,7 @@ const ContactsPage = lazy(() => import("@/pages/contacts"));
 const ContactsHubPage = lazy(() => import("@/pages/contacts-hub"));
 const MorePage = lazy(() => import("@/pages/more"));
 const DoctorsPage = lazy(() => import("@/pages/doctors"));
+const AutoPartsPage = lazy(() => import("@/pages/auto-parts"));
 const LostFoundPage = lazy(() => import("@/pages/lost-found"));
 const AuthPage = lazy(() => import("@/pages/auth"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
@@ -146,6 +147,7 @@ function Router() {
         <Route path="/city" component={CityServicesPage} />
         <Route path="/contacts/services" component={CityServicesPage} />
         <Route path="/contacts/useful" component={ContactsPage} />
+        <Route path="/auto-parts" component={AutoPartsPage} />
         <Route path="/doctors" component={DoctorsPage} />
         <Route path="/contacts" component={ContactsHubPage} />
         <Route path="/more" component={MorePage} />
@@ -171,54 +173,58 @@ function RouteEffects() {
 
     const metadata =
       location === "/" ? {
-        title: "GOVZA мастера — мастера рядом",
+        title: "GOVZA pro — мастера рядом",
         description: "Найдите мастера или организацию рядом, сравните услуги, отзывы и отправьте заявку в GOVZA.",
       } :
+      location.startsWith("/auto-parts") ? {
+        title: "Автозапчасти — GOVZA pro",
+        description: "Магазины, поставщики и авторазборы: новые и Б/У автозапчасти в GOVZA pro.",
+      } :
       location.startsWith("/admin") ? {
-        title: "Админ-панель — GOVZA мастера",
+        title: "Админ-панель — GOVZA pro",
         description: "Управление каталогом, справочниками и модерацией GOVZA.",
       } :
       location.startsWith("/doctors") ? {
-        title: "Врачи — GOVZA мастера",
+        title: "Врачи — GOVZA pro",
         description: "Каталог врачей и медицинских специалистов с контактами и удобным поиском.",
       } :
       location.startsWith("/contacts") || location === "/city" ? {
-        title: "Контакты — GOVZA мастера",
+        title: "Контакты — GOVZA pro",
         description: "Полезные городские службы, организации, адреса, телефоны и карта в GOVZA.",
       } :
       location.startsWith("/requests") ? {
-        title: "Мои заявки — GOVZA мастера",
+        title: "Мои заявки — GOVZA pro",
         description: "Создавайте заявки, получайте предложения исполнителей и выбирайте подходящего мастера.",
       } :
       location.startsWith("/orders") ? {
-        title: "Мои заказы — GOVZA мастера",
+        title: "Мои заказы — GOVZA pro",
         description: "Статусы заказов, чат с исполнителем и отзывы после завершения работы.",
       } :
       location.includes("/messages") ? {
-        title: "Сообщения — GOVZA мастера",
+        title: "Сообщения — GOVZA pro",
         description: "Личные сообщения и переписка с исполнителями и клиентами GOVZA.",
       } :
       location.startsWith("/profile") ? {
-        title: "Профиль — GOVZA мастера",
+        title: "Профиль — GOVZA pro",
         description: "Настройки профиля, уведомлений и активности аккаунта GOVZA.",
       } :
       /^\/master\/\d+/.test(location) ? {
-        title: "Профиль исполнителя — GOVZA мастера",
+        title: "Профиль исполнителя — GOVZA pro",
         description: "Услуги, портфолио, проверенные отзывы и контакты исполнителя в GOVZA.",
       } :
       location.startsWith("/master") ? {
-        title: "Кабинет мастера — GOVZA мастера",
+        title: "Кабинет мастера — GOVZA pro",
         description: "Заявки, заказы, сообщения и управление профилем мастера GOVZA.",
       } :
       location.startsWith("/organization") ? {
-        title: "Кабинет организации — GOVZA мастера",
+        title: "Кабинет организации — GOVZA pro",
         description: "Заявки, заказы, сообщения и управление профилем организации GOVZA.",
       } :
       location.startsWith("/lost-found") ? {
-        title: "Потеряно / Найдено — GOVZA мастера",
+        title: "Потеряно / Найдено — GOVZA pro",
         description: "Объявления о потерянных и найденных вещах, документах и животных.",
       } : {
-        title: "GOVZA мастера",
+        title: "GOVZA pro",
         description: "GOVZA — мастера, организации, услуги, заявки и полезные городские контакты рядом.",
       };
 

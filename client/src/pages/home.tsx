@@ -2,9 +2,9 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  BadgeCheck, Car, Check, ChevronDown, ChevronRight, Droplets, GraduationCap,
-  Hammer, MapPin, Palette, PlugZap, Search, SlidersHorizontal, Sparkles,
-  Truck, X, Zap,
+  BadgeCheck, Car, CarFront, Check, ChevronDown, ChevronRight, Droplets, GraduationCap,
+  Hammer, LayoutGrid, MapPin, Palette, PlugZap, Search, SlidersHorizontal, Sparkles,
+  Stethoscope, Truck, X, Zap,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -276,6 +276,63 @@ export default function HomePage() {
       </header>
 
       <main className="mx-auto max-w-lg px-4 py-5 lg:max-w-6xl lg:px-6">
+        <section className="mb-6">
+          <div className="mb-3">
+            <h2 className="section-title">Разделы GOVZA pro</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Выберите, что вам нужно</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <button
+              type="button"
+              onClick={() => { clearFilters(); setSearchQuery(""); }}
+              className="premium-card pressable min-h-[126px] border-primary/25 bg-primary/[0.045] p-4 text-left"
+              aria-current="page"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Hammer className="h-5 w-5" />
+              </div>
+              <p className="mt-4 font-extrabold">Мастера</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Услуги и специалисты</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/auto-parts")}
+              className="premium-card pressable min-h-[126px] p-4 text-left"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-600">
+                <CarFront className="h-5 w-5" />
+              </div>
+              <p className="mt-4 font-extrabold">Автозапчасти</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Новые, Б/У, авторазборы</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/doctors")}
+              className="premium-card pressable min-h-[126px] p-4 text-left"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
+                <Stethoscope className="h-5 w-5" />
+              </div>
+              <p className="mt-4 font-extrabold">Врачи</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Врачи и медицина</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/more")}
+              className="premium-card pressable min-h-[126px] p-4 text-left"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-foreground">
+                <LayoutGrid className="h-5 w-5" />
+              </div>
+              <p className="mt-4 font-extrabold">Ещё</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Город, контакты и сервисы</p>
+            </button>
+          </div>
+        </section>
+
         <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-8">
           <aside className="sticky top-[185px] hidden lg:block">
             <div className="premium-card p-5">
