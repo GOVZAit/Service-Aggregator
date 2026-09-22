@@ -423,6 +423,7 @@ export interface IStorage {
   getOrderById(id: number): Promise<Order | undefined>;
   createOrder(data: Omit<Order, 'id'>): Promise<Order>;
   updateOrder(id: number, patch: Pick<Order, 'status'>): Promise<Order | undefined>;
+  updateOrderTravel(id: number, patch: { travelStatus: "idle" | "en_route" | "arrived"; liveLocationUrl?: string | null }): Promise<Order | undefined>;
 
   // Auth
   createUser(data: { name: string; phone?: string; email?: string; passwordHash: string; role: UserRole }): Promise<AuthUser>;
@@ -583,6 +584,8 @@ export class MemStorage implements IStorage {
         id: persistedOrders.id, title: persistedOrders.title, masterId: persistedOrders.masterId,
         clientId: persistedOrders.clientId, status: persistedOrders.status, date: persistedOrders.date,
         price: persistedOrders.price, address: persistedOrders.address, comment: persistedOrders.comment,
+        travelStatus: persistedOrders.travelStatus, liveLocationUrl: persistedOrders.liveLocationUrl,
+        travelUpdatedAt: persistedOrders.travelUpdatedAt,
       }).from(persistedOrders).where(eq(persistedOrders.clientId, filter.clientId)).orderBy(desc(persistedOrders.id));
       return rows.map(toOrder);
     }
@@ -591,6 +594,8 @@ export class MemStorage implements IStorage {
         id: persistedOrders.id, title: persistedOrders.title, masterId: persistedOrders.masterId,
         clientId: persistedOrders.clientId, status: persistedOrders.status, date: persistedOrders.date,
         price: persistedOrders.price, address: persistedOrders.address, comment: persistedOrders.comment,
+        travelStatus: persistedOrders.travelStatus, liveLocationUrl: persistedOrders.liveLocationUrl,
+        travelUpdatedAt: persistedOrders.travelUpdatedAt,
       }).from(persistedOrders).where(eq(persistedOrders.masterId, filter.masterId)).orderBy(desc(persistedOrders.id));
       return rows.map(toOrder);
     }
@@ -602,6 +607,8 @@ export class MemStorage implements IStorage {
       id: persistedOrders.id, title: persistedOrders.title, masterId: persistedOrders.masterId,
       clientId: persistedOrders.clientId, status: persistedOrders.status, date: persistedOrders.date,
       price: persistedOrders.price, address: persistedOrders.address, comment: persistedOrders.comment,
+        travelStatus: persistedOrders.travelStatus, liveLocationUrl: persistedOrders.liveLocationUrl,
+        travelUpdatedAt: persistedOrders.travelUpdatedAt,
     }).from(persistedOrders).where(eq(persistedOrders.id, id)).limit(1);
     return order ? toOrder(order) : undefined;
   }
@@ -609,8 +616,17 @@ export class MemStorage implements IStorage {
   async createOrder(data: Omit<Order, 'id'>): Promise<Order> {
     if (data.clientId === undefined) throw new Error("clientId is required");
     const [order] = await db.insert(persistedOrders).values({
-      ...data,
+      title: data.title,
+      masterId: data.masterId,
       clientId: data.clientId,
+      status: data.status,
+      date: data.date,
+      price: data.price,
+      address: data.address ?? null,
+      comment: data.comment ?? null,
+      travelStatus: "idle",
+      liveLocationUrl: null,
+      travelUpdatedAt: null,
     }).returning();
     const { createdAt: _, ...result } = order;
     return toOrder(result);
@@ -619,6 +635,23 @@ export class MemStorage implements IStorage {
   async updateOrder(id: number, patch: Pick<Order, 'status'>): Promise<Order | undefined> {
     const [order] = await db.update(persistedOrders)
       .set({ status: patch.status })
+      .where(eq(persistedOrders.id, id))
+      .returning();
+    if (!order) return undefined;
+    const { createdAt: _, ...result } = order;
+    return toOrder(result);
+  }
+
+  async updateOrderTravel(
+    id: number,
+    patch: { travelStatus: "idle" | "en_route" | "arrived"; liveLocationUrl?: string | null },
+  ): Promise<Order | undefined> {
+    const [order] = await db.update(persistedOrders)
+      .set({
+        travelStatus: patch.travelStatus,
+        liveLocationUrl: patch.liveLocationUrl === undefined ? undefined : patch.liveLocationUrl,
+        travelUpdatedAt: new Date(),
+      })
       .where(eq(persistedOrders.id, id))
       .returning();
     if (!order) return undefined;
@@ -825,6 +858,9 @@ function toOrder(row: Omit<PersistedOrderRow, "createdAt">): Order {
     price: row.price,
     ...(row.address !== null ? { address: row.address } : {}),
     ...(row.comment !== null ? { comment: row.comment } : {}),
+    travelStatus: row.travelStatus,
+    ...(row.liveLocationUrl !== null ? { liveLocationUrl: row.liveLocationUrl } : {}),
+    ...(row.travelUpdatedAt ? { travelUpdatedAt: row.travelUpdatedAt.toISOString() } : {}),
   };
 }
 

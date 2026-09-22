@@ -10,7 +10,9 @@ import {
   Inbox,
   Mail,
   MapPin,
+  MapPinned,
   MessageSquare,
+  Navigation,
   PhoneCall,
   Send,
   Tag,
@@ -173,6 +175,105 @@ function RequestOpportunityCard({ request, invitation }: { request: ServiceReque
         </div>
       )}
     </article>
+  );
+}
+
+function TravelControls({ order }: { order: Order }) {
+  const [liveUrl, setLiveUrl] = useState(order.liveLocationUrl ?? "");
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const mutation = useMutation({
+    mutationFn: (payload: { status: "idle" | "en_route" | "arrived"; liveLocationUrl?: string }) =>
+      apiRequest("PATCH", `/api/orders/${order.id}/travel`, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Не удалось изменить статус поездки",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const travelStatus = order.travelStatus ?? "idle";
+
+  if (travelStatus === "en_route") {
+    return (
+      <div className="rounded-2xl border border-primary/20 bg-primary/[.05] p-3">
+        <div className="flex items-center gap-2 text-sm font-extrabold text-primary">
+          <Navigation className="h-4 w-4" />
+          Геопозиция передаётся клиенту
+        </div>
+        {order.liveLocationUrl && (
+          <a
+            href={order.liveLocationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 flex min-h-10 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-background text-xs font-bold text-primary"
+          >
+            <MapPinned className="h-4 w-4" />
+            Открыть live-карту
+          </a>
+        )}
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate({ status: "idle" })}
+            className="min-h-11 rounded-xl border border-border text-xs font-bold text-muted-foreground"
+          >
+            Остановить
+          </button>
+          <button
+            type="button"
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate({ status: "arrived" })}
+            className="min-h-11 rounded-xl bg-emerald-600 text-xs font-bold text-white"
+          >
+            Прибыл к клиенту
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (travelStatus === "arrived") {
+    return (
+      <div className="flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-emerald-500/10 px-3 text-sm font-bold text-emerald-700 dark:text-emerald-300">
+        <CheckCircle2 className="h-4 w-4" />
+        Прибыл к клиенту
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-border/70 p-3">
+      <p className="text-xs font-extrabold">Мастер в пути</p>
+      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+        Вставьте live-ссылку геопозиции из Google Maps или Яндекс Карт. GOVZA хранит только ссылку, а не маршрут.
+      </p>
+      <input
+        value={liveUrl}
+        onChange={(event) => setLiveUrl(event.target.value)}
+        placeholder="https://maps.app.goo.gl/…"
+        className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-xs outline-none focus:border-primary"
+      />
+      <button
+        type="button"
+        disabled={mutation.isPending}
+        onClick={() => mutation.mutate({
+          status: "en_route",
+          ...(liveUrl.trim() ? { liveLocationUrl: liveUrl.trim() } : {}),
+        })}
+        className="mt-2 min-h-11 w-full rounded-xl bg-primary text-sm font-bold text-white disabled:opacity-50"
+      >
+        <Navigation className="mr-1.5 inline h-4 w-4" />
+        Выехал к клиенту
+      </button>
+    </div>
   );
 }
 
@@ -449,9 +550,12 @@ export default function MasterOrdersPage() {
                   </div>
                 )}
                 {order.status === "in_progress" && (
-                  <button disabled={orderMutation.isPending} onClick={() => orderMutation.mutate({ id: order.id, status: "completed" })} className="h-11 w-full rounded-2xl bg-emerald-600 text-sm font-bold text-white">
-                    <CheckCircle2 className="mr-1 inline h-4 w-4" />Завершить заказ
-                  </button>
+                  <>
+                    <TravelControls order={order} />
+                    <button disabled={orderMutation.isPending} onClick={() => orderMutation.mutate({ id: order.id, status: "completed" })} className="h-11 w-full rounded-2xl bg-emerald-600 text-sm font-bold text-white">
+                      <CheckCircle2 className="mr-1 inline h-4 w-4" />Завершить заказ
+                    </button>
+                  </>
                 )}
                 {order.status === "completed" && <><p className="flex items-center gap-1 text-sm font-medium text-green-600"><CheckCircle2 className="h-4 w-4" />Заказ выполнен</p><ReviewReplyPanel orderId={order.id} /></>}
                 {order.status === "rejected" && <p className="text-sm text-muted-foreground">Заказ отклонён</p>}
