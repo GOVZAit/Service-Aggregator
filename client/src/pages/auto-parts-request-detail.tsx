@@ -28,7 +28,7 @@ export default function AutoPartsRequestDetailPage() {
   const { data, isLoading, error } = useQuery<AutoPartRequestView>({
     queryKey: ["/api/auto-parts/requests", requestId],
     queryFn: async () => {
-      const response = await fetch(\`/api/auto-parts/requests/\${requestId}\`, { credentials: "include" });
+      const response = await fetch(`/api/auto-parts/requests/${requestId}`, { credentials: "include" });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.message || "Не удалось загрузить запрос");
       return body;
@@ -38,7 +38,7 @@ export default function AutoPartsRequestDetailPage() {
   });
 
   const closeMutation = useMutation({
-    mutationFn: () => apiRequest("POST", \`/api/auto-parts/requests/\${requestId}/close\`),
+    mutationFn: () => apiRequest("POST", `/api/auto-parts/requests/${requestId}/close`),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["/api/auto-parts/requests", requestId] }),
