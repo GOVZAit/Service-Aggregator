@@ -616,8 +616,17 @@ export class MemStorage implements IStorage {
   async createOrder(data: Omit<Order, 'id'>): Promise<Order> {
     if (data.clientId === undefined) throw new Error("clientId is required");
     const [order] = await db.insert(persistedOrders).values({
-      ...data,
+      title: data.title,
+      masterId: data.masterId,
       clientId: data.clientId,
+      status: data.status,
+      date: data.date,
+      price: data.price,
+      address: data.address ?? null,
+      comment: data.comment ?? null,
+      travelStatus: "idle",
+      liveLocationUrl: null,
+      travelUpdatedAt: null,
     }).returning();
     const { createdAt: _, ...result } = order;
     return toOrder(result);
