@@ -99,4 +99,5 @@ export interface AutoPartsSupplierView extends Required<Pick<AutoPartsSupplierDa
   lat?: number;
   lng?: number;
   dataSource: AutoPartsDataSource;
+  visible: boolean;
 }
