@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "GOVZA мастера",
-  "short_name": "GOVZA мастера",
+  "name": "GOVZA pro",
+  "short_name": "GOVZA pro",
   "description": "Мастера, организации, врачи и городские сервисы рядом.",
   "start_url": "/?source=pwa",
   "scope": "/",
