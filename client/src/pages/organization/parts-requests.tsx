@@ -63,7 +63,7 @@ function OfferEditor({ row }: { row: StoreRequestRow }) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", \`/api/auto-parts/store/requests/\${row.requestId}/offer\`, {
+      const response = await apiRequest("POST", `/api/auto-parts/store/requests/${row.requestId}/offer`, {
         supplierId: row.supplierId,
         availability,
         ...(availability !== "unavailable" ? {
@@ -178,7 +178,7 @@ export default function OrganizationPartsRequestsPage() {
           ) : (
             <div className="space-y-4">
               {requests.map((row) => (
-                <article key={\`\${row.requestId}-\${row.supplierId}\`} className="premium-card p-4">
+                <article key={`${row.requestId}-${row.supplierId}`} className="premium-card p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-extrabold uppercase tracking-[.1em] text-primary">{row.supplierName}</p>
