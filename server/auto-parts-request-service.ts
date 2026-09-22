@@ -21,14 +21,14 @@ function supplierMatchesRequest(
   row: typeof autoPartsSuppliers.$inferSelect,
   input: CreateAutoPartRequestInput,
 ) {
-  if (row.isVisible !== 1) return false;
+  if (row.isVisible !== 1 || !row.ownerUserId) return false;
   const data = effectiveSupplierData(row);
   const type = data.supplierType ?? "store";
   const condition = data.partsCondition ?? "mixed";
 
   if (input.target === "store" && type !== "store" && type !== "supplier") return false;
   if (input.target === "dismantler" && type !== "dismantler") return false;
-  if (input.city && data.city && data.city !== input.city) return false;
+  if (input.city && data.city !== input.city) return false;
 
   if (input.partCondition === "new" && condition === "used") return false;
   if (input.partCondition === "used" && condition === "new") return false;
