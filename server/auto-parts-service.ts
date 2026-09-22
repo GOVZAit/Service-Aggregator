@@ -1,5 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { db, pool } from "./db";
+import { curatedChechnyaAutoPartsSeeds } from "./auto-parts-curated-data";
 import {
   autoPartsSuppliers,
   type AutoPartsSupplierData,
@@ -70,6 +71,12 @@ export async function ensureAutoPartsTables() {
     CREATE INDEX IF NOT EXISTS auto_parts_suppliers_visible_updated_idx
       ON auto_parts_suppliers(is_visible, updated_at DESC);
   `);
+}
+
+export async function seedCuratedAutoPartsSuppliers() {
+  for (const seed of curatedChechnyaAutoPartsSeeds) {
+    await importAutoPartsSupplier(seed);
+  }
 }
 
 export async function listAutoPartsSuppliers(includeHidden = false) {
