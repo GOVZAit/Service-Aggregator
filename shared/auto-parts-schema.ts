@@ -4,6 +4,8 @@ import { integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from "d
 export type AutoPartsSupplierType = "store" | "supplier" | "dismantler";
 export type AutoPartsCondition = "new" | "used" | "mixed";
 export type AutoPartsSalesType = "retail" | "wholesale" | "both";
+export type AutoPartsVehicleType = "passenger" | "truck" | "van" | "special";
+export type AutoPartsVehicleOrigin = "foreign" | "domestic";
 export type AutoPartsDataSource = "manual" | "import";
 
 export interface AutoPartsSupplierData {
@@ -19,6 +21,8 @@ export interface AutoPartsSupplierData {
   description?: string;
   brands?: string[];
   partGroups?: string[];
+  vehicleTypes?: AutoPartsVehicleType[];
+  vehicleOrigins?: AutoPartsVehicleOrigin[];
   delivery?: boolean;
   pickup?: boolean;
   verified?: boolean;
@@ -57,6 +61,8 @@ export const autoPartsSupplierPatchSchema = z.object({
   description: z.string().trim().max(2000).optional(),
   brands: z.array(z.string().trim().min(1).max(80)).max(100).optional(),
   partGroups: z.array(z.string().trim().min(1).max(120)).max(100).optional(),
+  vehicleTypes: z.array(z.enum(["passenger", "truck", "van", "special"])).max(4).optional(),
+  vehicleOrigins: z.array(z.enum(["foreign", "domestic"])).max(2).optional(),
   delivery: z.boolean().optional(),
   pickup: z.boolean().optional(),
   verified: z.boolean().optional(),
@@ -93,6 +99,8 @@ export interface AutoPartsSupplierView extends Required<Pick<AutoPartsSupplierDa
   description?: string;
   brands: string[];
   partGroups: string[];
+  vehicleTypes: AutoPartsVehicleType[];
+  vehicleOrigins: AutoPartsVehicleOrigin[];
   delivery: boolean;
   pickup: boolean;
   verified: boolean;

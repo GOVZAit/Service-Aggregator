@@ -16,7 +16,7 @@ import type { Doctor } from "@/lib/doctors-data";
 import type { CityOrganization } from "@/lib/city-services-data";
 import type { Category } from "@shared/schema";
 import type { VerificationDocument } from "@shared/verification-schema";
-import type { AutoPartsSupplierView } from "@shared/auto-parts-schema";
+import type { AutoPartsSupplierView, AutoPartsVehicleOrigin, AutoPartsVehicleType } from "@shared/auto-parts-schema";
 
 type VerificationStatus = "unverified" | "pending" | "verified" | "rejected";
 
@@ -200,6 +200,8 @@ export default function AdminDashboardPage() {
     phone: "",
     brands: "",
     partGroups: "",
+    vehicleTypes: ["passenger"] as AutoPartsVehicleType[],
+    vehicleOrigins: ["foreign", "domestic"] as AutoPartsVehicleOrigin[],
     delivery: false,
     pickup: true,
   });
@@ -413,6 +415,8 @@ export default function AdminDashboardPage() {
           ...(autoPartsForm.phone.trim() ? { phone: autoPartsForm.phone.trim() } : {}),
           brands: autoPartsForm.brands.split(",").map((item) => item.trim()).filter(Boolean),
           partGroups: autoPartsForm.partGroups.split(",").map((item) => item.trim()).filter(Boolean),
+          vehicleTypes: autoPartsForm.vehicleTypes,
+          vehicleOrigins: autoPartsForm.vehicleOrigins,
           delivery: autoPartsForm.delivery,
           pickup: autoPartsForm.pickup,
         }),
@@ -426,6 +430,8 @@ export default function AdminDashboardPage() {
         phone: "",
         brands: "",
         partGroups: "",
+        vehicleTypes: ["passenger"] as AutoPartsVehicleType[],
+        vehicleOrigins: ["foreign", "domestic"] as AutoPartsVehicleOrigin[],
         delivery: false,
         pickup: true,
       });
@@ -942,6 +948,57 @@ export default function AdminDashboardPage() {
               <input className={fieldClass} placeholder="Телефон" value={autoPartsForm.phone} onChange={(event) => setAutoPartsForm((value) => ({ ...value, phone: event.target.value }))} />
               <input className={fieldClass} placeholder="Марки: Toyota, BMW, Lada" value={autoPartsForm.brands} onChange={(event) => setAutoPartsForm((value) => ({ ...value, brands: event.target.value }))} />
               <input className={fieldClass} placeholder="Группы: кузов, оптика, двигатель" value={autoPartsForm.partGroups} onChange={(event) => setAutoPartsForm((value) => ({ ...value, partGroups: event.target.value }))} />
+
+              <div className="rounded-xl border border-border bg-background p-3 md:col-span-2">
+                <p className="mb-2 text-xs font-extrabold">Для какого авто</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {([
+                    ["passenger", "Легковые"],
+                    ["truck", "Грузовые"],
+                    ["van", "Микроавтобусы"],
+                    ["special", "Спецтехника"],
+                  ] as const).map(([value, label]) => (
+                    <label key={value} className="flex min-h-10 items-center gap-2 rounded-lg bg-muted/40 px-2.5 text-xs font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={autoPartsForm.vehicleTypes.includes(value)}
+                        onChange={(event) => setAutoPartsForm((current) => ({
+                          ...current,
+                          vehicleTypes: event.target.checked
+                            ? [...current.vehicleTypes, value]
+                            : current.vehicleTypes.filter((item) => item !== value),
+                        }))}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-background p-3 md:col-span-2">
+                <p className="mb-2 text-xs font-extrabold">Производитель</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    ["foreign", "Иномарки"],
+                    ["domestic", "Отечественные"],
+                  ] as const).map(([value, label]) => (
+                    <label key={value} className="flex min-h-10 items-center gap-2 rounded-lg bg-muted/40 px-2.5 text-xs font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={autoPartsForm.vehicleOrigins.includes(value)}
+                        onChange={(event) => setAutoPartsForm((current) => ({
+                          ...current,
+                          vehicleOrigins: event.target.checked
+                            ? [...current.vehicleOrigins, value]
+                            : current.vehicleOrigins.filter((item) => item !== value),
+                        }))}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <label className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm">
                 <input type="checkbox" checked={autoPartsForm.delivery} onChange={(event) => setAutoPartsForm((value) => ({ ...value, delivery: event.target.checked }))} />
                 Доставка
@@ -970,7 +1027,20 @@ export default function AdminDashboardPage() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       #{supplier.id} · {supplier.supplierType === "dismantler" ? "Авторазбор" : "Автомагазин"} · {supplier.partsCondition} · {supplier.city || "город не указан"}
                     </p>
-                    {supplier.brands.length > 0 && <p className="mt-2 line-clamp-2 text-[11px] text-muted-foreground">{supplier.brands.join(", ")}</p>}
+                    {(supplier.vehicleTypes.length > 0 || supplier.vehicleOrigins.length > 0) && (
+                      <p className="mt-2 line-clamp-2 text-[11px] text-muted-foreground">
+                        {[
+                          ...supplier.vehicleTypes.map((item) => ({
+                            passenger: "Легковые",
+                            truck: "Грузовые",
+                            van: "Микроавтобусы",
+                            special: "Спецтехника",
+                          })[item]),
+                          ...supplier.vehicleOrigins.map((item) => item === "foreign" ? "Иномарки" : "Отечественные"),
+                        ].join(", ")}
+                      </p>
+                    )}
+                    {supplier.brands.length > 0 && <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{supplier.brands.join(", ")}</p>}
                   </div>
                   <Button
                     size="sm"
