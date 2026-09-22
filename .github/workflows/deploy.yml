@@ -37,8 +37,11 @@ jobs:
       - name: Smoke check production artifacts
         run: npm run smoke:build
 
+      - name: Mark prebuilt release
+        run: touch dist/.deploy-prebuilt
+
       - name: Create release archive
-        run: git archive --format=tar.gz --output=release.tar.gz HEAD
+        run: tar -czf release.tar.gz --exclude=node_modules --exclude=.git --exclude=release.tar.gz .
 
       - name: Configure SSH
         env:
