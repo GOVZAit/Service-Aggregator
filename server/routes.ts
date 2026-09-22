@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import { storage } from "./storage";
 import { emailDeliveryConfigured, sendWelcomeEmail } from "./email";
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema, lostFoundListingInputSchema, updateLostFoundListingSchema } from "@shared/schema";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema, updateOrderTravelSchema, lostFoundListingInputSchema, updateLostFoundListingSchema } from "@shared/schema";
 import type { AuthUser } from "@shared/schema";
 import { deliverPasswordReset, isPasswordResetDeliveryConfigured, passwordResetRateLimited } from "./password-reset";
 import { getProviderOwnerUserId, isProviderVisible, recordProviderActivity } from "./provider-service";
@@ -443,7 +443,13 @@ export async function registerRoutes(
       (order.status === "pending" && ["in_progress", "rejected"].includes(result.data.status)) ||
       (order.status === "in_progress" && result.data.status === "completed");
     if (!allowed) return res.status(409).json({ message: "Недопустимое изменение статуса" });
-    const updated = await storage.updateOrder(order.id, result.data);
+    let updated = await storage.updateOrder(order.id, result.data);
+    if (result.data.status === "completed" || result.data.status === "rejected") {
+      updated = await storage.updateOrderTravel(order.id, {
+        travelStatus: "idle",
+        liveLocationUrl: null,
+      }) ?? updated;
+    }
     if (order.clientId) {
       const statusText = result.data.status === "in_progress"
         ? "Мастер принял заказ"
@@ -457,6 +463,54 @@ export async function registerRoutes(
         tag: `order-status-${order.id}`,
       });
     }
+    res.json(updated);
+  });
+
+  app.patch("/api/orders/:id/travel", async (req, res) => {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if ((user.role !== "master" && user.role !== "organization") || !user.masterId) {
+      return res.status(403).json({ message: "Доступно только исполнителю" });
+    }
+
+    const orderId = Number(req.params.id);
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+      return res.status(400).json({ message: "Некорректный заказ" });
+    }
+
+    const order = await storage.getOrderById(orderId);
+    if (!order) return res.status(404).json({ message: "Заказ не найден" });
+    if (order.masterId !== user.masterId) return res.status(403).json({ message: "Это не ваш заказ" });
+    if (order.status !== "in_progress") {
+      return res.status(409).json({ message: "Сначала примите заказ" });
+    }
+
+    const parsed = updateOrderTravelSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+
+    const nextUrl = parsed.data.status === "en_route"
+      ? (parsed.data.liveLocationUrl ?? order.liveLocationUrl ?? null)
+      : null;
+
+    const updated = await storage.updateOrderTravel(order.id, {
+      travelStatus: parsed.data.status,
+      liveLocationUrl: nextUrl,
+    });
+    if (!updated) return res.status(404).json({ message: "Заказ не найден" });
+
+    if (order.clientId && parsed.data.status !== "idle") {
+      const title = parsed.data.status === "en_route" ? "Мастер выехал к вам" : "Мастер прибыл";
+      const body = parsed.data.status === "en_route" && nextUrl
+        ? "Можно открыть live-карту из заказа."
+        : order.title;
+      void sendPushToUser(order.clientId, {
+        title,
+        body,
+        url: "/orders",
+        tag: `order-travel-${order.id}`,
+      });
+    }
+
     res.json(updated);
   });
 
