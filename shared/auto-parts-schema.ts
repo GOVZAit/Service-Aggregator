@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { authUsers } from "./schema";
 
 export type AutoPartsSupplierType = "store" | "supplier" | "dismantler";
 export type AutoPartsCondition = "new" | "used" | "mixed";
@@ -32,6 +33,7 @@ export interface AutoPartsSupplierData {
 
 export const autoPartsSuppliers = pgTable("auto_parts_suppliers", {
   id: serial("id").primaryKey(),
+  ownerUserId: integer("owner_user_id").references(() => authUsers.id, { onDelete: "set null" }),
   dataSource: text("data_source").$type<AutoPartsDataSource>().default("manual").notNull(),
   sourceName: text("source_name"),
   sourceExternalId: text("source_external_id"),
@@ -44,6 +46,7 @@ export const autoPartsSuppliers = pgTable("auto_parts_suppliers", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("auto_parts_suppliers_source_external_unique").on(table.sourceName, table.sourceExternalId),
+  index("auto_parts_suppliers_owner_user_idx").on(table.ownerUserId),
 ]);
 
 const optionalUrl = z.string().url().max(1000).optional();
@@ -108,4 +111,9 @@ export interface AutoPartsSupplierView extends Required<Pick<AutoPartsSupplierDa
   lng?: number;
   dataSource: AutoPartsDataSource;
   visible: boolean;
+}
+
+
+export interface AdminAutoPartsSupplierView extends AutoPartsSupplierView {
+  ownerUserId: number | null;
 }

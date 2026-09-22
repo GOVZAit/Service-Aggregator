@@ -5,11 +5,15 @@ import {
   manualAutoPartsSupplierCreateSchema,
 } from "@shared/auto-parts-schema";
 import { authenticatedAdmin, logAdminAction } from "./admin-routes";
+import { autoPartsOwnerLinkSchema } from "@shared/auto-parts-request-schema";
+import { pool } from "./db";
 import {
   createManualAutoPartsSupplier,
   getAutoPartsSupplierRow,
   importAutoPartsSupplier,
+  listAdminAutoPartsSuppliers,
   listAutoPartsSuppliers,
+  setAutoPartsSupplierOwner,
   setAutoPartsSupplierVisibility,
   updateAutoPartsSupplier,
 } from "./auto-parts-service";
@@ -68,7 +72,50 @@ export async function registerAutoPartsRoutes(app: Express) {
   app.get("/api/admin/auto-parts/suppliers", async (req, res) => {
     const admin = await authenticatedAdmin(req, res);
     if (!admin) return;
-    res.json(await listAutoPartsSuppliers(true));
+    res.json(await listAdminAutoPartsSuppliers());
+  });
+
+  app.get("/api/admin/auto-parts/organization-accounts", async (req, res) => {
+    const admin = await authenticatedAdmin(req, res);
+    if (!admin) return;
+    const result = await pool.query<{
+      id: number;
+      name: string;
+      email: string | null;
+      phone: string | null;
+    }>(
+      "SELECT id, name, email, phone FROM auth_users WHERE role = 'organization' ORDER BY name, id"
+    );
+    res.json(result.rows);
+  });
+
+  app.post("/api/admin/auto-parts/suppliers/:id/owner", async (req, res) => {
+    const admin = await authenticatedAdmin(req, res);
+    if (!admin) return;
+
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ message: "Некорректный id" });
+
+    const parsed = autoPartsOwnerLinkSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+
+    if (parsed.data.ownerUserId !== null) {
+      const account = await pool.query<{ id: number }>(
+        "SELECT id FROM auth_users WHERE id = $1 AND role = 'organization' LIMIT 1",
+        [parsed.data.ownerUserId],
+      );
+      if (account.rows.length === 0) {
+        return res.status(400).json({ message: "Выберите аккаунт организации" });
+      }
+    }
+
+    const supplier = await setAutoPartsSupplierOwner(id, parsed.data.ownerUserId);
+    if (!supplier) return res.status(404).json({ message: "Запись не найдена" });
+
+    await logAdminAction(admin.id, "auto_parts.owner", "auto_parts_supplier", id, {
+      ownerUserId: parsed.data.ownerUserId,
+    });
+    res.json(supplier);
   });
 
   app.post("/api/admin/auto-parts/suppliers", async (req, res) => {

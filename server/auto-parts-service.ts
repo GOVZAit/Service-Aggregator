@@ -6,6 +6,7 @@ import {
   type AutoPartsSupplierData,
   type AutoPartsSupplierImportInput,
   type AutoPartsSupplierPatch,
+  type AdminAutoPartsSupplierView,
   type AutoPartsSupplierView,
   type ManualAutoPartsSupplierCreateInput,
 } from "@shared/auto-parts-schema";
@@ -53,6 +54,7 @@ export async function ensureAutoPartsTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS auto_parts_suppliers (
       id serial PRIMARY KEY,
+      owner_user_id integer REFERENCES auth_users(id) ON DELETE SET NULL,
       data_source text NOT NULL DEFAULT 'manual',
       source_name text,
       source_external_id text,
@@ -65,8 +67,14 @@ export async function ensureAutoPartsTables() {
       updated_at timestamptz NOT NULL DEFAULT now()
     );
 
+    ALTER TABLE auto_parts_suppliers
+      ADD COLUMN IF NOT EXISTS owner_user_id integer REFERENCES auth_users(id) ON DELETE SET NULL;
+
     CREATE UNIQUE INDEX IF NOT EXISTS auto_parts_suppliers_source_external_unique
       ON auto_parts_suppliers(source_name, source_external_id);
+
+    CREATE INDEX IF NOT EXISTS auto_parts_suppliers_owner_user_idx
+      ON auto_parts_suppliers(owner_user_id);
 
     CREATE INDEX IF NOT EXISTS auto_parts_suppliers_visible_updated_idx
       ON auto_parts_suppliers(is_visible, updated_at DESC);
@@ -86,6 +94,32 @@ export async function listAutoPartsSuppliers(includeHidden = false) {
         .where(eq(autoPartsSuppliers.isVisible, 1))
         .orderBy(desc(autoPartsSuppliers.updatedAt));
   return rows.map(autoPartsRowToView);
+}
+
+export async function listAdminAutoPartsSuppliers(): Promise<AdminAutoPartsSupplierView[]> {
+  const rows = await db.select().from(autoPartsSuppliers).orderBy(desc(autoPartsSuppliers.updatedAt));
+  return rows.map((row) => ({
+    ...autoPartsRowToView(row),
+    ownerUserId: row.ownerUserId ?? null,
+  }));
+}
+
+export async function listOwnedAutoPartsSuppliers(ownerUserId: number) {
+  const rows = await db.select().from(autoPartsSuppliers)
+    .where(eq(autoPartsSuppliers.ownerUserId, ownerUserId))
+    .orderBy(desc(autoPartsSuppliers.updatedAt));
+  return rows.map(autoPartsRowToView);
+}
+
+export async function setAutoPartsSupplierOwner(id: number, ownerUserId: number | null) {
+  const [updated] = await db.update(autoPartsSuppliers).set({
+    ownerUserId,
+    updatedAt: new Date(),
+  }).where(eq(autoPartsSuppliers.id, id)).returning();
+  return updated ? {
+    ...autoPartsRowToView(updated),
+    ownerUserId: updated.ownerUserId ?? null,
+  } satisfies AdminAutoPartsSupplierView : undefined;
 }
 
 export async function getAutoPartsSupplierRow(id: number) {

@@ -12,6 +12,7 @@ import {
   Warehouse,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { AppBrandHeader } from "@/components/app-brand-header";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
@@ -90,6 +91,7 @@ function normalizePhone(value: string) {
 }
 
 export default function AutoPartsPage() {
+  const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("");
   const [condition, setCondition] = useState<ConditionFilter>("all");
@@ -240,7 +242,26 @@ export default function AutoPartsPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-5 pb-28 lg:px-6">
-        <section className="hero-gradient relative overflow-hidden rounded-[1.75rem] border border-primary/15 p-5 shadow-sm">
+        <section className="hero-gradient relative overflow-hidden rounded-[1.75rem] border border-primary/20 p-5 shadow-sm">
+          <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[.12em] text-primary">Цены и наличие</p>
+              <h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em]">Не нашли нужную запчасть?</h2>
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                Отправьте один запрос — подходящие автомагазины и авторазборы ответят ценой, наличием и сроком.
+              </p>
+            </div>
+            <Button
+              className="accent-gradient min-h-12 shrink-0 rounded-2xl px-5 font-extrabold text-white"
+              onClick={() => navigate(`/auto-parts/requests?section=${supplierType}`)}
+            >
+              <PackageSearch className="mr-2 h-5 w-5" />
+              Запросить запчасть
+            </Button>
+          </div>
+        </section>
+
+        <section className="hero-gradient relative mt-5 overflow-hidden rounded-[1.75rem] border border-primary/15 p-5 shadow-sm">
           <div className="relative z-10 flex items-start gap-4">
             <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
               <PackageSearch className="h-6 w-6" />

@@ -1,11 +1,12 @@
 import { useLocation, Link } from "wouter";
-import { Home, ClipboardList, Building2, MessageCircle } from "lucide-react";
+import { Home, ClipboardList, Building2, MessageCircle, PackageSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnreadCounts } from "@/hooks/use-unread-counts";
 
 const tabs = [
   { href: "/organization", label: "Главная", icon: Home },
   { href: "/organization/orders", label: "Заявки", icon: ClipboardList },
+  { href: "/organization/parts-requests", label: "Запчасти", icon: PackageSearch },
   { href: "/organization/messages", label: "Сообщения", icon: MessageCircle },
   { href: "/organization/profile", label: "Организация", icon: Building2 },
 ];
@@ -24,7 +25,7 @@ export default function OrganizationBottomNavigation() {
               key={href}
               href={href}
               className={cn(
-                "pressable min-w-[84px] min-h-[52px] flex flex-col items-center justify-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all lg:flex-row",
+                "pressable min-w-[68px] min-h-[52px] flex flex-col items-center justify-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all lg:flex-row",
                 active ? "text-primary bg-primary/[0.07]" : "text-muted-foreground hover:text-foreground",
               )}
             >

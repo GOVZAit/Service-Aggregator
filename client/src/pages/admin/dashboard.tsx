@@ -16,7 +16,7 @@ import type { Doctor } from "@/lib/doctors-data";
 import type { CityOrganization } from "@/lib/city-services-data";
 import type { Category } from "@shared/schema";
 import type { VerificationDocument } from "@shared/verification-schema";
-import type { AutoPartsSupplierView, AutoPartsVehicleOrigin, AutoPartsVehicleType } from "@shared/auto-parts-schema";
+import type { AdminAutoPartsSupplierView, AutoPartsVehicleOrigin, AutoPartsVehicleType } from "@shared/auto-parts-schema";
 
 type VerificationStatus = "unverified" | "pending" | "verified" | "rejected";
 
@@ -132,6 +132,13 @@ interface VerificationEventDetail {
   createdAt: string;
 }
 
+interface OrganizationAccountOption {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+}
+
 interface VerificationDetail {
   status: VerificationStatus;
   note: string | null;
@@ -188,7 +195,8 @@ export default function AdminDashboardPage() {
   const [importRuns, setImportRuns] = useState<ImportRun[]>([]);
   const [importWorking, setImportWorking] = useState<string | null>(null);
 
-  const [autoPartsSuppliers, setAutoPartsSuppliers] = useState<AutoPartsSupplierView[]>([]);
+  const [autoPartsSuppliers, setAutoPartsSuppliers] = useState<AdminAutoPartsSupplierView[]>([]);
+  const [organizationAccounts, setOrganizationAccounts] = useState<OrganizationAccountOption[]>([]);
   const [autoPartsOpen, setAutoPartsOpen] = useState(false);
   const [autoPartsWorking, setAutoPartsWorking] = useState<number | "create" | null>(null);
   const [autoPartsForm, setAutoPartsForm] = useState({
@@ -263,7 +271,7 @@ export default function AdminDashboardPage() {
     setError("");
     setLoading(true);
     try {
-      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories, nextImportConfig, nextImportRuns, nextVerificationQueue, nextAutoPartsSuppliers] = await Promise.all([
+      const [nextSummary, nextProviders, nextAudit, nextDoctors, nextCityServices, nextCategories, nextImportConfig, nextImportRuns, nextVerificationQueue, nextAutoPartsSuppliers, nextOrganizationAccounts] = await Promise.all([
         api<Summary>("/api/admin/summary"),
         api<AdminProvider[]>(`/api/admin/providers${queryString}`),
         api<AuditEntry[]>("/api/admin/audit?limit=30"),
@@ -273,7 +281,8 @@ export default function AdminDashboardPage() {
         api<ImportConfig>("/api/admin/import/config"),
         api<ImportRun[]>("/api/admin/import/runs?limit=30"),
         api<VerificationQueueItem[]>("/api/admin/verifications"),
-        api<AutoPartsSupplierView[]>("/api/admin/auto-parts/suppliers"),
+        api<AdminAutoPartsSupplierView[]>("/api/admin/auto-parts/suppliers"),
+        api<OrganizationAccountOption[]>("/api/admin/auto-parts/organization-accounts"),
       ]);
       setSummary(nextSummary);
       setProviders(nextProviders);
@@ -285,6 +294,7 @@ export default function AdminDashboardPage() {
       setImportRuns(nextImportRuns);
       setVerificationQueue(nextVerificationQueue);
       setAutoPartsSuppliers(nextAutoPartsSuppliers);
+      setOrganizationAccounts(nextOrganizationAccounts);
       if (verificationSelected) {
         const refreshedVerification = nextVerificationQueue.find((item) => item.providerId === verificationSelected.providerId);
         if (refreshedVerification) setVerificationSelected(refreshedVerification);
@@ -444,7 +454,24 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const toggleAutoPartsVisibility = async (supplier: AutoPartsSupplierView) => {
+  const setAutoPartsOwner = async (supplierId: number, ownerUserId: number | null) => {
+    setAutoPartsWorking(supplierId);
+    setError("");
+    try {
+      await api(`/api/admin/auto-parts/suppliers/${supplierId}/owner`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ownerUserId }),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось привязать аккаунт");
+    } finally {
+      setAutoPartsWorking(null);
+    }
+  };
+
+  const toggleAutoPartsVisibility = async (supplier: AdminAutoPartsSupplierView) => {
     setAutoPartsWorking(supplier.id);
     setError("");
     try {
@@ -1041,6 +1068,25 @@ export default function AdminDashboardPage() {
                       </p>
                     )}
                     {supplier.brands.length > 0 && <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{supplier.brands.join(", ")}</p>}
+                    <label className="mt-3 block text-[11px] font-bold text-muted-foreground">
+                      Аккаунт организации
+                      <select
+                        className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-2 text-xs text-foreground"
+                        value={supplier.ownerUserId ?? ""}
+                        disabled={autoPartsWorking === supplier.id}
+                        onChange={(event) => void setAutoPartsOwner(
+                          supplier.id,
+                          event.target.value ? Number(event.target.value) : null,
+                        )}
+                      >
+                        <option value="">Не привязан</option>
+                        {organizationAccounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            {account.name} · #{account.id}{account.phone ? ` · ${account.phone}` : account.email ? ` · ${account.email}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                   <Button
                     size="sm"
