@@ -1,9 +1,15 @@
-import { ChevronRight, ClipboardList, Download, Heart, MessageCircle, PackageSearch, ReceiptText } from "lucide-react";
+import { ChevronRight, ClipboardList, Download, Heart, Landmark, MessageCircle, PackageSearch, ReceiptText } from "lucide-react";
 import { Link } from "wouter";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { AppBrandHeader } from "@/components/app-brand-header";
 
 const sections = [
+  {
+    href: "/contacts",
+    icon: Landmark,
+    title: "Город и контакты",
+    description: "Полезные службы, организации, телефоны, адреса и городские сервисы",
+  },
   {
     href: "/requests",
     icon: ClipboardList,
@@ -81,7 +87,7 @@ export default function MorePage() {
             </div>
             <div className="min-w-0 flex-1">
               <h2 className="text-lg font-extrabold tracking-[-0.03em]">
-                Установите <span className="text-primary">GOVZA мастера</span>
+                Установите <span className="text-primary">GOVZA pro</span>
               </h2>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 Быстрый доступ к сервису с главного экрана телефона.
