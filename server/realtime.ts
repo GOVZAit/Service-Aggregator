@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { WebSocket, WebSocketServer } from "ws";
 import { storage } from "./storage";
+import { orderTrackingLocationSchema } from "@shared/schema";
 
 const REALTIME_PATH = "/ws/realtime";
 const TOKEN_PREFIX = "govza-token-";
@@ -11,7 +12,18 @@ const TOKEN_TTL_MS = 5 * 60 * 1000;
 type RealtimeEvent =
   | { type: "direct-conversation"; conversationId: number }
   | { type: "direct-message"; conversationId: number }
-  | { type: "order-message"; orderId: number };
+  | { type: "order-message"; orderId: number }
+  | {
+      type: "order-tracking";
+      orderId: number;
+      status: "en_route" | "arrived" | "stopped";
+      lat?: number;
+      lng?: number;
+      accuracy?: number;
+      heading?: number | null;
+      speed?: number | null;
+      updatedAt: string;
+    };
 
 interface TokenPayload {
   userId: number;
@@ -21,6 +33,23 @@ interface TokenPayload {
 
 const socketsByUser = new Map<number, Set<WebSocket>>();
 const alive = new WeakMap<WebSocket, boolean>();
+
+interface LiveOrderTracking {
+  orderId: number;
+  providerUserId: number;
+  clientUserId: number;
+  status: "en_route" | "arrived" | "stopped";
+  lat?: number;
+  lng?: number;
+  accuracy?: number;
+  heading?: number | null;
+  speed?: number | null;
+  startedAt: string;
+  updatedAt: string;
+  stoppedAt?: string;
+}
+
+const liveTrackingByOrder = new Map<number, LiveOrderTracking>();
 
 function sessionSecret() {
   const value = process.env.SESSION_SECRET;
