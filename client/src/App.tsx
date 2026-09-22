@@ -179,58 +179,58 @@ function RouteEffects() {
 
     const metadata =
       location === "/" ? {
-        title: "GOVZA pro — мастера рядом",
+        title: "GOVZA мастера — мастера рядом",
         description: "Найдите мастера или организацию рядом, сравните услуги, отзывы и отправьте заявку в GOVZA.",
       } :
       location.startsWith("/auto-parts") ? {
-        title: "Автозапчасти — GOVZA pro",
-        description: "Автомагазины и авторазборы: новые и Б/У автозапчасти в GOVZA pro.",
+        title: "Автозапчасти — GOVZA мастера",
+        description: "Автомагазины и авторазборы: новые и Б/У автозапчасти в GOVZA мастера.",
       } :
       location.startsWith("/admin") ? {
-        title: "Админ-панель — GOVZA pro",
+        title: "Админ-панель — GOVZA мастера",
         description: "Управление каталогом, справочниками и модерацией GOVZA.",
       } :
       location.startsWith("/doctors") ? {
-        title: "Врачи — GOVZA pro",
+        title: "Врачи — GOVZA мастера",
         description: "Каталог врачей и медицинских специалистов с контактами и удобным поиском.",
       } :
       location.startsWith("/contacts") || location === "/city" ? {
-        title: "Контакты — GOVZA pro",
+        title: "Контакты — GOVZA мастера",
         description: "Полезные городские службы, организации, адреса, телефоны и карта в GOVZA.",
       } :
       location.startsWith("/requests") ? {
-        title: "Мои заявки — GOVZA pro",
+        title: "Мои заявки — GOVZA мастера",
         description: "Создавайте заявки, получайте предложения исполнителей и выбирайте подходящего мастера.",
       } :
       location.startsWith("/orders") ? {
-        title: "Мои заказы — GOVZA pro",
+        title: "Мои заказы — GOVZA мастера",
         description: "Статусы заказов, чат с исполнителем и отзывы после завершения работы.",
       } :
       location.includes("/messages") ? {
-        title: "Сообщения — GOVZA pro",
+        title: "Сообщения — GOVZA мастера",
         description: "Личные сообщения и переписка с исполнителями и клиентами GOVZA.",
       } :
       location.startsWith("/profile") ? {
-        title: "Профиль — GOVZA pro",
+        title: "Профиль — GOVZA мастера",
         description: "Настройки профиля, уведомлений и активности аккаунта GOVZA.",
       } :
       /^\/master\/\d+/.test(location) ? {
-        title: "Профиль исполнителя — GOVZA pro",
+        title: "Профиль исполнителя — GOVZA мастера",
         description: "Услуги, портфолио, проверенные отзывы и контакты исполнителя в GOVZA.",
       } :
       location.startsWith("/master") ? {
-        title: "Кабинет мастера — GOVZA pro",
+        title: "Кабинет мастера — GOVZA мастера",
         description: "Заявки, заказы, сообщения и управление профилем мастера GOVZA.",
       } :
       location.startsWith("/organization") ? {
-        title: "Кабинет организации — GOVZA pro",
+        title: "Кабинет организации — GOVZA мастера",
         description: "Заявки, заказы, сообщения и управление профилем организации GOVZA.",
       } :
       location.startsWith("/lost-found") ? {
-        title: "Потеряно / Найдено — GOVZA pro",
+        title: "Потеряно / Найдено — GOVZA мастера",
         description: "Объявления о потерянных и найденных вещах, документах и животных.",
       } : {
-        title: "GOVZA pro",
+        title: "GOVZA мастера",
         description: "GOVZA — мастера, организации, услуги, заявки и полезные городские контакты рядом.",
       };
 
