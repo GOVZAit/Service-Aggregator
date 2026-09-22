@@ -384,6 +384,19 @@ export async function submitStoreAutoPartOffer(
     .where(eq(autoPartRequests.id, requestId))
     .limit(1);
   if (!request || request.status !== "open") return { error: "request" as const };
+  if (request.inventoryPreference === "stock_only" && input.availability === "order") {
+    return { error: "inventory" as const };
+  }
+  if (request.inventoryPreference === "order_only" && input.availability === "in_stock") {
+    return { error: "inventory" as const };
+  }
+  if (
+    input.availability !== "unavailable" &&
+    request.partCondition !== "any" &&
+    input.condition !== request.partCondition
+  ) {
+    return { error: "condition" as const };
+  }
 
   const [offer] = await db.insert(autoPartOffers).values({
     requestId,
