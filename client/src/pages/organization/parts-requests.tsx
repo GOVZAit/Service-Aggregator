@@ -45,10 +45,10 @@ const inventoryLabels = {
 
 function OfferEditor({ row }: { row: StoreRequestRow }) {
   const queryClient = useQueryClient();
-  const allowedAvailability = useMemo(() => {
-    if (row.inventoryPreference === "stock_only") return ["in_stock", "unavailable"] as const;
-    if (row.inventoryPreference === "order_only") return ["order", "unavailable"] as const;
-    return ["in_stock", "order", "unavailable"] as const;
+  const allowedAvailability = useMemo<Array<"in_stock" | "order" | "unavailable">>(() => {
+    if (row.inventoryPreference === "stock_only") return ["in_stock", "unavailable"];
+    if (row.inventoryPreference === "order_only") return ["order", "unavailable"];
+    return ["in_stock", "order", "unavailable"];
   }, [row.inventoryPreference]);
 
   const [availability, setAvailability] = useState<"in_stock" | "order" | "unavailable">(
