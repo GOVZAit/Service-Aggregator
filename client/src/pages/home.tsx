@@ -302,36 +302,6 @@ export default function HomePage() {
             </section>
 
             <section className="mt-5">
-                <div className="mb-3 flex items-end justify-between gap-3">
-                  <div>
-                    <h2 className="section-title">Все категории</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">Выберите направление за пару секунд</p>
-                  </div>
-                </div>
-                <div className="scrollbar-none -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-                  {categories.slice(0, 8).map((category) => {
-                    const Icon = categoryIcons[category.iconName] ?? Zap;
-                    const count = allMasters.filter((master) => (master.categoryIds ?? [master.categoryId]).includes(category.id)).length;
-                    return (
-                      <button
-                        type="button"
-                        key={category.id}
-                        onClick={() => setSelectedCategory(category.id)}
-                        className="premium-card pressable min-w-[132px] p-4 text-left"
-                      >
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/[0.08] text-primary">
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <p className="mt-4 text-sm font-bold">{category.name}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{count || "Новые"} специалистов</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            <section className="mt-5">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
