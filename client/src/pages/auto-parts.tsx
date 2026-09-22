@@ -22,10 +22,14 @@ import type {
   AutoPartsCondition,
   AutoPartsSupplierType,
   AutoPartsSupplierView,
+  AutoPartsVehicleOrigin,
+  AutoPartsVehicleType,
 } from "@shared/auto-parts-schema";
 
 type ConditionFilter = "all" | AutoPartsCondition;
 type SupplierSection = "store" | "dismantler";
+type VehicleTypeFilter = "all" | AutoPartsVehicleType;
+type VehicleOriginFilter = "all" | AutoPartsVehicleOrigin;
 
 const conditionOptions: Array<{ value: ConditionFilter; label: string }> = [
   { value: "all", label: "Все" },
@@ -37,6 +41,32 @@ const supplierTypeOptions: Array<{ value: SupplierSection; label: string }> = [
   { value: "store", label: "Автомагазины" },
   { value: "dismantler", label: "Авторазборы" },
 ];
+
+const vehicleTypeOptions: Array<{ value: VehicleTypeFilter; label: string }> = [
+  { value: "all", label: "Все" },
+  { value: "passenger", label: "Легковые" },
+  { value: "truck", label: "Грузовые" },
+  { value: "van", label: "Микроавтобусы" },
+  { value: "special", label: "Спецтехника" },
+];
+
+const vehicleOriginOptions: Array<{ value: VehicleOriginFilter; label: string }> = [
+  { value: "all", label: "Все" },
+  { value: "foreign", label: "Иномарки" },
+  { value: "domestic", label: "Отечественные" },
+];
+
+const vehicleTypeLabel: Record<AutoPartsVehicleType, string> = {
+  passenger: "Легковые",
+  truck: "Грузовые",
+  van: "Микроавтобусы",
+  special: "Спецтехника",
+};
+
+const vehicleOriginLabel: Record<AutoPartsVehicleOrigin, string> = {
+  foreign: "Иномарки",
+  domestic: "Отечественные",
+};
 
 const conditionLabel: Record<AutoPartsCondition, string> = {
   new: "Новые",
@@ -64,6 +94,8 @@ export default function AutoPartsPage() {
   const [brand, setBrand] = useState("");
   const [condition, setCondition] = useState<ConditionFilter>("all");
   const [supplierType, setSupplierType] = useState<SupplierSection>("store");
+  const [vehicleType, setVehicleType] = useState<VehicleTypeFilter>("all");
+  const [vehicleOrigin, setVehicleOrigin] = useState<VehicleOriginFilter>("all");
   const [city, setCity] = useState<string>("Все города");
 
   const params = useMemo(() => {
@@ -72,9 +104,11 @@ export default function AutoPartsPage() {
     if (brand.trim()) search.set("brand", brand.trim());
     if (condition !== "all") search.set("condition", condition);
     search.set("type", supplierType);
+    if (vehicleType !== "all") search.set("vehicleType", vehicleType);
+    if (vehicleOrigin !== "all") search.set("vehicleOrigin", vehicleOrigin);
     if (city !== "Все города") search.set("city", city);
     return search.toString();
-  }, [query, brand, condition, supplierType, city]);
+  }, [query, brand, condition, supplierType, vehicleType, vehicleOrigin, city]);
 
   const { data: suppliers = [], isLoading, isError } = useQuery<AutoPartsSupplierView[]>({
     queryKey: ["/api/auto-parts/suppliers", params],
@@ -129,36 +163,78 @@ export default function AutoPartsPage() {
             </select>
           </div>
 
-          <div className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6">
-            {conditionOptions.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setCondition(item.value)}
-                className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold transition ${
-                  condition === item.value
-                    ? "bg-primary text-primary-foreground"
-                    : "border border-border bg-card text-muted-foreground"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-            <span className="mx-1 w-px shrink-0 bg-border" />
-            {supplierTypeOptions.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setSupplierType(item.value)}
-                className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold transition ${
-                  supplierType === item.value
-                    ? "bg-foreground text-background"
-                    : "border border-border bg-card text-muted-foreground"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
+          <div className="mt-3 space-y-3">
+            <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6">
+              {supplierTypeOptions.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => setSupplierType(item.value)}
+                  className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold transition ${
+                    supplierType === item.value
+                      ? "bg-foreground text-background"
+                      : "border border-border bg-card text-muted-foreground"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+              <span className="mx-1 w-px shrink-0 bg-border" />
+              {conditionOptions.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => setCondition(item.value)}
+                  className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold transition ${
+                    condition === item.value
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-border bg-card text-muted-foreground"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">Для какого авто</p>
+              <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6">
+                {vehicleTypeOptions.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setVehicleType(item.value)}
+                    className={`min-h-9 shrink-0 rounded-full px-3.5 text-xs font-bold transition ${
+                      vehicleType === item.value
+                        ? "bg-primary/12 text-primary ring-1 ring-primary/25"
+                        : "border border-border bg-card text-muted-foreground"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">Производитель</p>
+              <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6">
+                {vehicleOriginOptions.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setVehicleOrigin(item.value)}
+                    className={`min-h-9 shrink-0 rounded-full px-3.5 text-xs font-bold transition ${
+                      vehicleOrigin === item.value
+                        ? "bg-primary/12 text-primary ring-1 ring-primary/25"
+                        : "border border-border bg-card text-muted-foreground"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -191,7 +267,7 @@ export default function AutoPartsPage() {
               {isLoading ? "Загружаем каталог…" : `${suppliers.length} найдено`}
             </p>
           </div>
-          {(query || brand || condition !== "all" || city !== "Все города") && (
+          {(query || brand || condition !== "all" || vehicleType !== "all" || vehicleOrigin !== "all" || city !== "Все города") && (
             <Button
               variant="ghost"
               size="sm"
@@ -200,6 +276,8 @@ export default function AutoPartsPage() {
                 setBrand("");
                 setCondition("all");
                 setSupplierType("store");
+                setVehicleType("all");
+                setVehicleOrigin("all");
                 setCity("Все города");
               }}
             >
@@ -253,6 +331,21 @@ export default function AutoPartsPage() {
                     <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
                       {supplier.description}
                     </p>
+                  )}
+
+                  {(supplier.vehicleTypes.length > 0 || supplier.vehicleOrigins.length > 0) && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {supplier.vehicleTypes.map((item) => (
+                        <span key={item} className="rounded-full bg-primary/8 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                          {vehicleTypeLabel[item]}
+                        </span>
+                      ))}
+                      {supplier.vehicleOrigins.map((item) => (
+                        <span key={item} className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+                          {vehicleOriginLabel[item]}
+                        </span>
+                      ))}
+                    </div>
                   )}
 
                   {supplier.brands.length > 0 && (
