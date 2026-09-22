@@ -1,4 +1,4 @@
-import { Clock, MessageCircle, RotateCcw, Star } from "lucide-react";
+import { CheckCircle2, Clock, MapPinned, MessageCircle, Navigation, RotateCcw, Star } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,36 @@ export function OrderCard({ order, master, onLeaveReview, onOpenChat, onRepeatOr
         </span>
         <span className="font-bold">{order.price}</span>
       </div>
+
+      {order.status === 'in_progress' && order.travelStatus === 'en_route' && (
+        <div className="mt-4 rounded-xl border border-primary/20 bg-primary/[.05] p-3">
+          <div className="flex items-center gap-2 text-sm font-extrabold text-primary">
+            <Navigation className="h-4 w-4" />
+            Мастер в пути
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Мастер отметил, что выехал к вам.
+          </p>
+          {order.liveLocationUrl && (
+            <a
+              href={order.liveLocationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-bold text-primary-foreground"
+            >
+              <MapPinned className="h-4 w-4" />
+              Отслеживать на карте
+            </a>
+          )}
+        </div>
+      )}
+
+      {order.status === 'in_progress' && order.travelStatus === 'arrived' && (
+        <div className="mt-4 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500/10 px-3 text-sm font-bold text-emerald-700 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4" />
+          Мастер прибыл
+        </div>
+      )}
 
       {onOpenChat && order.status !== 'rejected' && (
         <Button
