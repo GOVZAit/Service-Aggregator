@@ -118,7 +118,7 @@ export async function setAutoPartsSupplierVisibility(id: number, visible: boolea
 }
 
 export async function importAutoPartsSupplier(input: AutoPartsSupplierImportInput) {
-  const [existing] = await db.select().from(autoPartsSuppliers)
+  const existing = await db.select().from(autoPartsSuppliers)
     .where(eq(autoPartsSuppliers.sourceName, input.sourceName))
     .orderBy(desc(autoPartsSuppliers.updatedAt));
 
