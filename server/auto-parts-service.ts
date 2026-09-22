@@ -42,6 +42,7 @@ export function autoPartsRowToView(row: typeof autoPartsSuppliers.$inferSelect):
     lat: data.lat,
     lng: data.lng,
     dataSource: row.dataSource,
+    visible: row.isVisible === 1,
   };
 }
 
