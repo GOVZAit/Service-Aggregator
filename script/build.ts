@@ -2,7 +2,7 @@ import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { createHash } from "node:crypto";
 import { join, relative } from "node:path";
-import { readdir, readFile, rm, writeFile } from "fs/promises";
+import { access, readdir, readFile, rm, writeFile } from "fs/promises";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -71,6 +71,14 @@ async function stampServiceWorker() {
 }
 
 async function buildAll() {
+  try {
+    await access("dist/.deploy-prebuilt");
+    console.log("using prebuilt production artifacts from CI");
+    return;
+  } catch {
+    // No CI marker: perform a normal clean build.
+  }
+
   await rm("dist", { recursive: true, force: true });
 
   console.log("building client...");
