@@ -178,7 +178,7 @@ function RouteEffects() {
       } :
       location.startsWith("/auto-parts") ? {
         title: "Автозапчасти — GOVZA pro",
-        description: "Магазины, поставщики и авторазборы: новые и Б/У автозапчасти в GOVZA pro.",
+        description: "Автомагазины и авторазборы: новые и Б/У автозапчасти в GOVZA pro.",
       } :
       location.startsWith("/admin") ? {
         title: "Админ-панель — GOVZA pro",
