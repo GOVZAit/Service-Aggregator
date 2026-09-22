@@ -36,7 +36,10 @@ export default function OrdersPage() {
   const [repeatOrder, setRepeatOrder] = useState<Order | null>(null);
   const [, navigate] = useLocation();
 
-  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({ queryKey: ["/api/orders"] });
+  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
+    queryKey: ["/api/orders"],
+    refetchInterval: 15_000,
+  });
   const { data: masters = [] } = useQuery<Master[]>({ queryKey: ["/api/masters"] });
   const { data: reviewed = { orderIds: [] } } = useQuery<{ orderIds: number[] }>({ queryKey: ["/api/order-reviews/mine"] });
 
