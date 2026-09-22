@@ -2,7 +2,7 @@
   "id": "/",
   "name": "GOVZA pro",
   "short_name": "GOVZA pro",
-  "description": "Мастера, организации, врачи и городские сервисы рядом.",
+  "description": "Мастера, автозапчасти, врачи и полезные городские сервисы рядом.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
@@ -49,6 +49,18 @@
       "name": "Найти исполнителя",
       "short_name": "Поиск",
       "url": "/",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Автозапчасти",
+      "short_name": "Запчасти",
+      "url": "/auto-parts",
       "icons": [
         {
           "src": "/icon-192.png",
