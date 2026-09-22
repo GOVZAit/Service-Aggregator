@@ -16,6 +16,8 @@ import { ensureProviderImportTables, startProviderImportScheduler } from "./prov
 import { registerProviderImportRoutes } from "./provider-import-routes";
 import { ensureProviderEngagementTables, registerProviderEngagementRoutes } from "./provider-engagement-routes";
 import { registerUrgentRoutes } from "./urgent-routes";
+import { ensureAutoPartsTables } from "./auto-parts-service";
+import { registerAutoPartsRoutes } from "./auto-parts-routes";
 import { ensureVerificationWorkflowTables } from "./verification-service";
 import { registerVerificationRoutes } from "./verification-routes";
 import { ensureProviderTables } from "./provider-service";
@@ -109,7 +111,9 @@ app.use((req, res, next) => {
         !path.startsWith("/api/internal/providers") &&
         !path.startsWith("/api/admin") &&
         !path.startsWith("/api/internal/admin") &&
-        !path.startsWith("/api/urgent")
+        !path.startsWith("/api/urgent") &&
+        !path.startsWith("/api/auto-parts") &&
+        !path.startsWith("/api/internal/auto-parts")
       ) {
         // Truncate to keep uploaded document images / PII out of the logs
         const body = JSON.stringify(capturedJsonResponse);
@@ -129,6 +133,7 @@ app.use((req, res, next) => {
   await ensureProviderTables();
   await ensureAdminTables();
   await ensureDirectoryTables();
+  await ensureAutoPartsTables();
   await ensureCategoryTables();
   await ensureProviderImportTables();
   await ensureRequestTables();
@@ -144,6 +149,7 @@ app.use((req, res, next) => {
   await registerProviderRoutes(app);
   await registerAdminRoutes(app);
   await registerDirectoryRoutes(app);
+  await registerAutoPartsRoutes(app);
   await registerCategoryRoutes(app);
   await registerProviderImportRoutes(app);
   await registerProviderEngagementRoutes(app);
