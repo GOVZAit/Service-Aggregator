@@ -9,7 +9,6 @@ import {
   PackageSearch,
   Phone,
   Search,
-  Truck,
   Warehouse,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -26,7 +25,7 @@ import type {
 } from "@shared/auto-parts-schema";
 
 type ConditionFilter = "all" | AutoPartsCondition;
-type SupplierTypeFilter = "all" | AutoPartsSupplierType;
+type SupplierSection = "store" | "dismantler";
 
 const conditionOptions: Array<{ value: ConditionFilter; label: string }> = [
   { value: "all", label: "Все" },
@@ -34,10 +33,8 @@ const conditionOptions: Array<{ value: ConditionFilter; label: string }> = [
   { value: "used", label: "Б/У" },
 ];
 
-const supplierTypeOptions: Array<{ value: SupplierTypeFilter; label: string }> = [
-  { value: "all", label: "Все" },
-  { value: "store", label: "Магазины" },
-  { value: "supplier", label: "Поставщики" },
+const supplierTypeOptions: Array<{ value: SupplierSection; label: string }> = [
+  { value: "store", label: "Автомагазины" },
   { value: "dismantler", label: "Авторазборы" },
 ];
 
@@ -48,13 +45,12 @@ const conditionLabel: Record<AutoPartsCondition, string> = {
 };
 
 const supplierTypeLabel: Record<AutoPartsSupplierType, string> = {
-  store: "Магазин",
-  supplier: "Поставщик",
+  store: "Автомагазин",
+  supplier: "Автомагазин",
   dismantler: "Авторазбор",
 };
 
 function supplierIcon(type: AutoPartsSupplierType) {
-  if (type === "supplier") return Truck;
   if (type === "dismantler") return Warehouse;
   return Building2;
 }
@@ -67,7 +63,7 @@ export default function AutoPartsPage() {
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("");
   const [condition, setCondition] = useState<ConditionFilter>("all");
-  const [supplierType, setSupplierType] = useState<SupplierTypeFilter>("all");
+  const [supplierType, setSupplierType] = useState<SupplierSection>("store");
   const [city, setCity] = useState<string>("Все города");
 
   const params = useMemo(() => {
@@ -75,7 +71,7 @@ export default function AutoPartsPage() {
     if (query.trim()) search.set("q", query.trim());
     if (brand.trim()) search.set("brand", brand.trim());
     if (condition !== "all") search.set("condition", condition);
-    if (supplierType !== "all") search.set("type", supplierType);
+    search.set("type", supplierType);
     if (city !== "Все города") search.set("city", city);
     return search.toString();
   }, [query, brand, condition, supplierType, city]);
@@ -101,7 +97,7 @@ export default function AutoPartsPage() {
             </div>
             <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.04em]">Найти запчасть</h1>
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Магазины, поставщики и авторазборы. Новые и Б/У запчасти — отдельно от каталога мастеров.
+              Автомагазины и авторазборы. Новые и Б/У запчасти — отдельно от каталога мастеров.
             </p>
           </div>
 
@@ -190,12 +186,12 @@ export default function AutoPartsPage() {
 
         <div className="mb-3 mt-7 flex items-end justify-between gap-3">
           <div>
-            <h2 className="section-title">Поставщики и магазины</h2>
+            <h2 className="section-title">{supplierType === "store" ? "Автомагазины" : "Авторазборы"}</h2>
             <p className="mt-1 text-xs text-muted-foreground">
               {isLoading ? "Загружаем каталог…" : `${suppliers.length} найдено`}
             </p>
           </div>
-          {(query || brand || condition !== "all" || supplierType !== "all" || city !== "Все города") && (
+          {(query || brand || condition !== "all" || city !== "Все города") && (
             <Button
               variant="ghost"
               size="sm"
@@ -203,7 +199,7 @@ export default function AutoPartsPage() {
                 setQuery("");
                 setBrand("");
                 setCondition("all");
-                setSupplierType("all");
+                setSupplierType("store");
                 setCity("Все города");
               }}
             >
@@ -221,8 +217,10 @@ export default function AutoPartsPage() {
         ) : !isLoading && suppliers.length === 0 ? (
           <EmptyState
             icon={<Box className="h-10 w-10" />}
-            title="Пока нет подходящих поставщиков"
-            description="Каталог автозапчастей готов. Реальные магазины и поставщики появятся после импорта или добавления администратором."
+            title={supplierType === "store" ? "Пока нет подходящих автомагазинов" : "Пока нет подходящих авторазборов"}
+            description={supplierType === "store"
+              ? "Автомагазины появятся после импорта реальных данных или добавления администратором."
+              : "Авторазборы появятся после импорта реальных данных или добавления администратором."}
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -24,7 +24,7 @@ export function autoPartsRowToView(row: typeof autoPartsSuppliers.$inferSelect):
   const data = effectiveData(row);
   return {
     id: row.id,
-    name: data.name ?? `Поставщик #${row.id}`,
+    name: data.name ?? `Автомагазин #${row.id}`,
     supplierType: data.supplierType ?? "store",
     partsCondition: data.partsCondition ?? "mixed",
     salesType: data.salesType ?? "retail",

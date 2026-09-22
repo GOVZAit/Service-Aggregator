@@ -910,9 +910,9 @@ export default function AdminDashboardPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">Автозапчасти</div>
-              <h2 className="mt-1 text-lg font-extrabold">Магазины и поставщики</h2>
+              <h2 className="mt-1 text-lg font-extrabold">Автомагазины и авторазборы</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Отдельный каталог: магазины, поставщики и авторазборы не смешиваются с мастерами.
+                Отдельный каталог: автомагазины и авторазборы не смешиваются с мастерами.
               </p>
             </div>
             <Button variant="outline" onClick={() => setAutoPartsOpen((value) => !value)}>
@@ -925,8 +925,7 @@ export default function AdminDashboardPage() {
             <div className="mt-4 grid gap-3 rounded-2xl border border-primary/15 bg-primary/[.035] p-4 md:grid-cols-2 xl:grid-cols-4">
               <input className={fieldClass} placeholder="Название" value={autoPartsForm.name} onChange={(event) => setAutoPartsForm((value) => ({ ...value, name: event.target.value }))} />
               <select className={fieldClass} value={autoPartsForm.supplierType} onChange={(event) => setAutoPartsForm((value) => ({ ...value, supplierType: event.target.value }))}>
-                <option value="store">Магазин</option>
-                <option value="supplier">Поставщик</option>
+                <option value="store">Автомагазин</option>
                 <option value="dismantler">Авторазбор</option>
               </select>
               <select className={fieldClass} value={autoPartsForm.partsCondition} onChange={(event) => setAutoPartsForm((value) => ({ ...value, partsCondition: event.target.value }))}>
@@ -969,7 +968,7 @@ export default function AdminDashboardPage() {
                       <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">{supplier.dataSource}</span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      #{supplier.id} · {supplier.supplierType} · {supplier.partsCondition} · {supplier.city || "город не указан"}
+                      #{supplier.id} · {supplier.supplierType === "dismantler" ? "Авторазбор" : "Автомагазин"} · {supplier.partsCondition} · {supplier.city || "город не указан"}
                     </p>
                     {supplier.brands.length > 0 && <p className="mt-2 line-clamp-2 text-[11px] text-muted-foreground">{supplier.brands.join(", ")}</p>}
                   </div>
