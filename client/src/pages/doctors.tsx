@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search, Phone, MapPin, Clock, Star, Baby, Home as HomeIcon, X,
-  Stethoscope, SlidersHorizontal, ChevronLeft, Send, MessageCircle,
+  SlidersHorizontal, ChevronLeft, Send, MessageCircle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
