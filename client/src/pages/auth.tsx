@@ -81,7 +81,7 @@ export default function AuthPage() {
         : result.emailDelivery === "unavailable_for_phone"
           ? "Аккаунт создан по номеру телефона."
           : "Аккаунт создан.";
-      toast({ title: "Добро пожаловать в GOVZA мастера", description });
+      toast({ title: "Добро пожаловать в GOVZA pro", description });
       navigate(result.user.role === "master"
         ? "/master/onboarding"
         : result.user.role === "organization"
@@ -110,7 +110,7 @@ export default function AuthPage() {
           <div className="relative">
             <div className="flex items-baseline gap-2 text-[2rem]">
               <span className="display-face font-bold text-[#07132f] dark:text-white">GOVZA</span>
-              <span className="font-extrabold tracking-[-0.05em] text-primary">мастера</span>
+              <span className="font-extrabold tracking-[-0.05em] text-primary">pro</span>
             </div>
             <p className="mt-1 text-sm font-medium text-muted-foreground">Надёжные специалисты рядом</p>
           </div>
