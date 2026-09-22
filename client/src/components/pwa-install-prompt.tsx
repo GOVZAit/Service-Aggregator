@@ -146,11 +146,11 @@ export function PwaInstallPrompt() {
           {ios ? <Share2 className="h-5 w-5" /> : <Download className="h-5 w-5" />}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">Установить GOVZA pro</p>
+          <p className="font-semibold">Установить GOVZA мастера</p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
             {ios
-              ? "Нажмите «Поделиться» → «На экран Домой», чтобы открывать GOVZA как приложение."
-              : "Добавьте GOVZA pro на главный экран для быстрого доступа и полноэкранного режима."}
+              ? "Нажмите «Поделиться» → «На экран Домой», чтобы открывать GOVZA мастера как приложение."
+              : "Добавьте GOVZA мастера на главный экран для быстрого доступа и полноэкранного режима."}
           </p>
           {!ios && event && (
             <Button size="sm" className="mt-3 rounded-xl font-bold" onClick={install}>
