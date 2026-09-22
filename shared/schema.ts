@@ -127,6 +127,7 @@ export interface ServiceRequest {
 }
 
 export type OrderStatus = 'completed' | 'in_progress' | 'pending' | 'rejected';
+export type OrderTravelStatus = 'idle' | 'en_route' | 'arrived';
 
 export interface Order {
   id: number;
@@ -151,6 +152,12 @@ export interface Order {
   clientName?: string;
 
   clientContact?: string;
+
+  travelStatus?: OrderTravelStatus;
+
+  liveLocationUrl?: string;
+
+  travelUpdatedAt?: string;
 }
 
 export interface ChatMessage {
@@ -328,6 +335,28 @@ export const updateOrderStatusSchema = z.object({
   status: z.enum(['in_progress', 'completed', 'rejected']),
 }).strict();
 
+const liveLocationUrlSchema = z.string().url('Некорректная ссылка карты').max(1000).refine((value) => {
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return [
+      'maps.app.goo.gl',
+      'google.com',
+      'www.google.com',
+      'yandex.ru',
+      'yandex.com',
+      'www.yandex.ru',
+      'www.yandex.com',
+    ].includes(host);
+  } catch {
+    return false;
+  }
+}, 'Используйте live-ссылку Google Maps или Яндекс Карт');
+
+export const updateOrderTravelSchema = z.object({
+  status: z.enum(['en_route', 'arrived', 'idle']),
+  liveLocationUrl: liveLocationUrlSchema.optional(),
+}).strict();
+
 const lostFoundEventDateSchema = z.string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Укажите дату')
   .refine((value) => {
@@ -383,6 +412,9 @@ export const persistedOrders = pgTable("orders", {
   price: text("price").notNull(),
   address: text("address"),
   comment: text("comment"),
+  travelStatus: text("travel_status").$type<OrderTravelStatus>().default("idle").notNull(),
+  liveLocationUrl: text("live_location_url"),
+  travelUpdatedAt: timestamp("travel_updated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("orders_client_id_idx").on(table.clientId),
