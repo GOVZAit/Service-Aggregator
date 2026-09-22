@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "GOVZA pro",
-  "short_name": "GOVZA pro",
-  "description": "Мастера, автозапчасти, врачи и полезные городские сервисы рядом.",
+  "name": "GOVZA мастера",
+  "short_name": "GOVZA мастера",
+  "description": "Мастера, услуги, автозапчасти, врачи и полезные городские сервисы рядом.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
