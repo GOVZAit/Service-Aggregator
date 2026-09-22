@@ -127,6 +127,20 @@ export interface ServiceRequest {
 }
 
 export type OrderStatus = 'completed' | 'in_progress' | 'pending' | 'rejected';
+export type OrderTrackingStatus = 'en_route' | 'arrived' | 'stopped';
+
+export interface OrderTrackingView {
+  orderId: number;
+  status: OrderTrackingStatus;
+  lat?: number;
+  lng?: number;
+  accuracy?: number;
+  heading?: number | null;
+  speed?: number | null;
+  startedAt: string;
+  updatedAt: string;
+  stoppedAt?: string;
+}
 
 export interface Order {
   id: number;
@@ -326,6 +340,14 @@ export const createOrderSchema = z.object({
 
 export const updateOrderStatusSchema = z.object({
   status: z.enum(['in_progress', 'completed', 'rejected']),
+}).strict();
+
+export const orderTrackingLocationSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  accuracy: z.number().min(0).max(100000).optional(),
+  heading: z.number().min(0).max(360).nullable().optional(),
+  speed: z.number().min(0).max(150).nullable().optional(),
 }).strict();
 
 const lostFoundEventDateSchema = z.string()
