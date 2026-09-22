@@ -4,12 +4,14 @@ import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import { storage } from "./storage";
 import { emailDeliveryConfigured, sendWelcomeEmail } from "./email";
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema, lostFoundListingInputSchema, updateLostFoundListingSchema } from "@shared/schema";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, masterSettingsSchema, clientProfileSchema, createOrderSchema, updateOrderStatusSchema, orderTrackingLocationSchema, lostFoundListingInputSchema, updateLostFoundListingSchema } from "@shared/schema";
 import type { AuthUser } from "@shared/schema";
 import { deliverPasswordReset, isPasswordResetDeliveryConfigured, passwordResetRateLimited } from "./password-reset";
 import { getProviderOwnerUserId, isProviderVisible, recordProviderActivity } from "./provider-service";
 import { sendPushToUser } from "./push-service";
 import { categoryIdsExist } from "./category-service";
+import { pool } from "./db";
+import { broadcastRealtimeEvent } from "./realtime";
 
 function normalizeIdentifier(value: string) {
   if (value.includes("@")) return value.trim().toLowerCase();
