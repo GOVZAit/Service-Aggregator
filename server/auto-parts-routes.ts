@@ -35,8 +35,10 @@ export async function registerAutoPartsRoutes(app: Express) {
     const salesType = typeof req.query.sales === "string" ? req.query.sales : "";
     const city = typeof req.query.city === "string" ? req.query.city.trim() : "";
     const brand = typeof req.query.brand === "string" ? req.query.brand.trim().toLocaleLowerCase("ru-RU") : "";
-    const vehicleType = typeof req.query.vehicleType === "string" ? req.query.vehicleType : "";
-    const vehicleOrigin = typeof req.query.vehicleOrigin === "string" ? req.query.vehicleOrigin : "";
+    const rawVehicleType = typeof req.query.vehicleType === "string" ? req.query.vehicleType : "";
+    const rawVehicleOrigin = typeof req.query.vehicleOrigin === "string" ? req.query.vehicleOrigin : "";
+    const vehicleType = ["passenger", "truck", "van", "special"].includes(rawVehicleType) ? rawVehicleType : "";
+    const vehicleOrigin = ["foreign", "domestic"].includes(rawVehicleOrigin) ? rawVehicleOrigin : "";
 
     const filtered = suppliers.filter((supplier) => {
       if (condition && supplier.partsCondition !== condition && supplier.partsCondition !== "mixed") return false;
@@ -45,8 +47,8 @@ export async function registerAutoPartsRoutes(app: Express) {
       if (supplierType && supplierType !== "store" && supplierType !== "dismantler" && supplier.supplierType !== supplierType) return false;
       if (salesType && supplier.salesType !== salesType && supplier.salesType !== "both") return false;
       if (city && supplier.city !== city) return false;
-      if (vehicleType && !supplier.vehicleTypes.includes(vehicleType as any)) return false;
-      if (vehicleOrigin && !supplier.vehicleOrigins.includes(vehicleOrigin as any)) return false;
+      if (vehicleType && !(supplier.vehicleTypes as string[]).includes(vehicleType)) return false;
+      if (vehicleOrigin && !(supplier.vehicleOrigins as string[]).includes(vehicleOrigin)) return false;
       if (brand && !supplier.brands.some((item) => item.toLocaleLowerCase("ru-RU").includes(brand))) return false;
       if (q) {
         const matches =
