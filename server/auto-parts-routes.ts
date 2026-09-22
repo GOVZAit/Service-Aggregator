@@ -38,7 +38,9 @@ export async function registerAutoPartsRoutes(app: Express) {
 
     const filtered = suppliers.filter((supplier) => {
       if (condition && supplier.partsCondition !== condition && supplier.partsCondition !== "mixed") return false;
-      if (supplierType && supplier.supplierType !== supplierType) return false;
+      if (supplierType === "store" && supplier.supplierType !== "store" && supplier.supplierType !== "supplier") return false;
+      if (supplierType === "dismantler" && supplier.supplierType !== "dismantler") return false;
+      if (supplierType && supplierType !== "store" && supplierType !== "dismantler" && supplier.supplierType !== supplierType) return false;
       if (salesType && supplier.salesType !== salesType && supplier.salesType !== "both") return false;
       if (city && supplier.city !== city) return false;
       if (brand && !supplier.brands.some((item) => item.toLocaleLowerCase("ru-RU").includes(brand))) return false;
@@ -88,7 +90,7 @@ export async function registerAutoPartsRoutes(app: Express) {
     if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
 
     const supplier = await updateAutoPartsSupplier(id, parsed.data);
-    if (!supplier) return res.status(404).json({ message: "Поставщик не найден" });
+    if (!supplier) return res.status(404).json({ message: "Запись не найдена" });
 
     await logAdminAction(admin.id, "auto_parts.update", "auto_parts_supplier", id, {
       fields: Object.keys(parsed.data),
@@ -103,7 +105,7 @@ export async function registerAutoPartsRoutes(app: Express) {
     const visible = req.body?.visible;
     if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ message: "Некорректный id" });
     if (typeof visible !== "boolean") return res.status(400).json({ message: "visible должен быть boolean" });
-    if (!(await getAutoPartsSupplierRow(id))) return res.status(404).json({ message: "Поставщик не найден" });
+    if (!(await getAutoPartsSupplierRow(id))) return res.status(404).json({ message: "Запись не найдена" });
 
     const supplier = await setAutoPartsSupplierVisibility(id, visible);
     await logAdminAction(admin.id, visible ? "auto_parts.show" : "auto_parts.hide", "auto_parts_supplier", id);
