@@ -42,9 +42,9 @@ export async function registerAutoPartsRequestRoutes(app: Express) {
     await Promise.all(ownerIds.map((ownerUserId) =>
       sendPushToUser(ownerUserId, {
         title: "Новый запрос на запчасть",
-        body: \`\${parsed.data.brand}\${parsed.data.model ? \` \${parsed.data.model}\` : ""}: \${parsed.data.partName}\`,
+        body: `${parsed.data.brand}${parsed.data.model ? ` ${parsed.data.model}` : ""}: ${parsed.data.partName}`,
         url: "/organization/parts-requests",
-        tag: \`auto-parts-request-\${result.request.id}\`,
+        tag: `auto-parts-request-${result.request.id}`,
         type: "request",
         data: { requestId: result.request.id },
       }).catch(() => undefined)
@@ -130,9 +130,9 @@ export async function registerAutoPartsRequestRoutes(app: Express) {
 
     await sendPushToUser(result.clientUserId, {
       title: "Новое предложение по запчасти",
-      body: \`\${result.supplierName} ответил на ваш запрос\`,
-      url: \`/auto-parts/requests/\${requestId}\`,
-      tag: \`auto-parts-offer-\${requestId}-\${parsed.data.supplierId}\`,
+      body: `${result.supplierName} ответил на ваш запрос`,
+      url: `/auto-parts/requests/${requestId}`,
+      tag: `auto-parts-offer-${requestId}-${parsed.data.supplierId}`,
       type: "request",
       data: { requestId, supplierId: parsed.data.supplierId },
     }).catch(() => undefined);
