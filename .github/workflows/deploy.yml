@@ -41,7 +41,9 @@ jobs:
         run: touch dist/.deploy-prebuilt
 
       - name: Create release archive
-        run: tar -czf release.tar.gz --exclude=node_modules --exclude=.git --exclude=release.tar.gz .
+        run: |
+          tar -czf "$RUNNER_TEMP/release.tar.gz" --exclude=node_modules --exclude=.git .
+          mv "$RUNNER_TEMP/release.tar.gz" release.tar.gz
 
       - name: Configure SSH
         env:
