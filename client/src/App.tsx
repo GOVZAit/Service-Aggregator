@@ -266,6 +266,18 @@ function ThemeInitializer() {
     } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       document.documentElement.classList.add("dark");
     }
+
+    const themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const syncThemeColor = () => {
+      if (themeMeta) {
+        themeMeta.content = document.documentElement.classList.contains("dark") ? "#111827" : "#0B8FB6";
+      }
+    };
+
+    syncThemeColor();
+    const observer = new MutationObserver(syncThemeColor);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
   }, []);
 
   return null;

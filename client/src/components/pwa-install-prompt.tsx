@@ -44,6 +44,7 @@ export function PwaInstallPrompt() {
   const [visible, setVisible] = useState(false);
   const [ios, setIos] = useState(false);
   const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
+  const [manualFallback, setManualFallback] = useState(false);
 
   useEffect(() => {
     if (isStandalone()) return;
@@ -67,6 +68,7 @@ export function PwaInstallPrompt() {
       const installEvent = raw as BeforeInstallPromptEvent;
       promptRef.current = installEvent;
       setEvent(installEvent);
+      setManualFallback(false);
       scheduleShow(3200);
     };
 
@@ -80,13 +82,19 @@ export function PwaInstallPrompt() {
 
       if (promptRef.current) {
         setEvent(promptRef.current);
+        setManualFallback(false);
         setVisible(true);
+        return;
       }
+
+      setManualFallback(true);
+      setVisible(true);
     };
 
     const installedListener = () => {
       promptRef.current = null;
       setEvent(null);
+      setManualFallback(false);
       setVisible(false);
       try {
         localStorage.removeItem(DISMISS_KEY);
@@ -112,6 +120,7 @@ export function PwaInstallPrompt() {
 
   const dismiss = () => {
     rememberDismissal();
+    setManualFallback(false);
     setVisible(false);
   };
 
@@ -131,6 +140,7 @@ export function PwaInstallPrompt() {
 
     promptRef.current = null;
     setEvent(null);
+    setManualFallback(false);
   };
 
   if (!visible || isStandalone()) return null;
@@ -150,7 +160,9 @@ export function PwaInstallPrompt() {
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
             {ios
               ? "Нажмите «Поделиться» → «На экран Домой», чтобы открывать GOVZA мастера как приложение."
-              : "Добавьте GOVZA мастера на главный экран для быстрого доступа и полноэкранного режима."}
+              : manualFallback
+                ? "Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран»."
+                : "Добавьте GOVZA мастера на главный экран для быстрого доступа и полноэкранного режима."}
           </p>
           {!ios && event && (
             <Button size="sm" className="mt-3 rounded-xl font-bold" onClick={install}>
