@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,7 +15,7 @@ import { MapView } from "@/components/map-view";
 import { MasterCard } from "@/components/master-card";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
-import FilterSheet, { FilterPanel, applyMasterFilters, type FilterState, defaultFilterState } from "@/components/filter-sheet";
+import FilterSheet, {\n  FilterPanel,\n  applyMasterFilters,\n  sortMasters,\n  getActiveFilterCount,\n  getActiveFilterChips,\n  type FilterState,\n  defaultFilterState,\n} from "@/components/filter-sheet";
 import { BroadcastModal } from "@/components/broadcast-modal";
 import { WelcomeOnboarding, useWelcomeOnboarding } from "@/components/welcome-onboarding";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -79,6 +79,17 @@ export default function HomePage() {
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOnboarding();
 
   const debouncedSearch = useDebounce(searchQuery, 300);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        FILTER_STORAGE_KEY,
+        JSON.stringify({ searchQuery, selectedCategory, filterState, city, viewMode }),
+      );
+    } catch {
+      // Browsing still works if storage is unavailable.
+    }
+  }, [searchQuery, selectedCategory, filterState, city, viewMode]);
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
@@ -147,30 +158,18 @@ export default function HomePage() {
     return result;
   }, [selectedCategory, debouncedSearch, allMasters, city]);
 
-  const filteredMasters = useMemo(() => {
-    const result = applyMasterFilters(baseMasters, filterState);
-    return [...result].sort((a, b) => {
-      switch (filterState.sortBy) {
-        case "rating": return b.rating - a.rating;
-        case "reviews": return b.reviews - a.reviews;
-        case "price_asc": return extractMinPrice(a.price) - extractMinPrice(b.price);
-        case "price_desc": return extractMinPrice(b.price) - extractMinPrice(a.price);
-        case "distance": return parseFloat(a.distance) - parseFloat(b.distance);
-        default: return 0;
-      }
-    });
-  }, [baseMasters, filterState]);
+  const filteredMasters = useMemo(
+    () => sortMasters(applyMasterFilters(baseMasters, filterState), filterState),
+    [baseMasters, filterState],
+  );
 
   const selectedCategoryName = selectedCategory
     ? categories.find((category) => category.id === selectedCategory)?.name
     : null;
 
-  const hasActiveFilters =
-    filterState.verifiedOnly ||
-    filterState.onlineOnly ||
-    filterState.certifiedOnly ||
-    filterState.executorType !== "all" ||
-    filterState.sortBy !== "rating";
+  const activeFilterCount = getActiveFilterCount(filterState);
+  const hasActiveFilters = activeFilterCount > 0;
+  const activeFilterChips = getActiveFilterChips(filterState);
 
   const clearFilters = () => {
     setSelectedCategory(null);
@@ -239,7 +238,11 @@ export default function HomePage() {
               )}
             >
               <SlidersHorizontal className="h-5 w-5" />
-              {hasActiveFilters && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-background bg-orange-500" />}
+              {activeFilterCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-background bg-orange-500 px-1 text-[9px] font-extrabold leading-none text-white">
+                  {activeFilterCount > 9 ? "9+" : activeFilterCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -270,14 +273,87 @@ export default function HomePage() {
               })
             )}
           </div>
+
+          <div className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6" aria-label="Быстрые фильтры">
+            {[
+              {
+                key: "verified",
+                label: "Проверенные",
+                active: filterState.verifiedOnly,
+                onClick: () => setFilterState((state) => ({ ...state, verifiedOnly: !state.verifiedOnly })),
+              },
+              {
+                key: "online",
+                label: "Онлайн",
+                active: filterState.onlineOnly,
+                onClick: () => setFilterState((state) => ({ ...state, onlineOnly: !state.onlineOnly })),
+              },
+              {
+                key: "certificate",
+                label: "С сертификатом",
+                active: filterState.certifiedOnly,
+                onClick: () => setFilterState((state) => ({ ...state, certifiedOnly: !state.certifiedOnly })),
+              },
+              {
+                key: "near",
+                label: "Ближе",
+                active: filterState.sortBy === "distance",
+                onClick: () => setFilterState((state) => ({ ...state, sortBy: state.sortBy === "distance" ? "rating" : "distance" })),
+              },
+              {
+                key: "rating",
+                label: "Рейтинг 4.5+",
+                active: filterState.minRating === 4.5,
+                onClick: () => setFilterState((state) => ({ ...state, minRating: state.minRating === 4.5 ? 0 : 4.5 })),
+              },
+            ].map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={item.onClick}
+                aria-pressed={item.active}
+                className={cn(
+                  "pressable min-h-11 shrink-0 rounded-full border px-3.5 text-xs font-bold",
+                  item.active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border/70 bg-background text-foreground"
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          {activeFilterChips.length > 0 && (
+            <div className="scrollbar-none -mx-4 mt-2 flex items-center gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6">
+              {activeFilterChips.map((chip) => (
+                <button
+                  key={String(chip.key)}
+                  type="button"
+                  onClick={() => setFilterState((state) => chip.clear(state))}
+                  aria-label={`Убрать фильтр: ${chip.label}`}
+                  className="pressable flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-semibold text-foreground"
+                >
+                  <span>{chip.label}</span>
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setFilterState(defaultFilterState)}
+                className="min-h-10 shrink-0 px-2 text-xs font-bold text-primary"
+              >
+                Сбросить фильтры
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
       <main className="mx-auto max-w-lg px-4 py-5 lg:max-w-6xl lg:px-6">
         <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-8">
           <aside className="sticky top-[185px] hidden lg:block">
-            <div className="premium-card p-5">
-              <h2 className="mb-4 text-base font-bold">Фильтры и сортировка</h2>
+            <div className="premium-card max-h-[calc(100dvh-220px)] overflow-y-auto p-4">
               <FilterPanel value={filterState} onChange={setFilterState} />
             </div>
           </aside>
