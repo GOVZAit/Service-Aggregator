@@ -26,7 +26,7 @@ export default function OrganizationBottomNavigation() {
               href={href}
               className={cn(
                 "pressable min-w-[68px] min-h-[52px] flex flex-col items-center justify-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all lg:flex-row",
-                active ? "text-primary bg-primary/[0.07]" : "text-muted-foreground hover:text-foreground",
+                active ? "nav-active-pill text-primary" : "text-muted-foreground hover:text-foreground",
               )}
             >
               <span className="relative">
