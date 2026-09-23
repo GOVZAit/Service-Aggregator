@@ -112,10 +112,13 @@ function RoleGuard({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
+  const [location] = useLocation();
+
   return (
     <Suspense fallback={<AppBootScreen />}>
       <RoleGuard>
-        <Switch>
+        <div key={location} className="route-stage">
+          <Switch>
         {/* Executor (master) routes — declared first so /master/orders and /master/profile
             are matched before the parameterized /master/:id client route */}
         <Route path="/master" component={MasterDashboardPage} />
@@ -164,7 +167,8 @@ function Router() {
         <Route path="/preview/whatsapp" component={PreviewWhatsApp} />
 
           <Route component={NotFound} />
-        </Switch>
+          </Switch>
+        </div>
       </RoleGuard>
     </Suspense>
   );

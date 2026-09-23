@@ -17,7 +17,7 @@ export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardP
     <Link href={`/master/${master.id}`}>
       <article
         data-testid={`master-card-${master.id}`}
-        className="premium-card pressable group cursor-pointer overflow-hidden p-4 transition-transform duration-200 active:scale-[.995]"
+        className="premium-card content-auto pressable group cursor-pointer overflow-hidden p-4 transition-transform duration-200 active:scale-[.995]"
       >
         <div className="flex gap-3.5">
           <div className="relative shrink-0">

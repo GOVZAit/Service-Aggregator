@@ -59,13 +59,13 @@ export function BottomNavigation() {
               data-testid={`nav-${tab.id}`}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "pressable min-w-[66px] min-h-[52px] shrink-0 flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-xl transition-colors lg:flex-row lg:gap-2 lg:px-4 lg:rounded-full",
+                "pressable min-w-[66px] min-h-[52px] shrink-0 flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-xl transition-all lg:flex-row lg:gap-2 lg:px-4 lg:rounded-full",
                 isActive
-                  ? "text-primary"
+                  ? "nav-active-pill text-primary"
                   : "text-muted-foreground lg:hover:text-foreground"
               )}
             >
-              <span className="relative">
+              <span className={cn("relative flex h-8 w-10 items-center justify-center rounded-xl transition-transform", isActive && "scale-[1.03]")}>
                 <Icon className="w-6 h-6 lg:w-5 lg:h-5" />
                 {tab.id === "more" && totalCount > 0 && (
                   <span className="absolute -right-2.5 -top-2 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 py-0.5 text-[9px] font-bold leading-none text-primary-foreground">
@@ -73,7 +73,7 @@ export function BottomNavigation() {
                   </span>
                 )}
               </span>
-              <span className="text-center text-[11px] font-medium leading-tight lg:text-sm lg:whitespace-nowrap">
+              <span className={cn("text-center text-[11px] leading-tight lg:text-sm lg:whitespace-nowrap", isActive ? "font-extrabold" : "font-medium")}>
                 {tab.label}
               </span>
             </Link>
@@ -85,14 +85,16 @@ export function BottomNavigation() {
           data-testid="nav-profile"
           aria-current={location.startsWith("/profile") ? "page" : undefined}
           className={cn(
-            "pressable relative z-10 my-1 mr-2 flex min-h-[52px] min-w-[66px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1 transition-colors lg:mr-3 lg:flex-row lg:gap-2 lg:rounded-full lg:px-4",
+            "pressable relative z-10 my-1 mr-2 flex min-h-[52px] min-w-[66px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1 transition-all lg:mr-3 lg:flex-row lg:gap-2 lg:rounded-full lg:px-4",
             location.startsWith("/profile")
-              ? "text-primary"
+              ? "nav-active-pill text-primary"
               : "text-muted-foreground lg:hover:text-foreground"
           )}
         >
-          <User className="h-6 w-6 lg:h-5 lg:w-5" />
-          <span className="text-center text-[11px] font-medium leading-tight lg:text-sm lg:whitespace-nowrap">
+          <span className={cn("flex h-8 w-10 items-center justify-center rounded-xl", location.startsWith("/profile") && "scale-[1.03]")}>
+            <User className="h-6 w-6 lg:h-5 lg:w-5" />
+          </span>
+          <span className={cn("text-center text-[11px] leading-tight lg:text-sm lg:whitespace-nowrap", location.startsWith("/profile") ? "font-extrabold" : "font-medium")}>
             Профиль
           </span>
         </Link>

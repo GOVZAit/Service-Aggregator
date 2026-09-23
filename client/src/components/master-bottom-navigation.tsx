@@ -22,10 +22,11 @@ export default function MasterBottomNavigation() {
           return (
             <Link key={href} href={href}
                 data-testid={`nav-master-${label.toLowerCase()}`}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "pressable min-w-[76px] min-h-[52px] flex flex-col items-center justify-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all lg:flex-row",
                   isActive
-                    ? "text-primary bg-primary/[0.07]"
+                    ? "nav-active-pill text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
