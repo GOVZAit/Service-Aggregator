@@ -8,38 +8,56 @@ export function PwaUpdatePrompt() {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
-    let disposed = false;
 
-    const inspect = async () => {
-      const current = await navigator.serviceWorker.getRegistration();
-      if (!current || disposed) return;
+    let disposed = false;
+    let currentRegistration: ServiceWorkerRegistration | null = null;
+
+    const bindRegistration = (current: ServiceWorkerRegistration) => {
+      if (disposed || currentRegistration === current) return;
+      currentRegistration = current;
       setRegistration(current);
-      if (current.waiting && navigator.serviceWorker.controller) setVisible(true);
+
+      if (current.waiting && navigator.serviceWorker.controller) {
+        setVisible(true);
+      }
+
       current.addEventListener("updatefound", () => {
         const worker = current.installing;
         if (!worker) return;
         worker.addEventListener("statechange", () => {
-          if (worker.state === "installed" && navigator.serviceWorker.controller) setVisible(true);
+          if (worker.state === "installed" && navigator.serviceWorker.controller) {
+            setVisible(true);
+          }
         });
       });
     };
 
-    inspect().catch(() => {});
+    navigator.serviceWorker.getRegistration()
+      .then((current) => { if (current) bindRegistration(current); })
+      .catch(() => {});
+
+    const onRegistration = (event: Event) => {
+      const custom = event as CustomEvent<ServiceWorkerRegistration>;
+      if (custom.detail) bindRegistration(custom.detail);
+    };
+
     const onControllerChange = () => window.location.reload();
+
+    window.addEventListener("govza:sw-registration", onRegistration);
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
-    const interval = window.setInterval(() => {
-      navigator.serviceWorker.getRegistration().then((current) => current?.update()).catch(() => {});
-    }, 60 * 60 * 1000);
 
     return () => {
       disposed = true;
-      window.clearInterval(interval);
+      window.removeEventListener("govza:sw-registration", onRegistration);
       navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
     };
   }, []);
 
   const applyUpdate = () => {
-    if (!registration?.waiting) { window.location.reload(); return; }
+    if (!registration?.waiting) {
+      void registration?.update().finally(() => window.location.reload());
+      return;
+    }
     registration.waiting.postMessage("SKIP_WAITING");
   };
 
@@ -54,12 +72,19 @@ export function PwaUpdatePrompt() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-extrabold">Доступно обновление GOVZA мастера</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Обновите приложение, чтобы получить последнюю версию интерфейса и функций.</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Обновите приложение, чтобы получить последнюю версию интерфейса и функций.
+            </p>
             <Button size="sm" className="mt-3 rounded-xl font-bold" onClick={applyUpdate}>
               <RefreshCw className="mr-1.5 h-4 w-4" /> Обновить
             </Button>
           </div>
-          <button type="button" onClick={() => setVisible(false)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground" aria-label="Закрыть">
+          <button
+            type="button"
+            onClick={() => setVisible(false)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground"
+            aria-label="Закрыть"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
