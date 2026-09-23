@@ -79,13 +79,16 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: postgresql://postgres:test@localhost:5432/govza_test
         run: npm run test:product:db
-      - name: Commit verified feature branch only
+      - name: Commit verified source files to feature branch only
         shell: bash
         run: |
           test "$(git branch --show-current)" = "gpt/product-maturity"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          # GITHUB_TOKEN has no workflow-write permission. Keep workflows unchanged;
+          # the authorized GitHub connector will apply CI changes and remove helpers.
+          git restore --source=HEAD --staged --worktree .github/workflows
           git diff --cached --stat
           git commit -m 'feat: persistent client memory, reliable availability and smarter catalog'
           git push origin HEAD:gpt/product-maturity
