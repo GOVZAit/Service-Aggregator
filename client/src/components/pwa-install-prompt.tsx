@@ -7,6 +7,9 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
+const DISMISS_KEY = "govza-install-dismissed-at";
+const DISMISS_TTL = 5 * 24 * 60 * 60 * 1000;
+
 function isStandalone() {
   return window.matchMedia("(display-mode: standalone)").matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true;
@@ -16,53 +19,76 @@ function isIos() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
+function recentlyDismissed() {
+  const value = Number(localStorage.getItem(DISMISS_KEY) || 0);
+  return value > 0 && Date.now() - value < DISMISS_TTL;
+}
+
 export function PwaInstallPrompt() {
   const [event, setEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [ios, setIos] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
 
   useEffect(() => {
     if (isStandalone()) return;
-    if (sessionStorage.getItem("govza-install-dismissed") === "1") return;
     setIos(isIos());
 
-    const listener = (raw: Event) => {
+    const installListener = (raw: Event) => {
       raw.preventDefault();
       setEvent(raw as BeforeInstallPromptEvent);
+      if (!recentlyDismissed()) setVisible(true);
+    };
+
+    const openListener = () => {
+      setManualOpen(true);
       setVisible(true);
     };
-    const openListener = () => setVisible(true);
-    window.addEventListener("beforeinstallprompt", listener);
-    window.addEventListener("govza:install", openListener);
 
-    if (isIos()) {
-      const timer = window.setTimeout(() => setVisible(true), 1800);
-      return () => {
-        window.clearTimeout(timer);
-        window.removeEventListener("beforeinstallprompt", listener);
-        window.removeEventListener("govza:install", openListener);
-      };
+    const installedListener = () => {
+      localStorage.removeItem(DISMISS_KEY);
+      setVisible(false);
+      setEvent(null);
+    };
+
+    window.addEventListener("beforeinstallprompt", installListener);
+    window.addEventListener("govza:install", openListener);
+    window.addEventListener("appinstalled", installedListener);
+
+    let timer: number | undefined;
+    if (isIos() && !recentlyDismissed()) {
+      timer = window.setTimeout(() => setVisible(true), 2200);
     }
+
     return () => {
-      window.removeEventListener("beforeinstallprompt", listener);
+      if (timer) window.clearTimeout(timer);
+      window.removeEventListener("beforeinstallprompt", installListener);
       window.removeEventListener("govza:install", openListener);
+      window.removeEventListener("appinstalled", installedListener);
     };
   }, []);
 
   const dismiss = () => {
-    sessionStorage.setItem("govza-install-dismissed", "1");
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
     setVisible(false);
+    setManualOpen(false);
   };
 
   const install = async () => {
     if (!event) return;
     await event.prompt();
     const choice = await event.userChoice;
-    if (choice.outcome === "accepted") setVisible(false);
+    if (choice.outcome === "accepted") {
+      localStorage.removeItem(DISMISS_KEY);
+      setVisible(false);
+    }
     setEvent(null);
+    setManualOpen(false);
   };
 
   if (!visible || isStandalone()) return null;
+
+  const androidFallback = !ios && !event && manualOpen;
 
   return (
     <div className="fixed bottom-20 left-3 right-3 z-[70] mx-auto max-w-md rounded-[1.5rem] border border-primary/15 bg-background/95 p-4 shadow-2xl backdrop-blur-2xl lg:bottom-6">
@@ -71,17 +97,26 @@ export function PwaInstallPrompt() {
           {ios ? <Share2 className="h-5 w-5" /> : <Download className="h-5 w-5" />}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">Установить GOVZA мастера</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="font-extrabold">Установить GOVZA мастера</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
             {ios
               ? "В Safari нажмите «Поделиться» → «На экран Домой»."
-              : "Добавьте GOVZA мастера на главный экран для быстрого доступа."}
+              : androidFallback
+                ? "Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран»."
+                : "Добавьте GOVZA мастера на главный экран для быстрого доступа."}
           </p>
           {!ios && event && (
-            <Button size="sm" className="mt-3" onClick={install}>Установить</Button>
+            <Button size="sm" className="mt-3 rounded-xl font-bold" onClick={install}>
+              <Download className="mr-1.5 h-4 w-4" /> Установить
+            </Button>
           )}
         </div>
-        <button onClick={dismiss} className="flex h-10 w-10 items-center justify-center text-muted-foreground" aria-label="Закрыть">
+        <button
+          type="button"
+          onClick={dismiss}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground"
+          aria-label="Закрыть"
+        >
           <X className="h-4 w-4" />
         </button>
       </div>
