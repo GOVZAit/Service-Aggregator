@@ -1,13 +1,15 @@
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "__GOVZA_BUILD_VERSION__";
 const STATIC_CACHE = `govza-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `govza-runtime-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
   "/",
+  "/offline.html",
   "/manifest.webmanifest",
   "/favicon.png",
   "/icon-192.png",
   "/icon-512.png",
+  "/maskable-icon.svg",
 ];
 
 self.addEventListener("install", (event) => {
@@ -41,6 +43,7 @@ self.addEventListener("fetch", (event) => {
 
   if (url.pathname.startsWith("/api/")) {
     if (request.method !== "GET") return;
+
     event.respondWith(
       fetch(request).catch(() => new Response(
         JSON.stringify({ message: "Нет подключения к интернету" }),
@@ -65,7 +68,11 @@ self.addEventListener("fetch", (event) => {
         if (preload) return preload;
         return await fetch(request);
       } catch {
-        return await caches.match("/") || Response.error();
+        const cachedShell = await caches.match("/");
+        if (cachedShell) return cachedShell;
+
+        const offlineFallback = await caches.match("/offline.html");
+        return offlineFallback || Response.error();
       }
     })());
     return;
@@ -74,7 +81,8 @@ self.addEventListener("fetch", (event) => {
   const isAppMetadata =
     url.pathname === "/manifest.webmanifest" ||
     url.pathname === "/favicon.png" ||
-    url.pathname.startsWith("/icon-");
+    url.pathname.startsWith("/icon-") ||
+    url.pathname === "/maskable-icon.svg";
 
   if (isAppMetadata) {
     event.respondWith((async () => {
@@ -136,7 +144,14 @@ self.addEventListener("push", (event) => {
     },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) =>
+        Promise.all(clients.map((client) => client.postMessage({ type: "govza:push-received" })))
+      ),
+    ])
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {
@@ -147,6 +162,7 @@ self.addEventListener("notificationclick", (event) => {
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (clients) => {
       for (const client of clients) {
         if (!("focus" in client)) continue;
+
         if ("navigate" in client) {
           try {
             await client.navigate(targetUrl);
@@ -154,6 +170,7 @@ self.addEventListener("notificationclick", (event) => {
             // Keep the existing window if navigation is temporarily unavailable.
           }
         }
+
         return client.focus();
       }
 
