@@ -10,7 +10,9 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "test:email": "tsx script/test-email-payloads.ts",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "test:product": "tsx script/test-product-maturity.ts",
+    "test:product:db": "tsx script/test-product-memory-db.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

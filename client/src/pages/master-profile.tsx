@@ -1,3 +1,6 @@
+import { useFavorites } from "@/hooks/use-favorites";
+import { useRecordMasterView, useServiceClock } from "@/hooks/use-master-memory";
+import { isAvailableToday, serviceNow } from "@shared/service-time";
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -118,7 +121,7 @@ export default function MasterProfilePage() {
   const masterId = Number(id);
 
   const { data: master, isLoading: masterLoading } = useQuery<Master>({
-    queryKey: [`/api/masters/${masterId}`],
+    queryKey: [`/api/masters/${masterId}`], staleTime: 30_000, refetchOnWindowFocus: true,
   });
 
   const { data: reviewSummary } = useQuery<MasterReviewSummary>({
@@ -126,59 +129,26 @@ export default function MasterProfilePage() {
     enabled: Number.isInteger(masterId) && masterId > 0,
   });
 
-  const todayKey = (() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  })();
+  useRecordMasterView(master);
+  const now = useServiceClock();
+  const todayKey = serviceNow(now).date;
 
-  const { data: availability = [] } = useQuery<AvailabilityDayView[]>({
+  const { data: availabilityRows = [], isError: availabilityError } = useQuery<AvailabilityDayView[]>({
     queryKey: ["/api/providers", masterId, "availability", todayKey],
+    staleTime: 30_000, refetchInterval: 60_000, refetchOnWindowFocus: true,
     enabled: Number.isInteger(masterId) && masterId > 0,
     queryFn: async () => {
       const response = await fetch(`/api/providers/${masterId}/availability?from=${todayKey}&days=14`);
-      if (!response.ok) return [];
+      if (!response.ok) throw new Error("Не удалось проверить расписание");
       return response.json();
     },
   });
 
-  const { data: favorites = [] } = useQuery<number[]>({
-    queryKey: ["/api/favorites"],
-    enabled: user?.role === "client",
-  });
+  const availability = availabilityError ? [] : availabilityRows;
+
+  const { favorites, toggle, isPending: favoritePending } = useFavorites();
   const isFavorite = favorites.includes(masterId);
-
-  const favoriteMutation = useMutation({
-    mutationFn: async (remove: boolean) => {
-      await apiRequest(remove ? "DELETE" : "POST", `/api/favorites/${masterId}`);
-      return remove;
-    },
-    onMutate: async (remove) => {
-      await queryClient.cancelQueries({ queryKey: ["/api/favorites"] });
-      const previous = queryClient.getQueryData<number[]>(["/api/favorites"]) ?? [];
-      queryClient.setQueryData<number[]>(
-        ["/api/favorites"],
-        remove ? previous.filter((id) => id !== masterId) : [...new Set([...previous, masterId])],
-      );
-      return { previous };
-    },
-    onError: (_error, _remove, context) => {
-      if (context?.previous) queryClient.setQueryData(["/api/favorites"], context.previous);
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
-    },
-  });
-
-  const toggleFavorite = () => {
-    if (user?.role !== "client") {
-      navigate("/auth");
-      return;
-    }
-    favoriteMutation.mutate(isFavorite);
-  };
+  const toggleFavorite = () => toggle(masterId);
 
   const directChatMutation = useMutation({
     mutationFn: async () => {
@@ -294,8 +264,8 @@ export default function MasterProfilePage() {
   const displayRating = reviewSummary && reviewSummary.count > 0 ? reviewSummary.average : master.rating;
   const displayReviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : master.reviews;
   const callState = getCallState(master);
-  const todayAvailability = availability.find((day) => day.date === todayKey);
-  const nextAvailable = availability.find((day) => day.status === "available");
+  const todayAvailability = availability.find((day) => isAvailableToday(day, now));
+  const nextAvailable = availability.find((day) => day.status === "available" && day.date > todayKey);
   const portfolioVisible = master.showPortfolio !== false && master.portfolio.length > 0;
   const reviewsVisible = master.showReviews !== false;
   const pricesVisible = master.showPrices !== false && master.services.length > 0;
@@ -324,7 +294,7 @@ export default function MasterProfilePage() {
             <Button variant="ghost" size="icon" className="w-11 h-11" aria-label="Поделиться профилем" onClick={() => void shareProfile()} data-testid="button-share-profile">
               <Share2 className="w-5 h-5 text-muted-foreground" />
             </Button>
-            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} aria-pressed={isFavorite} onClick={toggleFavorite} data-testid="button-favorite-profile">
+            <Button variant="ghost" size="icon" className="w-11 h-11" aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} aria-pressed={isFavorite} onClick={toggleFavorite} disabled={favoritePending(masterId)} data-testid="button-favorite-profile">
               <Heart className={`w-5 h-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'text-muted-foreground'}`} />
             </Button>
           </div>

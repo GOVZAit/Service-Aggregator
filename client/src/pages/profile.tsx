@@ -1,6 +1,6 @@
 import {
   Check, ChevronRight, FileText, HelpCircle, LogIn, LogOut,
-  Moon, Pencil, Save, Sun, UserPlus, X, Download, UserRound, Mail,
+  Moon, Pencil, Save, Sun, UserPlus, X, Download, UserRound, Mail, Heart, History,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
@@ -149,6 +149,11 @@ export default function ProfilePage() {
             <Pencil className="mr-1.5 h-4 w-4" /> Редактировать
           </Button>
         </section>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" className="min-h-12 rounded-xl" onClick={() => navigate("/saved")}><Heart className="mr-2 h-4 w-4" /> Избранное</Button>
+          <Button variant="outline" className="min-h-12 rounded-xl" onClick={() => navigate("/saved?tab=recent")}><History className="mr-2 h-4 w-4" /> Вы смотрели</Button>
+        </div>
 
         <div className="grid grid-cols-3 border-b border-border/70">
           {([

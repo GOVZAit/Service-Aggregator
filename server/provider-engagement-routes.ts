@@ -1,3 +1,4 @@
+import { isCalendarDate, serviceNow } from "@shared/service-time";
 import type { Express } from "express";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db, pool } from "./db";
@@ -33,6 +34,7 @@ function providerCategoryNames(provider: { category: string; categoryId: number;
 }
 
 function dateRange(from: string, days: number) {
+  if (!isCalendarDate(from)) return undefined;
   const start = new Date(`${from}T00:00:00.000Z`);
   if (Number.isNaN(start.getTime())) return undefined;
   const end = new Date(start);
@@ -162,6 +164,21 @@ async function createInvitation(requestId: number, masterId: number, clientId: n
 }
 
 export async function registerProviderEngagementRoutes(app: Express) {
+  app.get("/api/providers/me/availability", async (req, res) => {
+    const user = await authenticatedUser(req);
+    if (!user) return res.status(401).json({ message: "Не авторизован" });
+    if ((user.role !== "master" && user.role !== "organization") || !user.masterId) {
+      return res.status(403).json({ message: "Доступно только исполнителю" });
+    }
+
+    const from = typeof req.query.from === "string" ? req.query.from : serviceNow().date;
+    const requestedDays = Number(req.query.days ?? 14);
+    const days = Number.isInteger(requestedDays) ? Math.min(Math.max(requestedDays, 1), 31) : 14;
+    const rows = await readAvailability(user.masterId, from, days);
+    if (!rows) return res.status(400).json({ message: "Некорректная дата" });
+    res.json(rows);
+  });
+
   app.get("/api/providers/:id/availability", async (req, res) => {
     const providerId = Number(req.params.id);
     if (!Number.isInteger(providerId) || providerId <= 0) {
@@ -172,25 +189,10 @@ export async function registerProviderEngagementRoutes(app: Express) {
       return res.status(404).json({ message: "Исполнитель не найден" });
     }
 
-    const from = typeof req.query.from === "string" ? req.query.from : new Date().toISOString().slice(0, 10);
+    const from = typeof req.query.from === "string" ? req.query.from : serviceNow().date;
     const requestedDays = Number(req.query.days ?? 14);
     const days = Number.isInteger(requestedDays) ? Math.min(Math.max(requestedDays, 1), 31) : 14;
     const rows = await readAvailability(providerId, from, days);
-    if (!rows) return res.status(400).json({ message: "Некорректная дата" });
-    res.json(rows);
-  });
-
-  app.get("/api/providers/me/availability", async (req, res) => {
-    const user = await authenticatedUser(req);
-    if (!user) return res.status(401).json({ message: "Не авторизован" });
-    if ((user.role !== "master" && user.role !== "organization") || !user.masterId) {
-      return res.status(403).json({ message: "Доступно только исполнителю" });
-    }
-
-    const from = typeof req.query.from === "string" ? req.query.from : new Date().toISOString().slice(0, 10);
-    const requestedDays = Number(req.query.days ?? 14);
-    const days = Number.isInteger(requestedDays) ? Math.min(Math.max(requestedDays, 1), 31) : 14;
-    const rows = await readAvailability(user.masterId, from, days);
     if (!rows) return res.status(400).json({ message: "Некорректная дата" });
     res.json(rows);
   });
