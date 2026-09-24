@@ -58,7 +58,21 @@ export function AppBrandHeader({
               <span className="display-face text-[1.45rem] font-bold text-foreground sm:text-[1.7rem]">GOVZA</span>
               <span className="text-[1rem] font-extrabold tracking-[-0.04em] text-primary sm:text-[1.1rem]">мастера</span>
             </div>
-            <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground sm:text-xs">{subtitle}</p>
+            {onLocationClick ? (
+              <button
+                type="button"
+                onClick={onLocationClick}
+                className="pressable mt-1 flex max-w-[13rem] items-center gap-1 text-[11px] font-semibold text-muted-foreground sm:hidden"
+                data-testid="brand-location-mobile"
+              >
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="truncate">{city}</span>
+                <ChevronDown className="h-3 w-3 shrink-0" />
+              </button>
+            ) : (
+              <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground sm:hidden">{subtitle}</p>
+            )}
+            <p className="mt-0.5 hidden truncate text-xs font-medium text-muted-foreground sm:block">{subtitle}</p>
           </div>
         )}
 

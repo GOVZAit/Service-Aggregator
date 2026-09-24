@@ -2,7 +2,7 @@ import { useMemo, useState, type SetStateAction } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
-  BadgeCheck, Car, Check, ChevronDown, ChevronRight, Droplets, GraduationCap,
+  BadgeCheck, Car, Check, ChevronRight, Droplets, GraduationCap,
   Hammer, MapPin, Palette, PlugZap, Search, SlidersHorizontal, Sparkles,
   Truck, X, Zap, Heart, History, CalendarCheck,
 } from "lucide-react";
@@ -129,20 +129,6 @@ export default function HomePage() {
             subtitle="Надёжные мастера рядом"
           />
 
-          <button
-            type="button"
-            onClick={() => setShowLocation(true)}
-            className="pressable mt-3 flex min-h-10 items-center gap-2 rounded-xl bg-muted/75 px-3 text-left sm:hidden"
-            data-testid="button-location"
-          >
-            <MapPin className="h-4 w-4 text-primary" />
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-medium leading-none text-muted-foreground">Чеченская Республика</p>
-              <p className="mt-1 truncate text-sm font-bold">{city}</p>
-            </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </button>
-
           <div className="mt-3 flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
@@ -186,37 +172,38 @@ export default function HomePage() {
             </button>
           </div>
 
-          <div className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5 lg:-mx-6 lg:px-6">
-            {categoriesLoading ? (
-              Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-11 w-28 shrink-0 rounded-2xl" />)
-            ) : (
-              categories.slice(0, 8).map((category) => {
-                const Icon = categoryIcons[category.iconName] ?? Zap;
-                const active = selectedCategory === category.id;
-                return (
-                  <button
-                    key={category.id}
-                    type="button"
-                    onClick={() => setSelectedCategory((current) => current === category.id ? null : category.id)}
-                    className={cn(
-                      "pressable flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-sm font-semibold",
-                      active
-                        ? "bg-primary text-primary-foreground"
-                        : "border border-border/70 bg-background text-foreground"
-                    )}
-                    data-testid={`category-chip-${category.id}`}
-                  >
-                    <Icon className={cn("h-4 w-4", !active && "text-primary")} />
-                    {category.name}
-                  </button>
-                );
-              })
-            )}
-          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-lg px-4 py-4 lg:max-w-6xl lg:px-6 lg:py-6">
+        <div className="scrollbar-none -mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 lg:-mx-6 lg:px-6">
+          {categoriesLoading ? (
+            Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-11 w-28 shrink-0 rounded-2xl" />)
+          ) : (
+            categories.slice(0, 8).map((category) => {
+              const Icon = categoryIcons[category.iconName] ?? Zap;
+              const active = selectedCategory === category.id;
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => setSelectedCategory((current) => current === category.id ? null : category.id)}
+                  className={cn(
+                    "pressable flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-sm font-semibold",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-border/70 bg-background text-foreground"
+                  )}
+                  data-testid={`category-chip-${category.id}`}
+                >
+                  <Icon className={cn("h-4 w-4", !active && "text-primary")} />
+                  {category.name}
+                </button>
+              );
+            })
+          )}
+        </div>
+
         <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-8">
           <aside className="sticky top-[185px] hidden max-h-[calc(100dvh-205px)] overflow-y-auto overscroll-contain lg:block">
             <div className="premium-card p-5">
