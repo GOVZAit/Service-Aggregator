@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   BadgeCheck, Car, Check, ChevronRight, Droplets, GraduationCap,
-  Hammer, Palette, PlugZap, Search, SlidersHorizontal, Sparkles,
+  Hammer, MapPin, Palette, PlugZap, Search, SlidersHorizontal, Sparkles,
   Truck, X, Zap, Heart, History, CalendarCheck,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
