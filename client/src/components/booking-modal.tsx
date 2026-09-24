@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { X, Calendar, MapPin, MessageSquare, CheckCircle2, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { Master } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/auth-context";
+import { useEffect, useRef, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Calendar, CheckCircle2, X } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/auth-context";
+import { useServiceClock } from "@/hooks/use-master-memory";
+import { canRequestSlot, formatBookingSlot, isFutureSlot, serviceNow, upcomingDates } from "@shared/service-time";
+import type { AvailabilityDayView } from "@shared/provider-engagement-schema";
+import type { Master, Order } from "@shared/schema";
 
 interface BookingModalProps {
   master: Master;
@@ -16,271 +19,149 @@ interface BookingModalProps {
   heading?: string;
 }
 
-const timeSlots = [
-  "09:00", "10:00", "11:00", "12:00", "13:00",
-  "14:00", "15:00", "16:00", "17:00", "18:00", "19:00",
-];
+// Half-hour request times. The server rechecks the actual day/window before accepting.
+const timeSlots = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
 
-const today = new Date();
-const dates = Array.from({ length: 7 }, (_, i) => {
-  const d = new Date(today);
-  d.setDate(today.getDate() + i);
-  return d;
-});
-
-function formatDate(d: Date) {
-  const days = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
-  return { day: d.getDate(), weekday: days[d.getDay()] };
-}
-
-export function BookingModal({
-  master,
-  onClose,
-  initialService,
-  initialAddress = "",
-  initialComment = "",
-  heading = "Записаться к мастеру",
-}: BookingModalProps) {
-  const [step, setStep] = useState<"form" | "success">("form");
-  const [selectedDate, setSelectedDate] = useState<number>(0);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedService, setSelectedService] = useState<string | null>(() => {
-    if (initialService && master.services.some((service) => service.name === initialService)) {
-      return initialService;
-    }
-    return master.services[0]?.name ?? null;
-  });
-  const [address, setAddress] = useState(initialAddress);
-  const [comment, setComment] = useState(initialComment);
-  const [showServices, setShowServices] = useState(false);
+export function BookingModal({ master, onClose, initialService, initialAddress = "", initialComment = "", heading = "Записаться к мастеру" }: BookingModalProps) {
+  const clock = useServiceClock();
+  const today = serviceNow(clock).date;
+  const dates = upcomingDates(7, clock);
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedTime, setSelectedTime] = useState("");
+  const [selectedService, setSelectedService] = useState(() => initialService
+    ? (master.services.some((service) => service.name === initialService) ? initialService : "")
+    : master.services[0]?.name ?? "");
+  const [address, setAddress] = useState(initialAddress.slice(0, 250));
+  const [comment, setComment] = useState(initialComment.slice(0, 1000));
   const [submitting, setSubmitting] = useState(false);
+  const sending = useRef(false);
   const [submitError, setSubmitError] = useState("");
+  const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const availability = useQuery<AvailabilityDayView[]>({
+    queryKey: ["/api/providers", master.id, "availability", today, 7],
+    queryFn: async ({ signal }) => {
+      const response = await fetch(`/api/providers/${master.id}/availability?from=${today}&days=7`, { signal, cache: "no-store" });
+      if (!response.ok) throw new Error("Не удалось проверить расписание");
+      return response.json();
+    },
+    staleTime: 15_000, refetchInterval: 30_000, refetchOnWindowFocus: true,
+  });
+  const day = availability.data?.find((row) => row.date === selectedDate);
+  const service = master.services.find((item) => item.name === selectedService);
+  const missingOriginalService = !!initialService && !master.services.some((item) => item.name === initialService);
+  const allowedTimes = Array.from(new Set([...timeSlots, ...(day?.fromTime ? [day.fromTime] : [])])).sort().filter((time) => isFutureSlot(selectedDate, time, clock) && canRequestSlot(day, selectedDate, time));
+  const canSubmit = !!service && address.trim().length >= 3 && !!selectedTime && allowedTimes.includes(selectedTime) &&
+    !availability.isPending && !availability.isError && !submitting;
 
-  const canSubmit = selectedTime && address.trim();
+  useEffect(() => {
+    if (selectedDate < today) { setSelectedDate(today); setSelectedTime(""); }
+  }, [today, selectedDate]);
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
-    if (!user) {
-      onClose();
-      navigate("/auth?tab=register");
-      return;
-    }
+    if (sending.current || !canSubmit || !service) return;
+    if (!user) { onClose(); navigate("/auth?tab=register"); return; }
+    sending.current = true;
     setSubmitting(true);
     setSubmitError("");
     try {
-      await apiRequest("POST", "/api/orders", {
-        masterId: master.id,
-        service: selectedService,
-        scheduledAt: `${dates[selectedDate].toLocaleDateString("ru-RU")}, ${selectedTime}`,
-        address: address.trim(),
-        comment: comment.trim() || undefined,
+      const response = await fetch("/api/orders", {
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ masterId: master.id, service: service.name, expectedPrice: service.price,
+          scheduledAt: formatBookingSlot(selectedDate, selectedTime), address: address.trim(), comment: comment.trim() || undefined }),
       });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        if (response.status === 409) {
+          setSelectedTime("");
+          await Promise.all([queryClient.invalidateQueries({ queryKey: ["/api/masters"] }),
+            queryClient.invalidateQueries({ queryKey: [`/api/masters/${master.id}`] }), availability.refetch()]);
+        }
+        throw new Error(typeof payload?.message === "string" ? payload.message : "Не удалось отправить заявку. Проверьте соединение и повторите.");
+      }
+      setCreatedOrder(payload as Order);
       await queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      setStep("success");
-    } catch {
-      setSubmitError("Не удалось отправить заявку. Попробуйте ещё раз.");
-    } finally {
-      setSubmitting(false);
-    }
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Не удалось отправить заявку.");
+    } finally { sending.current = false; setSubmitting(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative mt-auto w-full max-h-[92vh] bg-background rounded-t-3xl flex flex-col overflow-hidden shadow-2xl">
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-        </div>
-
-        {step === "success" ? (
-          <div className="flex flex-col items-center justify-center px-6 py-12 gap-4">
-            <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-950/50 flex items-center justify-center">
-              <CheckCircle2 className="w-10 h-10 text-green-500" />
+    <Dialog.Root open onOpenChange={(open) => { if (!open && !sending.current) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" />
+        <Dialog.Content aria-describedby="booking-description" className="fixed bottom-0 left-0 right-0 z-[61] flex max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl bg-background shadow-2xl outline-none sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:w-[min(560px,94vw)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl">
+          <div className="flex items-center justify-between border-b border-border/60 px-5 py-4 shrink-0">
+            <div>
+              <Dialog.Title className="text-lg font-bold">{createdOrder ? "Заявка отправлена" : heading}</Dialog.Title>
+              <Dialog.Description id="booking-description" className="text-xs text-muted-foreground">{master.name} · {master.category}</Dialog.Description>
             </div>
-            <div className="text-center">
-              <h2 className="text-xl font-bold mb-1">Заявка отправлена!</h2>
-              <p className="text-muted-foreground text-sm">
-                {master.name} получит уведомление и свяжется с вами в течение {master.responseTime}
-              </p>
-            </div>
-            <div className="w-full rounded-2xl bg-muted p-4 text-sm space-y-1">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Услуга</span>
-                <span className="font-medium">{selectedService}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Дата</span>
-                <span className="font-medium">
-                  {dates[selectedDate].getDate()} {["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"][dates[selectedDate].getMonth()]} в {selectedTime}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Адрес</span>
-                <span className="font-medium truncate max-w-[180px]">{address}</span>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-full h-12 rounded-xl bg-primary text-white font-semibold text-base"
-              data-testid="button-booking-done"
-            >
-              Отлично!
-            </button>
+            <Dialog.Close disabled={submitting} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted" aria-label="Закрыть" data-testid="button-close-booking"><X className="h-4 w-4" /></Dialog.Close>
           </div>
-        ) : (
-          <>
-            <div className="px-5 pb-3 pt-1 shrink-0 flex items-center justify-between border-b border-border/60">
-              <div>
-                <h2 className="font-bold text-lg">{heading}</h2>
-                <p className="text-xs text-muted-foreground">{master.name} · {master.category}</p>
-              </div>
-              <button onClick={onClose} aria-label="Закрыть" className="w-11 h-11 -mr-2 rounded-full flex items-center justify-center" data-testid="button-close-booking">
-                <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                  <X className="w-4 h-4" />
-                </span>
-              </button>
+          {createdOrder ? (
+            <div className="space-y-4 overflow-y-auto p-6">
+              <CheckCircle2 className="mx-auto h-16 w-16 text-green-600" />
+              <p className="text-center text-sm text-muted-foreground">Мастер получил заявку. Дождитесь подтверждения времени и условий работы.</p>
+              <dl className="space-y-2 rounded-2xl bg-muted p-4 text-sm">
+                <div><dt className="text-muted-foreground">Услуга</dt><dd className="font-medium">{createdOrder.title}</dd></div>
+                <div><dt className="text-muted-foreground">Желаемое время (МСК)</dt><dd>{createdOrder.date}</dd></div>
+                <div><dt className="text-muted-foreground">Цена по прайсу</dt><dd>{createdOrder.price}</dd></div>
+                <div><dt className="text-muted-foreground">Адрес</dt><dd className="break-words">{createdOrder.address}</dd></div>
+              </dl>
+              <button onClick={onClose} className="h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground" data-testid="button-booking-done">Готово</button>
             </div>
-
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-              {/* Service selector */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Услуга</p>
-                <button
-                  onClick={() => setShowServices((v) => !v)}
-                  data-testid="button-select-service"
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-muted border border-border text-sm font-medium"
-                >
-                  <span>{selectedService || "Выберите услугу"}</span>
-                  <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", showServices && "rotate-180")} />
-                </button>
-                {showServices && (
-                  <div className="mt-2 rounded-xl border border-border bg-card overflow-hidden">
-                    {master.services.map((svc) => (
-                      <button
-                        key={svc.name}
-                        onClick={() => { setSelectedService(svc.name); setShowServices(false); }}
-                        data-testid={`option-service-${svc.name}`}
-                        className={cn(
-                          "w-full flex items-center justify-between px-4 py-3 text-sm border-b border-border/60 last:border-0 transition-colors",
-                          selectedService === svc.name ? "bg-primary/5 text-primary font-medium" : "hover:bg-muted/50"
-                        )}
-                      >
-                        <span>{svc.name}</span>
-                        <span className="font-semibold">{svc.price}</span>
-                      </button>
-                    ))}
+          ) : (
+            <>
+              <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
+                {initialService && <p className="rounded-xl bg-muted p-3 text-sm">Задача и адрес перенесены из прошлого заказа. Выберите новую дату и проверьте текущую цену.</p>}
+                {missingOriginalService && <p role="status" className="text-sm text-amber-700 dark:text-amber-400">Услуги «{initialService}» больше нет в прайсе. Выберите подходящую услугу — мы не заменяем её автоматически.</p>}
+                <label className="block text-sm font-medium">Услуга
+                  <select value={service ? selectedService : ""} onChange={(event) => setSelectedService(event.target.value)} className="mt-2 min-h-12 w-full rounded-xl border border-border bg-muted px-3" data-testid="button-select-service">
+                    <option value="" disabled>Выберите услугу</option>
+                    {master.services.map((item) => <option key={item.name} value={item.name}>{item.name} · {item.price}</option>)}
+                  </select>
+                </label>
+                {service && <p className="text-sm">Текущая цена по прайсу: <strong data-testid="booking-current-price">{service.price}</strong>. Итоговую стоимость согласуйте с мастером.</p>}
+                <div>
+                  <p className="mb-2 flex items-center gap-2 text-sm font-medium"><Calendar className="h-4 w-4" />Дата · время по Москве</p>
+                  <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Дата записи">
+                    {dates.map((date, index) => {
+                      const d = new Date(`${date}T12:00:00Z`);
+                      return <button key={date} onClick={() => { setSelectedDate(date); setSelectedTime(""); }} aria-pressed={selectedDate === date} data-testid={`date-slot-${index}`} className={cn("flex w-16 shrink-0 flex-col rounded-xl border-2 px-2 py-2", selectedDate === date ? "border-primary bg-primary text-primary-foreground" : "border-border")}>
+                        <span className="text-xs">{index === 0 ? "Сегодня" : d.toLocaleDateString("ru-RU", { weekday: "short", timeZone: "UTC" })}</span>
+                        <span className="font-bold">{d.getUTCDate()}</span>
+                      </button>;
+                    })}
                   </div>
-                )}
-              </div>
-
-              {/* Date picker */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Дата</p>
                 </div>
-                <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
-                  {dates.map((d, i) => {
-                    const { day, weekday } = formatDate(d);
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => setSelectedDate(i)}
-                        data-testid={`date-slot-${i}`}
-                        className={cn(
-                          "shrink-0 flex flex-col items-center gap-0.5 w-14 py-2.5 rounded-xl border-2 transition-all",
-                          selectedDate === i
-                            ? "border-primary bg-primary text-white"
-                            : "border-border bg-card text-foreground hover:border-primary/40"
-                        )}
-                      >
-                        <span className="text-[10px] font-medium opacity-70">{weekday}</span>
-                        <span className="text-base font-bold">{day}</span>
-                      </button>
-                    );
-                  })}
+                <div>
+                  <p className="mb-2 text-sm font-medium">Желаемое время</p>
+                  {availability.isPending ? <p role="status" className="text-sm text-muted-foreground">Проверяем расписание…</p> : availability.isError ? (
+                    <div role="alert" className="text-sm text-destructive">Не удалось проверить расписание. <button className="min-h-11 underline" onClick={() => void availability.refetch()}>Повторить</button></div>
+                  ) : <>
+                    {!day && <p className="mb-2 text-xs text-muted-foreground">Мастер не указал расписание на этот день. Время будет подтверждено после отправки заявки.</p>}
+                    {allowedTimes.length === 0 ? <p role="status" className="rounded-xl bg-muted p-3 text-sm">На этот день нет доступного времени. Выберите другую дату.</p> : <div className="grid max-h-44 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6">
+                      {allowedTimes.map((time) => <button key={time} onClick={() => setSelectedTime(time)} aria-pressed={selectedTime === time} data-testid={`time-slot-${time}`} className={cn("min-h-11 rounded-lg border-2 text-sm", selectedTime === time ? "border-primary bg-primary text-primary-foreground" : "border-border")}>{time}</button>)}
+                    </div>}
+                  </>}
                 </div>
+                <label className="block text-sm font-medium">Адрес
+                  <input value={address} onChange={(event) => setAddress(event.target.value)} maxLength={250} autoComplete="street-address" placeholder="Улица, дом, квартира" data-testid="input-booking-address" className="mt-2 min-h-12 w-full rounded-xl border border-border bg-muted px-4 text-sm" />
+                </label>
+                <label className="block text-sm font-medium">Комментарий (необязательно)
+                  <textarea value={comment} onChange={(event) => setComment(event.target.value)} maxLength={1000} rows={3} data-testid="input-booking-comment" className="mt-2 w-full resize-none rounded-xl border border-border bg-muted p-3 text-sm" />
+                </label>
               </div>
-
-              {/* Time slots */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Время</p>
-                <div className="flex flex-wrap gap-2">
-                  {timeSlots.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setSelectedTime(t)}
-                      data-testid={`time-slot-${t}`}
-                      className={cn(
-                        "px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-all",
-                        selectedTime === t
-                          ? "border-primary bg-primary text-white"
-                          : "border-border bg-card hover:border-primary/40"
-                      )}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
+              <div className="shrink-0 border-t border-border/60 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                {submitError && <p role="alert" className="mb-3 text-sm text-destructive">{submitError}</p>}
+                <button onClick={() => void handleSubmit()} disabled={!canSubmit} data-testid="button-booking-submit" className="h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground">{submitting ? "Отправляем…" : user ? "Отправить заявку" : "Войти и отправить"}</button>
               </div>
-
-              {/* Address */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="w-4 h-4 text-primary" />
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Адрес</p>
-                </div>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="ул. Путина, 15, кв. 42"
-                  data-testid="input-booking-address"
-                  className="w-full px-4 py-3 rounded-xl bg-muted border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-              </div>
-
-              {/* Comment */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="w-4 h-4 text-primary" />
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Комментарий (необязательно)</p>
-                </div>
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Опишите задачу подробнее..."
-                  rows={3}
-                  data-testid="input-booking-comment"
-                  className="w-full px-4 py-3 rounded-xl bg-muted border border-border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-              </div>
-            </div>
-
-            {/* Submit */}
-            <div className="px-5 py-4 border-t border-border/60 shrink-0">
-              {submitError && <p className="text-sm text-destructive text-center mb-2">{submitError}</p>}
-              <button
-                onClick={handleSubmit}
-                disabled={!canSubmit || submitting}
-                data-testid="button-booking-submit"
-                className={cn(
-                  "w-full h-12 rounded-xl font-semibold text-base transition-all",
-                  canSubmit && !submitting
-                    ? "bg-primary text-white active:scale-[0.98]"
-                    : "bg-muted text-muted-foreground cursor-not-allowed"
-                )}
-              >
-                {submitting ? "Отправляем..." : user ? "Отправить заявку" : "Войти и отправить"}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+            </>
+          )}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

@@ -240,6 +240,16 @@ export const userFavorites = pgTable("user_favorites", {
   index("user_favorites_user_id_idx").on(table.userId),
 ]);
 
+export const userMasterViews = pgTable("user_master_views", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  masterId: integer("master_id").notNull(),
+  viewedAt: timestamp("viewed_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("user_master_views_user_master_unique").on(table.userId, table.masterId),
+  index("user_master_views_user_date_idx").on(table.userId, table.viewedAt),
+]);
+
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
@@ -327,6 +337,7 @@ export const createOrderSchema = z.object({
   masterId: z.number().int().positive(),
   service: z.string().min(1, 'Выберите услугу').max(120),
   scheduledAt: z.string().min(1, 'Выберите дату и время').max(40),
+  expectedPrice: z.string().max(120).optional(),
   address: z.string().min(3, 'Укажите адрес').max(250),
   comment: z.string().max(1000).optional(),
 }).strict();

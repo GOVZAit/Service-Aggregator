@@ -6,28 +6,17 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { AvailabilityDayView, AvailabilityStatus } from "@shared/provider-engagement-schema";
 
+import { useServiceClock } from "@/hooks/use-master-memory";
+import { serviceNow, upcomingDates } from "@shared/service-time";
+
+const emptyAvailability: AvailabilityDayView[] = [];
+
 type DraftDay = {
   status: AvailabilityStatus | "unset";
   fromTime: string;
   toTime: string;
   note: string;
 };
-
-function dateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function nextDates(count: number) {
-  return Array.from({ length: count }, (_, index) => {
-    const date = new Date();
-    date.setHours(12, 0, 0, 0);
-    date.setDate(date.getDate() + index);
-    return date;
-  });
-}
 
 export function ProviderAvailabilityCard({
   defaultFrom,
@@ -38,11 +27,13 @@ export function ProviderAvailabilityCard({
 }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const dates = useMemo(() => nextDates(31), []);
-  const from = dateKey(dates[0]);
+  const clock = useServiceClock();
+  const from = serviceNow(clock).date;
+  const dates = useMemo(() => upcomingDates(31, new Date(`${from}T12:00:00Z`)), [from]);
 
-  const { data: availability = [], isLoading } = useQuery<AvailabilityDayView[]>({
+  const { data: availability = emptyAvailability, isLoading, isError, refetch } = useQuery<AvailabilityDayView[]>({
     queryKey: ["/api/providers/me/availability", from, 31],
+    staleTime: 30_000, refetchOnWindowFocus: false,
     queryFn: async () => {
       const response = await fetch(`/api/providers/me/availability?from=${from}&days=31`);
       if (!response.ok) throw new Error("Не удалось загрузить расписание");
@@ -56,7 +47,7 @@ export function ProviderAvailabilityCard({
     const rows = new Map(availability.map((day) => [day.date, day]));
     const next: Record<string, DraftDay> = {};
     for (const date of dates) {
-      const key = dateKey(date);
+      const key = date;
       const row = rows.get(key);
       next[key] = {
         status: row?.status ?? "unset",
@@ -72,7 +63,7 @@ export function ProviderAvailabilityCard({
     mutationFn: async () => {
       const original = new Map(availability.map((day) => [day.date, day]));
       const upserts = dates.flatMap((date) => {
-        const key = dateKey(date);
+        const key = date;
         const day = draft[key];
         if (!day || day.status === "unset") return [];
         const previous = original.get(key);
@@ -91,7 +82,7 @@ export function ProviderAvailabilityCard({
       });
 
       const deletions = dates
-        .map(dateKey)
+        .map((date) => date)
         .filter((key) => original.has(key) && draft[key]?.status === "unset");
 
       if (upserts.length > 0) {
@@ -103,7 +94,9 @@ export function ProviderAvailabilityCard({
       return { changed: upserts.length + deletions.length };
     },
     onSuccess: async ({ changed }) => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/providers/me/availability"] });
+      await Promise.all([queryClient.invalidateQueries({ queryKey: ["/api/providers/me/availability"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/providers"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/catalog/availability-today"] })]);
       toast({
         title: changed > 0 ? "Расписание сохранено" : "Изменений нет",
         description: changed > 0 ? "Клиенты увидят актуальную доступность в вашем профиле." : undefined,
@@ -133,15 +126,17 @@ export function ProviderAvailabilityCard({
             Укажите свободные окна на ближайшие 31 день. Неуказанный день не считается свободным.
           </p>
         </div>
-        <Button size="sm" disabled={isLoading || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+        <Button size="sm" disabled={isLoading || isError || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
           <Save className="mr-1.5 h-4 w-4" />
           Сохранить
         </Button>
       </div>
 
-      <div className="mt-4 max-h-[520px] space-y-2 overflow-y-auto pr-1">
+      {isError && <p role="alert" className="mt-3 text-sm text-destructive">Расписание не загрузилось. <button onClick={() => void refetch()} className="min-h-11 underline">Повторить</button></p>}
+      <p className="mt-2 text-xs text-muted-foreground">Время по Москве. Отметка «Свободен сегодня» исчезнет после окончания окна.</p>
+      <fieldset disabled={isLoading || isError || saveMutation.isPending} className="mt-4 max-h-[520px] space-y-2 overflow-y-auto pr-1">
         {dates.map((date, index) => {
-          const key = dateKey(date);
+          const key = date;
           const day = draft[key] ?? {
             status: "unset" as const,
             fromTime: defaultFrom,
@@ -152,7 +147,7 @@ export function ProviderAvailabilityCard({
             ? "Сегодня"
             : index === 1
               ? "Завтра"
-              : new Intl.DateTimeFormat("ru-RU", { weekday: "short", day: "numeric", month: "short" }).format(date);
+              : new Intl.DateTimeFormat("ru-RU", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 
           return (
             <div key={key} className="rounded-2xl border border-border/70 bg-muted/25 p-3">
@@ -162,6 +157,7 @@ export function ProviderAvailabilityCard({
                   <p className="text-[11px] text-muted-foreground">{key}</p>
                 </div>
                 <select
+                  aria-label={`Доступность ${key}`}
                   value={day.status}
                   onChange={(event) => setDay(key, { status: event.target.value as DraftDay["status"] })}
                   className="h-10 rounded-xl border border-border bg-background px-2 text-sm"
@@ -175,6 +171,7 @@ export function ProviderAvailabilityCard({
                   <div className="flex items-center gap-2">
                     <input
                       type="time"
+                      aria-label={`Начало окна ${key}`}
                       value={day.fromTime}
                       onChange={(event) => setDay(key, { fromTime: event.target.value })}
                       className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-background px-2 text-sm"
@@ -182,6 +179,7 @@ export function ProviderAvailabilityCard({
                     <span className="text-xs text-muted-foreground">—</span>
                     <input
                       type="time"
+                      aria-label={`Конец окна ${key}`}
                       value={day.toTime}
                       onChange={(event) => setDay(key, { toTime: event.target.value })}
                       className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-background px-2 text-sm"
@@ -189,6 +187,7 @@ export function ProviderAvailabilityCard({
                   </div>
                 ) : (
                   <input
+                    aria-label={`Комментарий ${key}`}
                     value={day.note}
                     onChange={(event) => setDay(key, { note: event.target.value })}
                     maxLength={160}
@@ -200,7 +199,7 @@ export function ProviderAvailabilityCard({
             </div>
           );
         })}
-      </div>
+      </fieldset>
     </section>
   );
 }

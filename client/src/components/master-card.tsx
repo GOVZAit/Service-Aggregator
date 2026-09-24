@@ -1,23 +1,25 @@
 import { BadgeCheck, Building2, Clock, Heart, MapPin, Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Master } from "@shared/schema";
+import type { AvailabilityWindow } from "@shared/service-time";
 import { Link } from "wouter";
 
 interface MasterCardProps {
   master: Master;
   isFavorite: boolean;
   onToggleFavorite: (e: React.MouseEvent) => void;
+  favoritePending?: boolean;
+  availableToday?: AvailabilityWindow;
 }
 
-export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardProps) {
+export function MasterCard({ master, isFavorite, onToggleFavorite, favoritePending, availableToday }: MasterCardProps) {
   const previewPhotos = master.showPortfolio !== false ? (master.portfolio?.slice(0, 3) ?? []) : [];
   const isOrganization = master.providerType === "organization";
 
   return (
-    <Link href={`/master/${master.id}`}>
       <article
         data-testid={`master-card-${master.id}`}
-        className="premium-card content-auto pressable group cursor-pointer overflow-hidden p-4 transition-transform duration-200 active:scale-[.995]"
+        className="relative premium-card content-auto pressable group cursor-pointer overflow-hidden p-4 transition-transform duration-200 active:scale-[.995]"
       >
         <div className="flex gap-3.5">
           <div className="relative shrink-0">
@@ -44,14 +46,17 @@ export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardP
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
                 <h3 className="truncate text-[1.02rem] font-extrabold tracking-[-0.03em]" data-testid={`text-name-${master.id}`}>
-                  {master.name}
+                  <Link href={`/master/${master.id}`} className="after:absolute after:inset-0 after:content-[''] focus-visible:underline">{master.name}</Link>
                 </h3>
                 <p className="mt-0.5 text-sm font-medium text-muted-foreground">{master.category}</p>
               </div>
               <button
                 type="button"
                 onClick={onToggleFavorite}
-                className="pressable -mr-1 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-muted"
+                disabled={favoritePending}
+                aria-pressed={isFavorite}
+                data-testid={`favorite-master-${master.id}`}
+                className="pressable relative z-10 -mr-1 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-muted"
                 aria-label={isFavorite ? "Убрать из избранного" : "Добавить в избранное"}
               >
                 <Heart className={`h-5 w-5 ${isFavorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
@@ -71,6 +76,9 @@ export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardP
           </div>
         </div>
 
+        {availableToday && <p className="mt-4 inline-flex rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400" data-testid={`available-today-${master.id}`}>
+          Свободен сегодня · {availableToday.fromTime}–{availableToday.toTime}
+        </p>}
         {previewPhotos.length > 0 && (
           <div className="mt-5 grid grid-cols-3 gap-2">
             {previewPhotos.map((src, index) => (
@@ -104,6 +112,5 @@ export function MasterCard({ master, isFavorite, onToggleFavorite }: MasterCardP
           )}
         </div>
       </article>
-    </Link>
   );
 }

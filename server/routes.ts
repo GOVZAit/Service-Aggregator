@@ -1,3 +1,6 @@
+import { pool } from "./db";
+import { searchMasters as searchCatalogMasters } from "@shared/catalog";
+import { canRequestSlot, isFutureSlot, parseBookingSlot, type AvailabilityWindow } from "@shared/service-time";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
@@ -249,13 +252,14 @@ export async function registerRoutes(
 
   app.get("/api/masters", async (req, res) => {
     const { categoryId, search } = req.query;
-    if (search && typeof search === "string") {
-      return res.json(await storage.searchMasters(search));
+    let masters = await storage.getMasters();
+    if (categoryId !== undefined) {
+      const id = Number(categoryId);
+      if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ message: "Некорректная категория" });
+      masters = masters.filter((master) => (master.categoryIds ?? [master.categoryId]).includes(id));
     }
-    if (categoryId) {
-      return res.json(await storage.getMastersByCategory(Number(categoryId)));
-    }
-    res.json(await storage.getMasters());
+    if (typeof search === "string") masters = searchCatalogMasters(masters, search);
+    res.json(masters);
   });
 
   app.get("/api/masters/:id", async (req, res) => {
@@ -310,7 +314,7 @@ export async function registerRoutes(
     if (user.role !== "client") return res.status(403).json({ message: "Избранное доступно клиентам" });
 
     const masterId = Number(req.params.masterId);
-    if (!Number.isInteger(masterId) || masterId <= 0) {
+    if (!Number.isSafeInteger(masterId) || masterId <= 0 || masterId > 2147483647) {
       return res.status(400).json({ message: "Некорректный мастер" });
     }
 
@@ -329,7 +333,7 @@ export async function registerRoutes(
     if (user.role !== "client") return res.status(403).json({ message: "Избранное доступно клиентам" });
 
     const masterId = Number(req.params.masterId);
-    if (!Number.isInteger(masterId) || masterId <= 0) {
+    if (!Number.isSafeInteger(masterId) || masterId <= 0 || masterId > 2147483647) {
       return res.status(400).json({ message: "Некорректный мастер" });
     }
 
@@ -382,16 +386,29 @@ export async function registerRoutes(
     res.json(orders);
   });
 
-  app.post("/api/orders", async (req, res) => {
+  app.post("/api/orders", async (req, res, next) => {
+    try {
     const user = await getAuthenticatedUser(req);
     if (!user) return res.status(401).json({ message: "Войдите, чтобы оформить заказ" });
     if (user.role !== "client") return res.status(403).json({ message: "Заказ может оформить только клиент" });
     const result = createOrderSchema.safeParse(req.body);
     if (!result.success) return res.status(400).json({ message: result.error.issues[0].message });
+    const slot = parseBookingSlot(result.data.scheduledAt);
+    if (!slot || !isFutureSlot(slot.date, slot.time)) {
+      return res.status(400).json({ message: "Выберите будущую дату и время по Москве" });
+    }
     const master = await storage.getMasterById(result.data.masterId);
-    if (!master) return res.status(404).json({ message: "Мастер не найден" });
+    if (!master || !(await isProviderVisible(master.id))) return res.status(404).json({ message: "Мастер не найден" });
+    const schedule = await pool.query<AvailabilityWindow>(`SELECT date, status, from_time AS "fromTime", to_time AS "toTime"
+      FROM provider_availability WHERE provider_id = $1 AND date = $2`, [master.id, slot.date]);
+    if (!canRequestSlot(schedule.rows[0], slot.date, slot.time)) {
+      return res.status(409).json({ message: "Расписание изменилось. Выберите другое свободное время." });
+    }
     const service = master.services.find((item) => item.name === result.data.service);
-    if (!service) return res.status(400).json({ message: "Выберите услугу этого мастера" });
+    if (!service) return res.status(409).json({ message: "Услуга больше недоступна. Проверьте актуальный прайс и выберите другую услугу." });
+    if (result.data.expectedPrice !== undefined && result.data.expectedPrice !== service.price) {
+      return res.status(409).json({ message: "Цена услуги изменилась. Проверьте актуальную стоимость и подтвердите заказ ещё раз." });
+    }
     const order = await storage.createOrder({
       title: service.name,
       masterId: master.id,
@@ -412,6 +429,7 @@ export async function registerRoutes(
       });
     }
     res.status(201).json(order);
+    } catch (error) { next(error); }
   });
 
   app.get("/api/orders/:id", async (req, res) => {

@@ -1,3 +1,4 @@
+import { ensureClientMemoryTables, registerClientMemoryRoutes } from "./client-memory-routes";
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -142,6 +143,7 @@ app.use((req, res, next) => {
   await ensureProviderImportTables();
   await ensureRequestTables();
   await ensureProviderEngagementTables();
+  await ensureClientMemoryTables();
   await ensureVerificationWorkflowTables();
   await initializePushService();
   await registerPersistentRequestRoutes(app);
@@ -160,6 +162,7 @@ app.use((req, res, next) => {
   await registerProviderEngagementRoutes(app);
   await registerUrgentRoutes(app);
   await registerVerificationRoutes(app);
+  registerClientMemoryRoutes(app);
   await registerRoutes(httpServer, app);
   startProviderLifecycleScheduler();
   startProviderImportScheduler();

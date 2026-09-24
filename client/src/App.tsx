@@ -14,6 +14,7 @@ const MasterProfilePage = lazy(() => import("@/pages/master-profile"));
 const RequestsPage = lazy(() => import("@/pages/requests"));
 const OrdersPage = lazy(() => import("@/pages/orders"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
+const SavedMastersPage = lazy(() => import("@/pages/saved-masters"));
 const CityServicesPage = lazy(() => import("@/pages/city-services"));
 const ContactsPage = lazy(() => import("@/pages/contacts"));
 const ContactsHubPage = lazy(() => import("@/pages/contacts-hub"));
@@ -151,6 +152,7 @@ function Router() {
         <Route path="/messages/:id" component={DirectChatPage} />
         <Route path="/messages" component={DirectChatsPage} />
         <Route path="/profile" component={ProfilePage} />
+        <Route path="/saved" component={SavedMastersPage} />
         <Route path="/city" component={CityServicesPage} />
         <Route path="/contacts/services" component={CityServicesPage} />
         <Route path="/contacts/useful" component={ContactsPage} />
@@ -206,6 +208,7 @@ function RouteEffects() {
         title: "Мои заявки — GOVZA мастера",
         description: "Создавайте заявки, получайте предложения исполнителей и выбирайте подходящего мастера.",
       } :
+      location === "/saved" ? { title: "Мои мастера — GOVZA", description: "Ваше избранное и история просмотренных мастеров." } :
       location.startsWith("/orders") ? {
         title: "Мои заказы — GOVZA мастера",
         description: "Статусы заказов, чат с исполнителем и отзывы после завершения работы.",

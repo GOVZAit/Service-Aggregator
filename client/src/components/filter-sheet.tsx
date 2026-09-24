@@ -1,350 +1,140 @@
-import { useState } from "react";
-import { X, Star, BadgeCheck, ArrowUpDown, Wifi, Award, Briefcase } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { ExecutorType, Master } from "@shared/schema";
+import { useId, useState } from "react";
+import { SlidersHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { activeFilterEntries, applyMasterFilters, defaultFilterState, type FilterState, type SortBy } from "@shared/catalog";
+import type { Master } from "@shared/schema";
 
-export type SortBy = "rating" | "price_asc" | "price_desc" | "reviews" | "distance";
+export { applyMasterFilters, defaultFilterState } from "@shared/catalog";
+export type { FilterState, SortBy } from "@shared/catalog";
 
-export interface FilterState {
-  sortBy: SortBy;
-  verifiedOnly: boolean;
-  onlineOnly: boolean;
-  certifiedOnly: boolean;
-  executorType: ExecutorType | "all";
-}
-
-export const defaultFilterState: FilterState = {
-  sortBy: "rating",
-  verifiedOnly: false,
-  onlineOnly: false,
-  certifiedOnly: false,
-  executorType: "all",
+export const sortLabels: Record<SortBy, string> = {
+  relevance: "По соответствию запросу", rating: "По рейтингу", reviews: "По числу отзывов",
+  price_asc: "Сначала дешевле", price_desc: "Сначала дороже", distance: "По расстоянию в профиле", orders: "По выполненным заказам",
 };
 
-/** Apply the non-sort filters to a list of masters. Shared by the home page and the sheet's live count. */
-export function applyMasterFilters(masters: Master[], state: FilterState): Master[] {
-  let result = masters;
-  if (state.verifiedOnly) result = result.filter((m) => m.verified);
-  if (state.onlineOnly) result = result.filter((m) => m.isOnline);
-  if (state.certifiedOnly) result = result.filter((m) => m.hasCertificate);
-  if (state.executorType !== "all") {
-    result = result.filter((m) => (m.executorType ?? "private") === state.executorType);
-  }
-  return result;
-}
-
-interface FilterSheetProps {
+interface PanelProps {
   value: FilterState;
-  onChange: (v: FilterState) => void;
-  onClose: () => void;
-  /** Masters already narrowed by category/search/district — used for the live draft count. */
-  masters: Master[];
+  onChange: (value: FilterState) => void;
+  districts?: string[];
 }
 
-const sortOptions: { key: SortBy; label: string; desc: string }[] = [
-  { key: "rating", label: "По рейтингу", desc: "Сначала лучшие" },
-  { key: "reviews", label: "По отзывам", desc: "Больше всего отзывов" },
-  { key: "price_asc", label: "По цене ↑", desc: "Сначала дешевле" },
-  { key: "price_desc", label: "По цене ↓", desc: "Сначала дороже" },
-  { key: "distance", label: "По расстоянию", desc: "Ближайшие первые" },
-];
-
-interface FilterPanelProps {
-  value: FilterState;
-  onChange: (v: FilterState) => void;
-}
-export default function FilterSheet({ value, onChange, onClose, masters }: FilterSheetProps) {
-  const [draft, setDraft] = useState<FilterState>(value);
-
-  const apply = () => {
-    onChange(draft);
-    onClose();
-  };
-
-  const reset = () => {
-    setDraft(defaultFilterState);
-    onChange(defaultFilterState);
-    onClose();
-  };
-
-  const hasChanges =
-    draft.sortBy !== "rating" || draft.verifiedOnly || draft.onlineOnly ||
-    draft.certifiedOnly || draft.executorType !== "all";
-
+export function FilterPanel({ value, onChange, districts = [] }: PanelProps) {
+  const id = useId();
+  const set = <K extends keyof FilterState>(key: K, next: FilterState[K]) => onChange({ ...value, [key]: next });
+  const inputClass = "min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm";
+  const invalidPrice = value.minPrice !== null && value.maxPrice !== null && value.minPrice > value.maxPrice;
+  const allDistricts = Array.from(new Set([...districts, ...(value.district === "all" ? [] : [value.district])])).sort((a, b) => a.localeCompare(b, "ru"));
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative mt-auto w-full bg-background rounded-t-3xl shadow-2xl">
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-        </div>
-
-        <div className="px-5 pt-2 pb-3 flex items-center justify-between border-b border-border/60">
-          <h2 className="font-bold text-lg">Фильтры и сортировка</h2>
-          <button onClick={onClose} aria-label="Закрыть фильтры" className="w-11 h-11 -mr-2 rounded-full flex items-center justify-center">
-            <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-              <X className="w-4 h-4" />
-            </span>
-          </button>
-        </div>
-
-        <div className="px-5 py-4 space-y-5 max-h-[60vh] overflow-y-auto">
-          {/* Sort */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <ArrowUpDown className="w-4 h-4 text-primary" />
-              <p className="text-sm font-semibold">Сортировка</p>
-            </div>
-            <div className="space-y-2">
-              {sortOptions.map((opt) => (
-                <button
-                  key={opt.key}
-                  onClick={() => setDraft((d) => ({ ...d, sortBy: opt.key }))}
-                  data-testid={`sort-option-${opt.key}`}
-                  aria-pressed={draft.sortBy === opt.key}
-                  className={cn(
-                    "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left",
-                    draft.sortBy === opt.key
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card hover:border-primary/30"
-                  )}
-                >
-                  <div>
-                    <p className={cn("text-sm font-medium", draft.sortBy === opt.key && "text-primary")}>{opt.label}</p>
-                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                  </div>
-                  <div className={cn(
-                    "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
-                    draft.sortBy === opt.key ? "border-primary bg-primary" : "border-border"
-                  )}>
-                    {draft.sortBy === opt.key && <div className="w-2 h-2 rounded-full bg-white" />}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Star className="w-4 h-4 text-primary" />
-              <p className="text-sm font-semibold">Фильтры</p>
-            </div>
-            <div className="space-y-2">
-              {([
-                { key: "verifiedOnly" as const, icon: BadgeCheck, label: "Только проверенные", desc: "Личность подтверждена командой" },
-                { key: "onlineOnly" as const, icon: Wifi, label: "Онлайн сейчас", desc: "Быстрее ответят на заявку" },
-                { key: "certifiedOnly" as const, icon: Award, label: "Есть сертификат", desc: "Подтверждённая квалификация" },
-              ]).map(({ key, icon: Icon, label, desc }) => (
-                <button
-                  key={key}
-                  onClick={() => setDraft((d) => ({ ...d, [key]: !d[key] }))}
-                  data-testid={`filter-${key}`}
-                  aria-pressed={draft[key]}
-                  className={cn(
-                    "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all",
-                    draft[key] ? "border-primary bg-primary/5" : "border-border bg-card"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className={cn("w-5 h-5", draft[key] ? "text-primary" : "text-muted-foreground")} />
-                    <div className="text-left">
-                      <p className={cn("text-sm font-medium", draft[key] && "text-primary")}>{label}</p>
-                      <p className="text-xs text-muted-foreground">{desc}</p>
-                    </div>
-                  </div>
-                  <div className={cn(
-                    "w-12 h-6 rounded-full transition-all relative shrink-0",
-                    draft[key] ? "bg-primary" : "bg-muted"
-                  )}>
-                    <div className={cn(
-                      "absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all",
-                      draft[key] ? "right-1" : "left-1"
-                    )} />
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Executor type */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Briefcase className="w-4 h-4 text-primary" />
-              <p className="text-sm font-semibold">Кто мастер</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {([
-                { key: "all", label: "Все" },
-                { key: "private", label: "Частное лицо" },
-                { key: "self_employed", label: "Самозанятый" },
-                { key: "company", label: "Компания" },
-              ] as const).map((opt) => (
-                <button
-                  key={opt.key}
-                  onClick={() => setDraft((d) => ({ ...d, executorType: opt.key }))}
-                  data-testid={`filter-executor-${opt.key}`}
-                  aria-pressed={draft.executorType === opt.key}
-                  className={cn(
-                    "px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all",
-                    draft.executorType === opt.key
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-border bg-card text-foreground"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="px-5 py-4 border-t border-border/60 flex gap-3">
-          {hasChanges && (
-            <button
-              onClick={reset}
-              data-testid="button-filter-reset"
-              className="px-4 h-12 rounded-xl border border-border text-sm font-medium text-muted-foreground"
-            >
-              Сбросить
-            </button>
-          )}
-          <button
-            onClick={apply}
-            data-testid="button-filter-apply"
-            className="flex-1 h-12 rounded-xl bg-primary text-white font-semibold text-sm"
-          >
-            Показать {applyMasterFilters(masters, draft).length} мастеров
-          </button>
-        </div>
+    <div className="space-y-5">
+      <div>
+        <label className="mb-2 block text-sm font-semibold" htmlFor={`${id}-sort`}>Сортировка</label>
+        <select id={`${id}-sort`} className={inputClass} value={value.sortBy} onChange={(event) => set("sortBy", event.target.value as SortBy)}>
+          {Object.entries(sortLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+        </select>
       </div>
+
+      <fieldset className="space-y-1">
+        <legend className="mb-2 text-sm font-semibold">Доступность и доверие</legend>
+        {([
+          ["availableTodayOnly", "Свободен сегодня", "По календарю мастера, не по онлайн-статусу"],
+          ["verifiedOnly", "Проверенные", "С отметкой проверки профиля"],
+          ["onlineOnly", "Сейчас онлайн", "Онлайн не означает свободное время"],
+          ["certifiedOnly", "С сертификатом", "Указаны документы о квалификации"],
+          ["topOnly", "Топ-мастера", "С отметкой топ-мастера"],
+        ] as const).map(([key, label, description]) => (
+          <label key={key} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl px-1 py-2">
+            <input type="checkbox" checked={value[key]} onChange={(event) => set(key, event.target.checked)} className="h-5 w-5 shrink-0 accent-primary" data-testid={`filter-${key}`} />
+            <span><span className="block text-sm font-medium">{label}</span><span className="block text-xs text-muted-foreground">{description}</span></span>
+          </label>
+        ))}
+      </fieldset>
+
+      <fieldset>
+        <legend className="mb-2 text-sm font-semibold">Цена в профиле, ₽</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {(["minPrice", "maxPrice"] as const).map((key) => (
+            <label key={key} className="text-xs text-muted-foreground">
+              {key === "minPrice" ? "От" : "До"}
+              <input type="number" inputMode="decimal" min={0} max={10000000} step="any" value={value[key] ?? ""}
+                placeholder={key === "minPrice" ? "Не важно" : "Без лимита"} className={`${inputClass} mt-1 text-foreground`}
+                aria-invalid={invalidPrice} aria-describedby={invalidPrice ? `${id}-price-error` : undefined}
+                onChange={(event) => set(key, event.target.value === "" ? null : Math.min(10000000, Math.max(0, Number(event.target.value) || 0)))} />
+            </label>
+          ))}
+        </div>
+        {invalidPrice ? <p id={`${id}-price-error`} role="alert" className="mt-2 text-xs text-destructive">Цена «от» не должна превышать цену «до».</p>
+          : <p className="mt-2 text-xs leading-relaxed text-muted-foreground">Сравниваем заявленную начальную цену. Итог согласуется с мастером. Неуказанная цена не считается нулевой.</p>}
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="mb-2 text-sm font-semibold">Опыт и отзывы</legend>
+        <label className="block text-xs text-muted-foreground">Рейтинг от
+          <select className={`${inputClass} mt-1 text-foreground`} value={value.minRating} onChange={(event) => set("minRating", Number(event.target.value))}>
+            {Array.from(new Set([0, 4, 4.5, 4.8, value.minRating])).sort((a, b) => a - b).map((rating) => <option key={rating} value={rating}>{rating ? `${rating}+` : "Любой"}</option>)}
+          </select>
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {(["minReviews", "minOrders"] as const).map((key) => <label key={key} className="text-xs text-muted-foreground">
+            {key === "minReviews" ? "Отзывов от" : "Заказов от"}
+            <input type="number" min={0} max={10000000} inputMode="numeric" className={`${inputClass} mt-1 text-foreground`} value={value[key] || ""} placeholder="Любое"
+              onChange={(event) => set(key, Math.min(10000000, Math.max(0, Math.floor(Number(event.target.value) || 0))))} />
+          </label>)}
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="mb-2 text-sm font-semibold">Исполнитель</legend>
+        <label className="block text-xs text-muted-foreground">Тип профиля
+          <select className={`${inputClass} mt-1 text-foreground`} value={value.providerType} onChange={(event) => set("providerType", event.target.value as FilterState["providerType"])}>
+            <option value="all">Все</option><option value="master">Мастер</option><option value="organization">Организация</option>
+          </select>
+        </label>
+        <label className="block text-xs text-muted-foreground">Статус исполнителя
+          <select className={`${inputClass} mt-1 text-foreground`} value={value.executorType} onChange={(event) => set("executorType", event.target.value as FilterState["executorType"])}>
+            <option value="all">Любой</option><option value="private">Частное лицо</option><option value="self_employed">Самозанятый</option><option value="company">Компания</option>
+          </select>
+        </label>
+        {allDistricts.length > 0 && <label className="block text-xs text-muted-foreground">Район
+          <select className={`${inputClass} mt-1 text-foreground`} value={value.district} onChange={(event) => set("district", event.target.value)}>
+            <option value="all">Все районы</option>{allDistricts.map((district) => <option key={district} value={district}>{district}</option>)}
+          </select>
+        </label>}
+      </fieldset>
+      {(activeFilterEntries(value).length > 0 || value.sortBy !== defaultFilterState.sortBy) && <Button type="button" variant="outline" className="w-full rounded-xl" onClick={() => onChange({ ...defaultFilterState })}>Сбросить фильтры</Button>}
     </div>
   );
 }
 
-/** Inline filter panel for the desktop sidebar (applies changes immediately). */
-export function FilterPanel({ value, onChange }: FilterPanelProps) {
-  const hasChanges =
-    value.sortBy !== "rating" || value.verifiedOnly || value.onlineOnly ||
-    value.certifiedOnly || value.executorType !== "all";
+interface FilterSheetProps extends PanelProps {
+  onClose: () => void;
+  masters: Master[];
+  availableIds?: ReadonlySet<number>;
+  availabilityLoading?: boolean;
+}
 
+export default function FilterSheet({ value, onChange, onClose, masters, districts, availableIds, availabilityLoading }: FilterSheetProps) {
+  const [draft, setDraft] = useState(value);
+  const mobile = useIsMobile();
+  const count = applyMasterFilters(masters, draft, availableIds).length;
+  const invalidPrice = draft.minPrice !== null && draft.maxPrice !== null && draft.minPrice > draft.maxPrice;
+  const checking = draft.availableTodayOnly && availabilityLoading;
   return (
-    <div className="space-y-5" data-testid="filter-panel-desktop">
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <ArrowUpDown className="w-4 h-4 text-primary" />
-          <p className="text-sm font-semibold">Сортировка</p>
+    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent side={mobile ? "bottom" : "right"} className={mobile ? "flex max-h-[90dvh] flex-col gap-0 rounded-t-3xl p-0" : "flex h-dvh w-full flex-col gap-0 p-0 sm:max-w-md"}>
+        <SheetHeader className="shrink-0 border-b px-5 py-4 text-left">
+          <SheetTitle className="flex items-center gap-2"><SlidersHorizontal className="h-5 w-5 text-primary" /> Фильтры</SheetTitle>
+          <SheetDescription>Уточните условия. Поиск и город останутся выбранными.</SheetDescription>
+        </SheetHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5"><FilterPanel value={draft} onChange={setDraft} districts={districts} /></div>
+        <div className="shrink-0 border-t bg-background px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+          <Button type="button" className="h-12 w-full rounded-xl" disabled={invalidPrice || checking} onClick={() => { onChange(draft); onClose(); }} data-testid="button-filter-apply">
+            {checking ? "Проверяем расписание…" : `Показать результаты: ${count}`}
+          </Button>
+          <p className="sr-only" role="status" aria-live="polite">Найдено: {count}</p>
         </div>
-        <div className="space-y-2">
-          {sortOptions.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => onChange({ ...value, sortBy: opt.key })}
-              data-testid={`desktop-sort-option-${opt.key}`}
-              aria-pressed={value.sortBy === opt.key}
-              className={cn(
-                "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left",
-                value.sortBy === opt.key
-                  ? "border-primary bg-primary/5"
-                  : "border-border bg-card hover:border-primary/30"
-              )}
-            >
-              <div>
-                <p className={cn("text-sm font-medium", value.sortBy === opt.key && "text-primary")}>{opt.label}</p>
-                <p className="text-xs text-muted-foreground">{opt.desc}</p>
-              </div>
-              <div className={cn(
-                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0",
-                value.sortBy === opt.key ? "border-primary bg-primary" : "border-border"
-              )}>
-                {value.sortBy === opt.key && <div className="w-2 h-2 rounded-full bg-white" />}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Star className="w-4 h-4 text-primary" />
-          <p className="text-sm font-semibold">Фильтры</p>
-        </div>
-        <div className="space-y-2">
-          {([
-            { key: "verifiedOnly" as const, icon: BadgeCheck, label: "Только проверенные", desc: "Личность подтверждена командой" },
-            { key: "onlineOnly" as const, icon: Wifi, label: "Онлайн сейчас", desc: "Быстрее ответят на заявку" },
-            { key: "certifiedOnly" as const, icon: Award, label: "Есть сертификат", desc: "Подтверждённая квалификация" },
-          ]).map(({ key, icon: Icon, label, desc }) => (
-            <button
-              key={key}
-              onClick={() => onChange({ ...value, [key]: !value[key] })}
-              data-testid={`desktop-filter-${key}`}
-              aria-pressed={value[key]}
-              className={cn(
-                "w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all",
-                value[key] ? "border-primary bg-primary/5" : "border-border bg-card"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <Icon className={cn("w-5 h-5", value[key] ? "text-primary" : "text-muted-foreground")} />
-                <div className="text-left">
-                  <p className={cn("text-sm font-medium", value[key] && "text-primary")}>{label}</p>
-                  <p className="text-xs text-muted-foreground">{desc}</p>
-                </div>
-              </div>
-              <div className={cn(
-                "w-12 h-6 rounded-full transition-all relative shrink-0",
-                value[key] ? "bg-primary" : "bg-muted"
-              )}>
-                <div className={cn(
-                  "absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all",
-                  value[key] ? "right-1" : "left-1"
-                )} />
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Briefcase className="w-4 h-4 text-primary" />
-          <p className="text-sm font-semibold">Кто мастер</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {([
-            { key: "all", label: "Все" },
-            { key: "private", label: "Частное лицо" },
-            { key: "self_employed", label: "Самозанятый" },
-            { key: "company", label: "Компания" },
-          ] as const).map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => onChange({ ...value, executorType: opt.key })}
-              data-testid={`desktop-filter-executor-${opt.key}`}
-              aria-pressed={value.executorType === opt.key}
-              className={cn(
-                "px-3.5 py-2 rounded-xl border-2 text-sm font-medium transition-all",
-                value.executorType === opt.key
-                  ? "border-primary bg-primary/5 text-primary"
-                  : "border-border bg-card"
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {hasChanges && (
-        <button
-          onClick={() => onChange(defaultFilterState)}
-          data-testid="desktop-button-filter-reset"
-          className="w-full h-11 rounded-xl border border-border text-sm font-medium text-muted-foreground hover-elevate"
-        >
-          Сбросить фильтры
-        </button>
-      )}
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }

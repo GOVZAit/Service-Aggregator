@@ -1,3 +1,4 @@
+import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -32,16 +33,27 @@ function OrderSkeleton() {
 }
 
 export default function OrdersPage() {
+  const { user, isLoading: authLoading } = useAuth();
+  const ownerId = user?.role === "client" ? user.id : null;
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
   const [repeatOrder, setRepeatOrder] = useState<Order | null>(null);
   const [, navigate] = useLocation();
 
-  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
-    queryKey: ["/api/orders"],
+  const { data: orders = [], isLoading: ordersLoading, isError, refetch } = useQuery<Order[]>({
+    queryKey: ["/api/orders", ownerId], enabled: ownerId !== null,
+    queryFn: async ({ signal }) => {
+      const response = await fetch("/api/orders", { signal, credentials: "include", cache: "no-store" });
+      if (!response.ok) throw new Error("Не удалось загрузить заказы");
+      return response.json();
+    },
     refetchInterval: 15_000,
   });
-  const { data: masters = [] } = useQuery<Master[]>({ queryKey: ["/api/masters"] });
-  const { data: reviewed = { orderIds: [] } } = useQuery<{ orderIds: number[] }>({ queryKey: ["/api/order-reviews/mine"] });
+  const { data: masters = [], isError: mastersError, isLoading: mastersLoading } = useQuery<Master[]>({ queryKey: ["/api/masters"], enabled: ownerId !== null, staleTime: 30_000, refetchOnWindowFocus: true });
+  const { data: reviewed = { orderIds: [] } } = useQuery<{ orderIds: number[] }>({ queryKey: ["/api/order-reviews/mine", ownerId], enabled: ownerId !== null, queryFn: async ({ signal }) => {
+    const response = await fetch("/api/order-reviews/mine", { signal, credentials: "include", cache: "no-store" });
+    if (!response.ok) throw new Error("Не удалось проверить отзывы");
+    return response.json();
+  } });
 
   return (
     <div className="app-page bg-background">
@@ -56,23 +68,28 @@ export default function OrdersPage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-5">
-        {ordersLoading ? (
+        {!authLoading && ownerId === null ? (
+          <EmptyState icon={<ShoppingBag className="h-10 w-10" />} title="Войдите, чтобы увидеть заказы" description="Заказы и повторная запись доступны в вашем аккаунте." action={<Button onClick={() => navigate("/auth")}>Войти</Button>} />
+        ) : isError ? (
+          <EmptyState icon={<ShoppingBag className="h-10 w-10" />} title="Не удалось загрузить заказы" description="Проверьте соединение. Ваши заказы не потеряны." action={<Button onClick={() => void refetch()}>Повторить</Button>} />
+        ) : authLoading || ordersLoading ? (
           <div className="grid gap-4 lg:grid-cols-2">
             {Array.from({ length: 4 }).map((_, index) => <OrderSkeleton key={index} />)}
           </div>
         ) : orders.length > 0 ? (
           <div className="grid gap-4 lg:grid-cols-2">
             {orders.map((order) => {
-              const master = masters.find((item) => item.id === order.masterId);
+              const master = masters.find((item) => item.id === order.masterId && item.isVisible !== false);
               return (
-                <OrderCard
-                  key={order.id}
+                <div key={order.id}><OrderCard
                   order={order}
                   master={master}
                   onLeaveReview={order.status === "completed" && !reviewed.orderIds.includes(order.id) ? () => setReviewOrder(order) : undefined}
                   onOpenChat={() => navigate(`/orders/${order.id}/chat`)}
                   onRepeatOrder={order.status === "completed" && master ? () => setRepeatOrder(order) : undefined}
                 />
+                {order.status === "completed" && !master && !mastersLoading && <p className="px-4 pb-4 text-sm text-muted-foreground">{mastersError ? "Не удалось загрузить данные мастера для повторной записи." : "Профиль этого мастера больше недоступен."} <button className="min-h-11 text-primary underline" onClick={() => navigate("/")}>Найти мастера</button></p>}
+                </div>
               );
             })}
           </div>

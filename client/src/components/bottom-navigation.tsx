@@ -83,18 +83,18 @@ export function BottomNavigation() {
         <Link
           href="/profile"
           data-testid="nav-profile"
-          aria-current={location.startsWith("/profile") ? "page" : undefined}
+          aria-current={(location.startsWith("/profile") || location === "/saved") ? "page" : undefined}
           className={cn(
             "pressable relative z-10 my-1 mr-2 flex min-h-[52px] min-w-[66px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1 transition-all lg:mr-3 lg:flex-row lg:gap-2 lg:rounded-full lg:px-4",
-            location.startsWith("/profile")
+            (location.startsWith("/profile") || location === "/saved")
               ? "nav-active-pill text-primary"
               : "text-muted-foreground lg:hover:text-foreground"
           )}
         >
-          <span className={cn("flex h-8 w-10 items-center justify-center rounded-xl", location.startsWith("/profile") && "scale-[1.03]")}>
+          <span className={cn("flex h-8 w-10 items-center justify-center rounded-xl", (location.startsWith("/profile") || location === "/saved") && "scale-[1.03]")}>
             <User className="h-6 w-6 lg:h-5 lg:w-5" />
           </span>
-          <span className={cn("text-center text-[11px] leading-tight lg:text-sm lg:whitespace-nowrap", location.startsWith("/profile") ? "font-extrabold" : "font-medium")}>
+          <span className={cn("text-center text-[11px] leading-tight lg:text-sm lg:whitespace-nowrap", (location.startsWith("/profile") || location === "/saved") ? "font-extrabold" : "font-medium")}>
             Профиль
           </span>
         </Link>
