@@ -98,6 +98,7 @@ export default function AutoPartsPage() {
   const [vehicleType, setVehicleType] = useState<VehicleTypeFilter>("all");
   const [vehicleOrigin, setVehicleOrigin] = useState<VehicleOriginFilter>("all");
   const [city, setCity] = useState<string>("Все города");
+  const extraFilterCount = [brand.trim(), condition !== "all", vehicleType !== "all", vehicleOrigin !== "all", city !== "Все города"].filter(Boolean).length;
 
   const params = useMemo(() => {
     const search = new URLSearchParams();
@@ -126,11 +127,11 @@ export default function AutoPartsPage() {
         <div className="mx-auto max-w-6xl px-4 pb-4 pt-3 lg:px-6">
           <AppBrandHeader compact />
           <div className="-mt-10 pr-28">
-            <h1 className="text-2xl font-bold tracking-tight">Автозапчасти</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Магазины и авторазборы</p>
+            <h1 className="text-xl font-extrabold tracking-[-0.03em] sm:text-2xl">Автозапчасти</h1>
+            <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">Магазины и авторазборы</p>
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_180px_180px]">
+          <div className="mt-3">
             <div className="relative">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -138,28 +139,12 @@ export default function AutoPartsPage() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Деталь, OEM, магазин…"
-                className="h-12 rounded-xl pl-12"
+                className="h-12 rounded-[1rem] bg-card pl-12"
                 data-testid="auto-parts-search"
               />
             </div>
-            <Input
-              value={brand}
-              onChange={(event) => setBrand(event.target.value)}
-              placeholder="Марка авто"
-              className="h-12 rounded-xl"
-              data-testid="auto-parts-brand"
-            />
-            <select
-              value={city}
-              onChange={(event) => setCity(event.target.value)}
-              className="h-12 rounded-xl border border-border bg-background px-3 text-sm font-semibold"
-            >
-              {cities.map((item) => <option key={item}>{item}</option>)}
-            </select>
-          </div>
 
-          <div className="mt-3 space-y-3">
-            <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6">
+            <div className="scrollbar-none -mx-4 mt-2.5 flex gap-2 overflow-x-auto px-4 pb-1 lg:-mx-6 lg:px-6">
               {supplierTypeOptions.map((item) => (
                 <button
                   key={item.value}
@@ -168,66 +153,55 @@ export default function AutoPartsPage() {
                   className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold transition ${
                     supplierType === item.value
                       ? "bg-foreground text-background"
-                      : "border border-border bg-card text-muted-foreground"
+                      : "bg-muted/75 text-muted-foreground"
                   }`}
                 >
                   {item.label}
                 </button>
               ))}
-              <span className="mx-1 w-px shrink-0 bg-border" />
-              {conditionOptions.map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => setCondition(item.value)}
-                  className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold transition ${
-                    condition === item.value
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border bg-card text-muted-foreground"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
+              <details className="relative sm:hidden">
+                <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-full bg-primary/10 px-4 text-sm font-bold text-primary">
+                  Фильтры{extraFilterCount > 0 ? ` · ${extraFilterCount}` : ""}
+                </summary>
+                <div className="fixed inset-x-3 top-[8.5rem] z-[60] max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-[1.25rem] border border-border bg-background p-4 shadow-xl">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="font-extrabold">Фильтры</p>
+                    <span className="text-xs text-muted-foreground">Нажмите вне панели, чтобы закрыть</span>
+                  </div>
+                  <div className="grid gap-2">
+                    <Input value={brand} onChange={(event) => setBrand(event.target.value)} placeholder="Марка авто" className="h-11 rounded-xl" />
+                    <select value={city} onChange={(event) => setCity(event.target.value)} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold">
+                      {cities.map((item) => <option key={item}>{item}</option>)}
+                    </select>
+                  </div>
+                  <p className="mb-1.5 mt-4 text-[11px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">Состояние</p>
+                  <div className="flex flex-wrap gap-2">
+                    {conditionOptions.map((item) => <button key={item.value} type="button" onClick={() => setCondition(item.value)} className={`min-h-9 rounded-full px-3 text-xs font-bold ${condition === item.value ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item.label}</button>)}
+                  </div>
+                  <p className="mb-1.5 mt-4 text-[11px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">Для какого авто</p>
+                  <div className="flex flex-wrap gap-2">
+                    {vehicleTypeOptions.map((item) => <button key={item.value} type="button" onClick={() => setVehicleType(item.value)} className={`min-h-9 rounded-full px-3 text-xs font-bold ${vehicleType === item.value ? "bg-primary/12 text-primary ring-1 ring-primary/25" : "bg-muted"}`}>{item.label}</button>)}
+                  </div>
+                  <p className="mb-1.5 mt-4 text-[11px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">Производитель</p>
+                  <div className="flex flex-wrap gap-2">
+                    {vehicleOriginOptions.map((item) => <button key={item.value} type="button" onClick={() => setVehicleOrigin(item.value)} className={`min-h-9 rounded-full px-3 text-xs font-bold ${vehicleOrigin === item.value ? "bg-primary/12 text-primary ring-1 ring-primary/25" : "bg-muted"}`}>{item.label}</button>)}
+                  </div>
+                </div>
+              </details>
             </div>
 
-            <div>
-              <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">Для какого авто</p>
-              <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6">
-                {vehicleTypeOptions.map((item) => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => setVehicleType(item.value)}
-                    className={`min-h-9 shrink-0 rounded-full px-3.5 text-xs font-bold transition ${
-                      vehicleType === item.value
-                        ? "bg-primary/12 text-primary ring-1 ring-primary/25"
-                        : "border border-border bg-card text-muted-foreground"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+            <div className="mt-3 hidden gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_180px]">
+              <Input value={brand} onChange={(event) => setBrand(event.target.value)} placeholder="Марка авто" className="h-11 rounded-xl" />
+              <select value={city} onChange={(event) => setCity(event.target.value)} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold">
+                {cities.map((item) => <option key={item}>{item}</option>)}
+              </select>
             </div>
 
-            <div>
-              <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">Производитель</p>
-              <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6">
-                {vehicleOriginOptions.map((item) => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => setVehicleOrigin(item.value)}
-                    className={`min-h-9 shrink-0 rounded-full px-3.5 text-xs font-bold transition ${
-                      vehicleOrigin === item.value
-                        ? "bg-primary/12 text-primary ring-1 ring-primary/25"
-                        : "border border-border bg-card text-muted-foreground"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
+            <div className="mt-3 hidden space-y-3 sm:block">
+              <div className="flex flex-wrap gap-2">
+                {conditionOptions.map((item) => <button key={item.value} type="button" onClick={() => setCondition(item.value)} className={`min-h-9 rounded-full px-3.5 text-xs font-bold ${condition === item.value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{item.label}</button>)}
+                {vehicleTypeOptions.map((item) => <button key={item.value} type="button" onClick={() => setVehicleType(item.value)} className={`min-h-9 rounded-full px-3.5 text-xs font-bold ${vehicleType === item.value ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground"}`}>{item.label}</button>)}
+                {vehicleOriginOptions.map((item) => <button key={item.value} type="button" onClick={() => setVehicleOrigin(item.value)} className={`min-h-9 rounded-full px-3.5 text-xs font-bold ${vehicleOrigin === item.value ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground"}`}>{item.label}</button>)}
               </div>
             </div>
           </div>
