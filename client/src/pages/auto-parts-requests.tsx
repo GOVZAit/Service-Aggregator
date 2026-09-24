@@ -115,27 +115,25 @@ export default function AutoPartsRequestsPage() {
   return (
     <div className="app-page bg-background">
       <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
-        <div className="mx-auto max-w-4xl px-4 py-4">
-          <AppBrandHeader compact />
-          <button type="button" onClick={() => navigate("/auto-parts")} className="mt-4 flex min-h-10 items-center gap-2 text-sm font-semibold text-muted-foreground">
-            <ArrowLeft className="h-4 w-4" /> Автозапчасти
+        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2.5">
+          <button
+            type="button"
+            onClick={() => navigate("/auto-parts")}
+            className="pressable flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted/75 text-foreground"
+            aria-label="Назад к автозапчастям"
+          >
+            <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="mt-3">
-            <div className="flex items-center gap-2 text-primary">
-              <Search className="h-5 w-5" />
-              <span className="text-xs font-extrabold uppercase tracking-[.14em]">Цены и наличие</span>
-            </div>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.04em]">Запросить запчасть</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Один запрос — несколько ответов от автомагазинов и авторазборов.
-            </p>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-extrabold tracking-[-0.025em]">Запросить запчасть</h1>
+            <p className="truncate text-[11px] font-medium text-muted-foreground">Один запрос — несколько предложений</p>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl space-y-6 px-4 py-5 pb-28">
-        <section className="premium-card p-5">
-          <h2 className="font-extrabold">Что нужно найти</h2>
+      <main className="mx-auto max-w-4xl space-y-4 px-4 py-4 pb-28">
+        <section className="premium-card p-4 sm:p-5">
+          <div className="flex items-center gap-2"><Search className="h-4 w-4 text-primary" /><h2 className="font-extrabold">Что нужно найти</h2></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Марка, например Toyota" />
             <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Модель, например Camry" />
@@ -146,8 +144,9 @@ export default function AutoPartsRequestsPage() {
           </div>
         </section>
 
-        <section className="premium-card p-5">
+        <section className="premium-card p-4 sm:p-5">
           <h2 className="font-extrabold">Условия поиска</h2>
+          <p className="mt-1 text-xs text-muted-foreground">Можно оставить значения по умолчанию и отправить запрос быстрее.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-xs font-bold text-muted-foreground">
               Где искать
