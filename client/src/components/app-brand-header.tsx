@@ -36,14 +36,14 @@ export function AppBrandHeader({
 
   const locationContent = (
     <>
-      <MapPin className="h-5 w-5 shrink-0 text-primary" />
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <MapPin className="h-4 w-4" />
+      </span>
       <div className="min-w-0 text-left">
-        <p className="text-[10px] font-medium leading-none text-muted-foreground sm:text-[11px]">
-          Чеченская Республика
-        </p>
+        <p className="text-[10px] font-medium leading-none text-muted-foreground">Чеченская Республика</p>
         <div className="mt-1 flex items-center gap-0.5">
           <span className="truncate text-sm font-bold leading-none text-foreground">{city}</span>
-          {onLocationClick && <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
+          {onLocationClick && <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
         </div>
       </div>
     </>
@@ -52,19 +52,17 @@ export function AppBrandHeader({
   return (
     <>
       <div className={cn(compact ? "flex items-center justify-end gap-2" : "flex items-center justify-between gap-3", className)}>
-        <div className="min-w-0">
-          {!compact && (
-            <>
-              <div className="flex items-baseline gap-1.5 whitespace-nowrap text-[1.6rem] sm:text-3xl">
-                <span className="display-face font-bold text-[#07132f] dark:text-white">GOVZA</span>
-                <span className="font-extrabold tracking-[-0.04em] text-primary">мастера</span>
-              </div>
-              <p className="mt-0.5 truncate text-xs font-medium text-muted-foreground sm:text-sm">{subtitle}</p>
-            </>
-          )}
-        </div>
+        {!compact && (
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+              <span className="display-face text-[1.45rem] font-bold text-foreground sm:text-[1.7rem]">GOVZA</span>
+              <span className="text-[1rem] font-extrabold tracking-[-0.04em] text-primary sm:text-[1.1rem]">мастера</span>
+            </div>
+            <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground sm:text-xs">{subtitle}</p>
+          </div>
+        )}
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-2">
           {onLocationClick ? (
             <button
               type="button"
@@ -83,20 +81,20 @@ export function AppBrandHeader({
               type="button"
               onClick={() => setShowNotifications(true)}
               aria-label="Открыть уведомления"
-              className="pressable relative flex h-11 w-11 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground shadow-sm sm:h-12 sm:w-12"
+              className="pressable relative flex h-10 w-10 items-center justify-center rounded-full bg-muted/80 text-foreground sm:h-11 sm:w-11"
               data-testid="brand-notifications"
             >
-              <Bell className="h-5 w-5" />
+              <Bell className="h-[18px] w-[18px]" />
               {(unread?.count ?? 0) > 0 && (
-                <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-extrabold text-primary-foreground ring-2 ring-background">
+                <span className="absolute -right-0.5 -top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[8px] font-extrabold text-primary-foreground ring-2 ring-background">
                   {(unread?.count ?? 0) > 99 ? "99+" : unread?.count}
                 </span>
               )}
             </button>
           )}
 
-          <Avatar className="h-11 w-11 border border-white/60 bg-gradient-to-br from-primary to-cyan-500 shadow-sm sm:h-12 sm:w-12">
-            <AvatarFallback className="bg-transparent text-sm font-bold text-white">{initials}</AvatarFallback>
+          <Avatar className="h-10 w-10 border border-border/60 bg-primary/10 sm:h-11 sm:w-11">
+            <AvatarFallback className="bg-transparent text-xs font-extrabold text-primary">{initials}</AvatarFallback>
           </Avatar>
         </div>
       </div>

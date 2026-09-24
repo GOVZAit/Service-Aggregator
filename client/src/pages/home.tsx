@@ -122,7 +122,7 @@ export default function HomePage() {
       {showWelcome && <WelcomeOnboarding onDone={dismissWelcome} />}
 
       <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
-        <div className="mx-auto max-w-lg px-4 pb-4 pt-3 lg:max-w-6xl lg:px-6">
+        <div className="mx-auto max-w-lg px-4 pb-3 pt-3 lg:max-w-6xl lg:px-6 lg:pb-4">
           <AppBrandHeader
             city={city}
             onLocationClick={() => setShowLocation(true)}
@@ -132,7 +132,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => setShowLocation(true)}
-            className="pressable mt-3 flex min-h-11 items-center gap-2 rounded-2xl bg-primary/[0.055] px-3 text-left sm:hidden"
+            className="pressable mt-3 flex min-h-10 items-center gap-2 rounded-xl bg-muted/75 px-3 text-left sm:hidden"
             data-testid="button-location"
           >
             <MapPin className="h-4 w-4 text-primary" />
@@ -143,7 +143,7 @@ export default function HomePage() {
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </button>
 
-          <div className="mt-4 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -154,7 +154,7 @@ export default function HomePage() {
                 placeholder="Какая услуга нужна?"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="h-12 rounded-2xl border-border/70 bg-background pl-11 pr-10 text-base font-medium placeholder:text-muted-foreground/75"
+                className="h-13 rounded-[1.05rem] border-border/60 bg-card pl-11 pr-10 text-base font-medium shadow-[0_8px_24px_-22px_hsl(var(--foreground)/.34)] placeholder:text-muted-foreground/70"
                 data-testid="input-search"
               />
               <datalist id="catalog-search-suggestions">{suggestions.map((label) => <option key={label} value={label} />)}</datalist>
@@ -175,7 +175,7 @@ export default function HomePage() {
               aria-label="Фильтры и сортировка"
               data-testid="button-filter"
               className={cn(
-                "pressable relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border lg:hidden",
+                "pressable relative flex h-13 w-13 shrink-0 items-center justify-center rounded-[1.05rem] border lg:hidden",
                 hasActiveFilters
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border/55 bg-card text-foreground"
@@ -186,7 +186,7 @@ export default function HomePage() {
             </button>
           </div>
 
-          <div className="scrollbar-none -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 lg:-mx-6 lg:px-6">
+          <div className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5 lg:-mx-6 lg:px-6">
             {categoriesLoading ? (
               Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-11 w-28 shrink-0 rounded-2xl" />)
             ) : (
@@ -199,7 +199,7 @@ export default function HomePage() {
                     type="button"
                     onClick={() => setSelectedCategory((current) => current === category.id ? null : category.id)}
                     className={cn(
-                      "pressable flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 text-sm font-semibold",
+                      "pressable flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-sm font-semibold",
                       active
                         ? "bg-primary text-primary-foreground"
                         : "border border-border/70 bg-background text-foreground"
@@ -216,7 +216,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-lg px-4 py-5 lg:max-w-6xl lg:px-6">
+      <main className="mx-auto max-w-lg px-4 py-4 lg:max-w-6xl lg:px-6 lg:py-6">
         <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-8">
           <aside className="sticky top-[185px] hidden max-h-[calc(100dvh-205px)] overflow-y-auto overscroll-contain lg:block">
             <div className="premium-card p-5">
@@ -226,7 +226,7 @@ export default function HomePage() {
           </aside>
 
           <div className="min-w-0">
-            <section className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3">
+            <section className="flex items-center gap-3 rounded-[1.15rem] bg-primary/[0.07] px-4 py-3.5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Zap className="h-5 w-5" />
               </div>
@@ -245,9 +245,9 @@ export default function HomePage() {
             </section>
 
             {user?.role === "client" && (
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Link href="/saved" className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold"><Heart className="h-4 w-4 text-primary" /> Избранное <span className="text-muted-foreground">{favorites.length}</span></Link>
-                <Link href="/saved?tab=recent" className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold"><History className="h-4 w-4 text-primary" /> Вы смотрели</Link>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Link href="/saved" className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-muted/70 px-3 text-sm font-semibold"><Heart className="h-4 w-4 text-primary" /> Избранное <span className="text-muted-foreground">{favorites.length}</span></Link>
+                <Link href="/saved?tab=recent" className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-muted/70 px-3 text-sm font-semibold"><History className="h-4 w-4 text-primary" /> Вы смотрели</Link>
               </div>
             )}
             {user?.role === "client" && recent.data.length > 0 && !searchQuery && !selectedCategory && !hasActiveFilters && (
@@ -261,14 +261,14 @@ export default function HomePage() {
               </section>
             )}
 
-            <div className="mt-4 flex flex-wrap gap-2" aria-label="Быстрые фильтры">
+            <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto scrollbar-none pb-1" aria-label="Быстрые фильтры">
               {([
                 ["availableTodayOnly", "Свободен сегодня", filterState.availableTodayOnly],
                 ["verifiedOnly", "Проверенные", filterState.verifiedOnly],
                 ["minRating", "Рейтинг 4.5+", filterState.minRating >= 4.5],
               ] as const).map(([key, label, selected]) => <button key={key} type="button" aria-pressed={selected}
                 onClick={() => setFilterState({ ...filterState, [key]: key === "minRating" ? (selected ? 0 : 4.5) : !selected })}
-                className={cn("min-h-11 rounded-full border px-3 text-xs font-semibold", selected ? "border-primary bg-primary/10 text-primary" : "border-border bg-card")}>
+                className={cn("min-h-10 shrink-0 rounded-full border px-3 text-xs font-semibold", selected ? "border-primary/30 bg-primary/10 text-primary" : "border-border/60 bg-card")}>
                 {key === "availableTodayOnly" && <CalendarCheck className="mr-1.5 inline h-4 w-4" />}{label}
               </button>)}
             </div>

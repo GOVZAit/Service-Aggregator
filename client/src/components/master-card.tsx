@@ -13,104 +13,105 @@ interface MasterCardProps {
 }
 
 export function MasterCard({ master, isFavorite, onToggleFavorite, favoritePending, availableToday }: MasterCardProps) {
-  const previewPhotos = master.showPortfolio !== false ? (master.portfolio?.slice(0, 3) ?? []) : [];
+  const previewPhoto = master.showPortfolio !== false ? master.portfolio?.[0] : undefined;
   const isOrganization = master.providerType === "organization";
 
   return (
-      <article
-        data-testid={`master-card-${master.id}`}
-        className="relative premium-card content-auto pressable group cursor-pointer overflow-hidden p-4 transition-transform duration-200 active:scale-[.995]"
-      >
-        <div className="flex gap-3.5">
-          <div className="relative shrink-0">
-            <Avatar className="h-[78px] w-[78px] rounded-[1.35rem] border border-border/50 shadow-sm">
-              <AvatarImage src={master.avatar} alt={master.name} className="object-cover" />
-              <AvatarFallback className="rounded-[1.35rem] bg-primary/10 text-lg font-extrabold text-primary">
-                {master.name.slice(0, 2)}
-              </AvatarFallback>
-            </Avatar>
-            {master.verified && (
-              <span className="absolute -bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full border border-primary/10 bg-background px-2 py-1 text-[10px] font-bold text-primary shadow-sm">
-                <BadgeCheck className="h-3 w-3" /> Проверен
-              </span>
-            )}
-          </div>
+    <article
+      data-testid={`master-card-${master.id}`}
+      className="premium-card content-auto pressable group relative cursor-pointer overflow-hidden p-4 active:scale-[.995] sm:p-5"
+    >
+      <div className="flex gap-3.5">
+        <Avatar className="h-[68px] w-[68px] shrink-0 rounded-[1.15rem] border border-border/50 sm:h-[76px] sm:w-[76px]">
+          <AvatarImage src={master.avatar} alt={master.name} className="object-cover" />
+          <AvatarFallback className="rounded-[1.15rem] bg-primary/10 text-lg font-extrabold text-primary">
+            {master.name.slice(0, 2)}
+          </AvatarFallback>
+        </Avatar>
 
-          <div className="min-w-0 flex-1">
-            {(isOrganization || master.companyName) && (
-              <div className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-[.08em] text-primary/80">
-                <Building2 className="h-3 w-3" />
-                <span className="truncate">{isOrganization ? "Организация" : master.companyName}</span>
-              </div>
-            )}
-            <div className="flex items-start gap-2">
-              <div className="min-w-0 flex-1">
-                <h3 className="truncate text-[1.02rem] font-extrabold tracking-[-0.03em]" data-testid={`text-name-${master.id}`}>
-                  <Link href={`/master/${master.id}`} className="after:absolute after:inset-0 after:content-[''] focus-visible:underline">{master.name}</Link>
-                </h3>
-                <p className="mt-0.5 text-sm font-medium text-muted-foreground">{master.category}</p>
-              </div>
-              <button
-                type="button"
-                onClick={onToggleFavorite}
-                disabled={favoritePending}
-                aria-pressed={isFavorite}
-                data-testid={`favorite-master-${master.id}`}
-                className="pressable relative z-10 -mr-1 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-muted"
-                aria-label={isFavorite ? "Убрать из избранного" : "Добавить в избранное"}
-              >
-                <Heart className={`h-5 w-5 ${isFavorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
-              </button>
-            </div>
-
-            <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-              <span className="inline-flex items-center gap-1 rounded-lg bg-amber-400/10 px-2 py-1 text-sm font-bold">
-                <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                {master.rating.toFixed(1)}
-              </span>
-              <span className="text-xs text-muted-foreground">({master.reviews} отзывов)</span>
-              {master.showPrices !== false && (
-                <span className="ml-auto whitespace-nowrap text-sm font-extrabold text-primary">{master.price}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              {(isOrganization || master.companyName) && (
+                <div className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-[.07em] text-primary/80">
+                  <Building2 className="h-3 w-3" />
+                  <span className="truncate">{isOrganization ? "Организация" : master.companyName}</span>
+                </div>
               )}
-            </div>
-          </div>
-        </div>
-
-        {availableToday && <p className="mt-4 inline-flex rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400" data-testid={`available-today-${master.id}`}>
-          Свободен сегодня · {availableToday.fromTime}–{availableToday.toTime}
-        </p>}
-        {previewPhotos.length > 0 && (
-          <div className="mt-5 grid grid-cols-3 gap-2">
-            {previewPhotos.map((src, index) => (
-              <div key={index} className="aspect-[4/3] overflow-hidden rounded-xl bg-muted">
-                <img
-                  src={src}
-                  alt={`Работа ${index + 1}`}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                  loading="lazy"
-                />
+              <div className="flex items-center gap-1.5">
+                <h3 className="truncate text-[1.02rem] font-extrabold tracking-[-0.025em]" data-testid={`text-name-${master.id}`}>
+                  <Link href={`/master/${master.id}`} className="after:absolute after:inset-0 after:content-[''] focus-visible:underline">
+                    {master.name}
+                  </Link>
+                </h3>
+                {master.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label="Проверен" />}
               </div>
-            ))}
-          </div>
-        )}
+              <p className="mt-0.5 truncate text-sm font-medium text-muted-foreground">{master.category}</p>
+            </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
-          <div className="flex min-w-0 items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex min-w-0 items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="truncate">{[master.city, master.district].filter(Boolean).join(" · ") || "Рядом"}</span>
-            </span>
-            <span className="flex shrink-0 items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              {master.responseTime}
-            </span>
+            <button
+              type="button"
+              onClick={onToggleFavorite}
+              disabled={favoritePending}
+              aria-pressed={isFavorite}
+              data-testid={`favorite-master-${master.id}`}
+              className="pressable relative z-10 -mr-1 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted/65"
+              aria-label={isFavorite ? "Убрать из избранного" : "Добавить в избранное"}
+            >
+              <Heart className={`h-[18px] w-[18px] ${isFavorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
+            </button>
           </div>
-          {master.isOnline && (
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-600">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Онлайн
+
+          <div className="mt-2.5 flex items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1 font-bold text-foreground">
+              <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+              {master.rating.toFixed(1)}
             </span>
-          )}
+            <span className="text-muted-foreground">{master.reviews} отзывов</span>
+            {master.showPrices !== false && (
+              <span className="ml-auto whitespace-nowrap text-sm font-extrabold text-foreground">{master.price}</span>
+            )}
+          </div>
         </div>
-      </article>
+      </div>
+
+      {availableToday && (
+        <div
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400"
+          data-testid={`available-today-${master.id}`}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          Сегодня {availableToday.fromTime}–{availableToday.toTime}
+        </div>
+      )}
+
+      {previewPhoto && (
+        <div className="mt-4 overflow-hidden rounded-[1rem] bg-muted">
+          <img
+            src={previewPhoto}
+            alt={`Пример работы ${master.name}`}
+            className="aspect-[16/7] w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
+            loading="lazy"
+          />
+        </div>
+      )}
+
+      <div className="mt-3 flex items-center gap-3 text-[11px] font-medium text-muted-foreground">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{[master.city, master.district].filter(Boolean).join(" · ") || "Рядом"}</span>
+        </span>
+        <span className="flex shrink-0 items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" />
+          {master.responseTime}
+        </span>
+        {master.isOnline && (
+          <span className="ml-auto flex shrink-0 items-center gap-1.5 text-emerald-600">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Онлайн
+          </span>
+        )}
+      </div>
+    </article>
   );
 }

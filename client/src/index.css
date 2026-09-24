@@ -9,9 +9,9 @@
   --opaque-button-border-intensity: -8;
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
-  --background: 0 0% 100%;
+  --background: 210 25% 98%;
   --foreground: 222 58% 12%;
-  --border: 214 18% 92%;
+  --border: 214 20% 90%;
   --card: 0 0% 100%;
   --card-foreground: 222 58% 12%;
   --card-border: 214 24% 92%;
@@ -30,8 +30,8 @@
   --primary-foreground: 0 0% 100%;
   --secondary: 210 30% 96%;
   --secondary-foreground: 222 58% 12%;
-  --muted: 210 22% 97%;
-  --muted-foreground: 218 17% 46%;
+  --muted: 210 24% 95%;
+  --muted-foreground: 216 14% 43%;
   --accent: 194 65% 95%;
   --accent-foreground: 222 58% 12%;
   --destructive: 0 84% 60%;
@@ -46,7 +46,7 @@
   --font-sans: Manrope, system-ui, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
-  --radius: .875rem;
+  --radius: 1rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
   --shadow-sm: 0 8px 24px -18px hsl(222 58% 12% / .22);
@@ -226,7 +226,7 @@
 @layer utilities {
   .app-page {
     min-height: 100dvh;
-    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(6.9rem + env(safe-area-inset-bottom, 0px));
   }
   .app-shell { width: min(100% - 2rem, 72rem); margin-inline: auto; }
   .pressable { transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease, opacity 160ms ease; }
@@ -267,7 +267,7 @@
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border) / .82);
     box-shadow: none;
-    border-radius: 1.125rem;
+    border-radius: 1.25rem;
   }
 
   .soft-surface {
