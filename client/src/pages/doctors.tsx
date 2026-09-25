@@ -163,89 +163,11 @@ export default function DoctorsPage() {
             })}
           </div>
 
-          {showFilters && (
-            <div className="mt-3 hidden premium-card space-y-4 p-4 lg:block" data-testid="doctor-filters-panel">
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Сортировка</p>
-                <div className="flex gap-2 flex-wrap">
-                  {sortOptions.map((opt) => (
-                    <button
-                      key={opt.key}
-                      onClick={() => setSortBy(opt.key)}
-                      aria-pressed={sortBy === opt.key}
-                      data-testid={`doctor-sort-${opt.key}`}
-                      className={cn(
-                        "px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
-                        sortBy === opt.key ? "bg-primary text-primary-foreground" : "bg-muted/60 hover:bg-muted"
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Город</p>
-                <div className="flex gap-2 flex-wrap">
-                  {doctorCities.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setCityFilter((prev) => (prev === c ? null : c))}
-                      aria-pressed={cityFilter === c}
-                      data-testid={`doctor-city-${c}`}
-                      className={cn(
-                        "px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
-                        cityFilter === c ? "bg-primary text-primary-foreground" : "bg-muted/60 hover:bg-muted"
-                      )}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => setChildrenOnly((v) => !v)}
-                  aria-pressed={childrenOnly}
-                  data-testid="doctor-filter-children"
-                  className={cn(
-                    "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
-                    childrenOnly ? "bg-primary text-primary-foreground" : "bg-muted/60 hover:bg-muted"
-                  )}
-                >
-                  <Baby className="w-4 h-4" /> Принимает детей
-                </button>
-                <button
-                  onClick={() => setHomeVisitsOnly((v) => !v)}
-                  aria-pressed={homeVisitsOnly}
-                  data-testid="doctor-filter-home-visits"
-                  className={cn(
-                    "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
-                    homeVisitsOnly ? "bg-primary text-primary-foreground" : "bg-muted/60 hover:bg-muted"
-                  )}
-                >
-                  <HomeIcon className="w-4 h-4" /> Выезд на дом
-                </button>
-              </div>
-
-              {hasActiveFilters && (
-                <button
-                  onClick={resetFilters}
-                  data-testid="doctor-filters-reset"
-                  className="text-sm font-medium text-primary hover:underline"
-                >
-                  Сбросить фильтры
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </header>
 
       <Sheet open={showFilters} onOpenChange={setShowFilters}>
-        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[1.75rem] lg:hidden">
+        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[1.75rem]">
           <SheetHeader className="text-left">
             <SheetTitle>Фильтры врачей</SheetTitle>
           </SheetHeader>
