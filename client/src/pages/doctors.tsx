@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { SectionPageHeader } from "@/components/section-page-header";
 import { MapView } from "@/components/map-view";
@@ -163,7 +164,7 @@ export default function DoctorsPage() {
           </div>
 
           {showFilters && (
-            <div className="mt-3 premium-card p-4 space-y-4" data-testid="doctor-filters-panel">
+            <div className="mt-3 hidden premium-card space-y-4 p-4 lg:block" data-testid="doctor-filters-panel">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Сортировка</p>
                 <div className="flex gap-2 flex-wrap">
@@ -242,6 +243,81 @@ export default function DoctorsPage() {
           )}
         </div>
       </header>
+
+      <Sheet open={showFilters} onOpenChange={setShowFilters}>
+        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[1.75rem] lg:hidden">
+          <SheetHeader className="text-left">
+            <SheetTitle>Фильтры врачей</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-5 pb-4 pt-3">
+            <div>
+              <p className="mb-2 text-xs font-bold text-muted-foreground">Сортировка</p>
+              <div className="flex flex-wrap gap-2">
+                {sortOptions.map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setSortBy(opt.key)}
+                    className={cn("section-chip", sortBy === opt.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-bold text-muted-foreground">Город</p>
+              <div className="flex flex-wrap gap-2">
+                {doctorCities.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setCityFilter((prev) => prev === item ? null : item)}
+                    className={cn("section-chip", cityFilter === item ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <button
+                type="button"
+                onClick={() => setChildrenOnly((value) => !value)}
+                className={cn("section-action flex items-center justify-start gap-2 px-4", childrenOnly ? "bg-primary/10 text-primary" : "bg-muted text-foreground")}
+              >
+                <Baby className="h-4 w-4" /> Принимает детей
+              </button>
+              <button
+                type="button"
+                onClick={() => setHomeVisitsOnly((value) => !value)}
+                className={cn("section-action flex items-center justify-start gap-2 px-4", homeVisitsOnly ? "bg-primary/10 text-primary" : "bg-muted text-foreground")}
+              >
+                <HomeIcon className="h-4 w-4" /> Выезд на дом
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="section-action border border-border bg-background text-foreground"
+              >
+                Сбросить
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFilters(false)}
+                className="section-action bg-primary text-primary-foreground"
+              >
+                Показать {filtered.length}
+              </button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <main className="section-shell pt-4">
         <div className="flex items-center justify-between mb-3">
