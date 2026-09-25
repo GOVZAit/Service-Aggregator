@@ -129,7 +129,7 @@ export default function HomePage() {
       {showWelcome && <WelcomeOnboarding onDone={dismissWelcome} />}
 
       <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
-        <div className="mx-auto max-w-lg px-4 pb-3 pt-3 lg:max-w-6xl lg:px-6 lg:pb-4">
+        <div className="section-shell pb-3 pt-3 sm:pb-4">
           <AppBrandHeader
             city={city}
             onLocationClick={() => setShowLocation(true)}
@@ -187,7 +187,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-lg px-4 py-4 lg:max-w-6xl lg:px-6 lg:py-6">
+      <main className="section-shell py-4 sm:py-6">
         <div className="scrollbar-none -mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 lg:hidden" aria-label="Примеры запросов">
           {quickProblemExamples.map((example) => (
             <button
@@ -204,7 +204,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="scrollbar-none -mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 lg:-mx-6 lg:px-6">
+        <div className="scrollbar-none -mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 sm:-mx-0 sm:px-0">
           {categoriesLoading ? (
             Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-11 w-28 shrink-0 rounded-2xl" />)
           ) : (
