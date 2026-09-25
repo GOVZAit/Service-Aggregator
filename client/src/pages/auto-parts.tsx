@@ -8,6 +8,7 @@ import {
   PackageSearch,
   Phone,
   Search,
+  SlidersHorizontal,
   Warehouse,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +18,7 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cities } from "@shared/schema";
 import type {
   AutoPartsCondition,
@@ -98,6 +100,7 @@ export default function AutoPartsPage() {
   const [vehicleType, setVehicleType] = useState<VehicleTypeFilter>("all");
   const [vehicleOrigin, setVehicleOrigin] = useState<VehicleOriginFilter>("all");
   const [city, setCity] = useState<string>("Все города");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const extraFilterCount = [brand.trim(), condition !== "all", vehicleType !== "all", vehicleOrigin !== "all", city !== "Все города"].filter(Boolean).length;
 
   const params = useMemo(() => {
@@ -159,35 +162,14 @@ export default function AutoPartsPage() {
                   {item.label}
                 </button>
               ))}
-              <details className="relative sm:hidden">
-                <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-full bg-primary/10 px-4 text-sm font-bold text-primary">
-                  Фильтры{extraFilterCount > 0 ? ` · ${extraFilterCount}` : ""}
-                </summary>
-                <div className="fixed inset-x-3 top-[8.5rem] z-[60] max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-[1.25rem] border border-border bg-background p-4 shadow-xl">
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="font-extrabold">Фильтры</p>
-                    <span className="text-xs text-muted-foreground">Нажмите вне панели, чтобы закрыть</span>
-                  </div>
-                  <div className="grid gap-2">
-                    <Input value={brand} onChange={(event) => setBrand(event.target.value)} placeholder="Марка авто" className="h-11 rounded-xl" />
-                    <select value={city} onChange={(event) => setCity(event.target.value)} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold">
-                      {cities.map((item) => <option key={item}>{item}</option>)}
-                    </select>
-                  </div>
-                  <p className="mb-1.5 mt-4 text-[11px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">Состояние</p>
-                  <div className="flex flex-wrap gap-2">
-                    {conditionOptions.map((item) => <button key={item.value} type="button" onClick={() => setCondition(item.value)} className={`min-h-9 rounded-full px-3 text-xs font-bold ${condition === item.value ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{item.label}</button>)}
-                  </div>
-                  <p className="mb-1.5 mt-4 text-[11px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">Для какого авто</p>
-                  <div className="flex flex-wrap gap-2">
-                    {vehicleTypeOptions.map((item) => <button key={item.value} type="button" onClick={() => setVehicleType(item.value)} className={`min-h-9 rounded-full px-3 text-xs font-bold ${vehicleType === item.value ? "bg-primary/12 text-primary ring-1 ring-primary/25" : "bg-muted"}`}>{item.label}</button>)}
-                  </div>
-                  <p className="mb-1.5 mt-4 text-[11px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">Производитель</p>
-                  <div className="flex flex-wrap gap-2">
-                    {vehicleOriginOptions.map((item) => <button key={item.value} type="button" onClick={() => setVehicleOrigin(item.value)} className={`min-h-9 rounded-full px-3 text-xs font-bold ${vehicleOrigin === item.value ? "bg-primary/12 text-primary ring-1 ring-primary/25" : "bg-muted"}`}>{item.label}</button>)}
-                  </div>
-                </div>
-              </details>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilters(true)}
+                className="section-chip flex items-center gap-2 bg-primary/10 text-primary sm:hidden"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Фильтры{extraFilterCount > 0 ? ` · ${extraFilterCount}` : ""}
+              </button>
             </div>
 
             <div className="mt-3 hidden gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_180px]">
@@ -370,6 +352,62 @@ export default function AutoPartsPage() {
           </div>
         )}
       </main>
+
+      <Sheet open={showMobileFilters} onOpenChange={setShowMobileFilters}>
+        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[1.75rem]">
+          <SheetHeader className="text-left">
+            <SheetTitle>Фильтры</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 pb-4 pt-3">
+            <div className="grid gap-2">
+              <Input value={brand} onChange={(event) => setBrand(event.target.value)} placeholder="Марка авто" className="h-12 rounded-xl" />
+              <select value={city} onChange={(event) => setCity(event.target.value)} className="h-12 rounded-xl border border-border bg-background px-3 text-sm font-semibold">
+                {cities.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-bold text-muted-foreground">Состояние</p>
+              <div className="flex flex-wrap gap-2">
+                {conditionOptions.map((item) => (
+                  <button key={item.value} type="button" onClick={() => setCondition(item.value)}
+                    className={`section-chip ${condition === item.value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-bold text-muted-foreground">Для какого авто</p>
+              <div className="flex flex-wrap gap-2">
+                {vehicleTypeOptions.map((item) => (
+                  <button key={item.value} type="button" onClick={() => setVehicleType(item.value)}
+                    className={`section-chip ${vehicleType === item.value ? "bg-primary/12 text-primary ring-1 ring-primary/25" : "bg-muted text-muted-foreground"}`}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-bold text-muted-foreground">Производитель</p>
+              <div className="flex flex-wrap gap-2">
+                {vehicleOriginOptions.map((item) => (
+                  <button key={item.value} type="button" onClick={() => setVehicleOrigin(item.value)}
+                    className={`section-chip ${vehicleOrigin === item.value ? "bg-primary/12 text-primary ring-1 ring-primary/25" : "bg-muted text-muted-foreground"}`}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Button className="h-12 w-full rounded-2xl font-bold" onClick={() => setShowMobileFilters(false)}>
+              Показать {suppliers.length}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <BottomNavigation />
     </div>
