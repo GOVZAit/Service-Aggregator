@@ -258,6 +258,8 @@
   .scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
@@ -385,6 +387,16 @@
 
   @keyframes govza-shimmer {
     100% { transform: translateX(100%); }
+  }
+
+  @media (max-width: 639px) {
+    body {
+      overscroll-behavior-y: contain;
+    }
+
+    button, [role="button"], a {
+      -webkit-touch-callout: none;
+    }
   }
 
   @media (display-mode: standalone) {
