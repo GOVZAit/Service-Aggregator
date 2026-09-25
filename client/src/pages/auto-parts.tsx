@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { AppBrandHeader } from "@/components/app-brand-header";
+import { SectionPageHeader } from "@/components/section-page-header";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { EmptyState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
@@ -124,12 +124,12 @@ export default function AutoPartsPage() {
   return (
     <div className="app-page bg-background">
       <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
-        <div className="mx-auto max-w-6xl px-4 pb-4 pt-3 lg:px-6">
-          <AppBrandHeader compact />
-          <div className="-mt-10 pr-28">
-            <h1 className="text-xl font-extrabold tracking-[-0.03em] sm:text-2xl">Автозапчасти</h1>
-            <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">Магазины и авторазборы</p>
-          </div>
+        <div className="section-shell pb-3 pt-3 sm:pb-4">
+          <SectionPageHeader
+            title="Автозапчасти"
+            subtitle="Магазины и авторазборы"
+            city={city}
+          />
 
           <div className="mt-3">
             <div className="relative">
@@ -139,18 +139,18 @@ export default function AutoPartsPage() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Деталь, OEM, магазин…"
-                className="h-12 rounded-[1rem] bg-card pl-12"
+                className="section-search pl-12"
                 data-testid="auto-parts-search"
               />
             </div>
 
-            <div className="scrollbar-none -mx-4 mt-2.5 flex gap-2 overflow-x-auto px-4 pb-1 lg:-mx-6 lg:px-6">
+            <div className="section-chip-row -mx-4 mt-2.5 px-4 sm:-mx-0 sm:px-0">
               {supplierTypeOptions.map((item) => (
                 <button
                   key={item.value}
                   type="button"
                   onClick={() => setSupplierType(item.value)}
-                  className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold transition ${
+                  className={`section-chip transition ${
                     supplierType === item.value
                       ? "bg-foreground text-background"
                       : "bg-muted/75 text-muted-foreground"
@@ -208,8 +208,8 @@ export default function AutoPartsPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-5 pb-28 lg:px-6">
-        <section className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+      <main className="section-shell py-4 pb-28 sm:py-5">
+        <section className="premium-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="contents">
             <div>
               <p className="text-xs font-semibold text-primary">Цены и наличие</p>
@@ -219,7 +219,7 @@ export default function AutoPartsPage() {
               </p>
             </div>
             <Button
-              className="min-h-11 shrink-0 rounded-xl px-4 font-bold"
+              className="section-action min-w-[170px] shrink-0 px-4"
               onClick={() => navigate(`/auto-parts/requests?section=${supplierType}`)}
             >
               <PackageSearch className="mr-2 h-5 w-5" />
@@ -269,11 +269,11 @@ export default function AutoPartsPage() {
               : "Авторазборы появятся после импорта реальных данных или добавления администратором."}
           />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="section-card-grid three">
             {suppliers.map((supplier) => {
               const Icon = supplierIcon(supplier.supplierType);
               return (
-                <article key={supplier.id} className="premium-card p-4">
+                <article key={supplier.id} className="premium-card flex h-full flex-col p-4 sm:p-5">
                   <div className="flex items-start gap-3">
                     <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
                       <Icon className="h-5 w-5" />
@@ -334,11 +334,11 @@ export default function AutoPartsPage() {
                     )}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
                     {supplier.phone ? (
                       <a
                         href={`tel:${normalizePhone(supplier.phone)}`}
-                        className="flex h-11 items-center justify-center gap-2 rounded-xl border border-primary/25 text-sm font-bold text-primary"
+                        className="section-action flex items-center justify-center gap-2 border border-primary/25 text-primary"
                       >
                         <Phone className="h-4 w-4" />
                         Позвонить
@@ -349,7 +349,7 @@ export default function AutoPartsPage() {
                         href={supplier.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-bold text-primary-foreground"
+                        className="section-action flex items-center justify-center gap-2 bg-primary px-3 text-primary-foreground"
                       >
                         Сайт <ChevronRight className="h-4 w-4" />
                       </a>
