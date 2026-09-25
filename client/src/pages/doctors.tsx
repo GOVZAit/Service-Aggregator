@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { BottomNavigation } from "@/components/bottom-navigation";
-import { AppBrandHeader } from "@/components/app-brand-header";
+import { SectionPageHeader } from "@/components/section-page-header";
 import { MapView } from "@/components/map-view";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -90,12 +90,13 @@ export default function DoctorsPage() {
   return (
     <div className="min-h-screen bg-background pb-24 lg:pb-28">
       <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
-        <div className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-3 pb-4">
-          <AppBrandHeader compact />
-          <div className="-mt-10 pr-28 mb-3">
-            <h1 className="text-2xl font-bold tracking-tight">Врачи</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Специалисты и клиники</p>
-          </div>
+        <div className="section-shell pb-3 pt-3 sm:pb-4">
+          <SectionPageHeader
+            title="Врачи"
+            subtitle="Специалисты и клиники"
+            city={cityFilter ?? "Все города"}
+            onLocationClick={() => setShowFilters(true)}
+          />
 
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -105,8 +106,7 @@ export default function DoctorsPage() {
                 placeholder="Врач, специальность или клиника"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 pr-10 bg-card border border-border/60 rounded-[1.2rem] font-medium shadow-sm placeholder:text-muted-foreground/70"
-                style={{ height: "48px" }}
+                className="section-search pl-12 pr-10 font-medium placeholder:text-muted-foreground/70"
                 data-testid="input-doctor-search"
               />
               {searchQuery && (
@@ -125,12 +125,12 @@ export default function DoctorsPage() {
               aria-expanded={showFilters}
               data-testid="button-doctor-filters"
               className={cn(
-                "rounded-2xl flex items-center justify-center transition-colors relative shrink-0",
+                "section-action relative flex h-[52px] w-[52px] shrink-0 items-center justify-center transition-colors",
                 hasActiveFilters || showFilters
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/60 text-foreground hover:bg-muted"
               )}
-              style={{ width: "48px", height: "48px" }}
+
             >
               <SlidersHorizontal className="w-5 h-5" />
               {hasActiveFilters && (
@@ -139,7 +139,7 @@ export default function DoctorsPage() {
             </button>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 lg:-mx-6 lg:px-6 mt-3 lg:flex-wrap lg:overflow-visible">
+          <div className="section-chip-row -mx-4 mt-3 px-4 sm:-mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
             {doctorSpecialties.map((s) => {
               const isSelected = specialty === s.id;
               return (
@@ -149,7 +149,7 @@ export default function DoctorsPage() {
                   aria-pressed={isSelected}
                   data-testid={`specialty-chip-${s.id}`}
                   className={cn(
-                    "flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-colors",
+                    "section-chip flex items-center gap-1.5 whitespace-nowrap transition-colors",
                     isSelected
                       ? "bg-primary text-primary-foreground"
                       : "bg-background border border-border/70 text-foreground"
@@ -243,7 +243,7 @@ export default function DoctorsPage() {
         </div>
       </header>
 
-      <main className="max-w-lg lg:max-w-5xl mx-auto px-4 lg:px-6 pt-4">
+      <main className="section-shell pt-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm text-muted-foreground">
             <span className="font-semibold text-foreground">{filtered.length}</span>{" "}
@@ -309,12 +309,12 @@ export default function DoctorsPage() {
             )}
           </div>
         ) : (
-          <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
+          <div className="section-card-grid">
             {filtered.map((doc) => (
               <div
                 key={doc.id}
                 data-testid={`doctor-card-${doc.id}`}
-                className="premium-card p-4"
+                className="premium-card flex h-full flex-col p-4 sm:p-5"
               >
                 <div className="flex gap-3">
                   <Avatar className="w-14 h-14 rounded-2xl">
@@ -371,11 +371,11 @@ export default function DoctorsPage() {
                   </div>
                 )}
 
-                <div className="mt-3 flex gap-2">
+                <div className="mt-auto flex gap-2 pt-4">
                   <a
                     href={`tel:${doc.phone.replace(/[^+\d]/g, "")}`}
                     data-testid={`doctor-call-${doc.id}`}
-                    className="flex-1 h-12 rounded-2xl bg-emerald-600 hover:bg-primary/90 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                    className="section-action flex flex-1 items-center justify-center gap-2 bg-primary text-primary-foreground transition-colors"
                   >
                     <Phone className="w-4 h-4" />
                     Позвонить
@@ -383,7 +383,7 @@ export default function DoctorsPage() {
                   <button
                     onClick={() => setChatDoctor(doc)}
                     data-testid={`doctor-message-${doc.id}`}
-                    className="flex-1 h-12 rounded-2xl border-2 border-primary/30 text-primary hover:bg-primary/10 font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                    className="section-action flex flex-1 items-center justify-center gap-2 border border-primary/25 bg-background text-primary transition-colors hover:bg-primary/5"
                   >
                     <MessageCircle className="w-4 h-4" />
                     Написать
