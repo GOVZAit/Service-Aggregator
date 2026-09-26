@@ -4,7 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const assert = require('node:assert/strict');
-const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const engines = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const engine = process.env.UI_BROWSER || 'chromium';
+assert.ok(['chromium', 'webkit'].includes(engine), 'Unsupported test browser');
 const fixture = JSON.parse(fs.readFileSync(process.env.UI_FIXTURES, 'utf8'));
 const output = process.env.UI_REPORT || '/tmp/govza-ui-report';
 fs.mkdirSync(output, { recursive: true });
@@ -31,6 +33,8 @@ async function context(signedIn = false, dark = false) {
   }, { dark });
   await ctx.route('**/*', async route => {
     const req = route.request(), url = new URL(req.url()), p = url.pathname, q = url.searchParams;
+    // Allow the existing public font assets; all external app/API traffic is blocked.
+    if (['fonts.googleapis.com', 'fonts.gstatic.com'].includes(url.hostname)) return route.continue();
     if (url.hostname !== '127.0.0.1') return route.abort();
     if (!p.startsWith('/api/')) return route.continue();
     let data = [], status = 200;
@@ -65,7 +69,7 @@ async function context(signedIn = false, dark = false) {
 }
 (async () => {
   await new Promise(resolve => server.listen(4174, '127.0.0.1', resolve));
-  browser = await chromium.launch({ headless: true });
+  browser = await engines[engine].launch({ headless: true });
   const { ctx } = await context();
   const page = await ctx.newPage(); page.setDefaultTimeout(5000);
   const errors = []; page.on('pageerror', error => errors.push(error.message));
@@ -104,6 +108,7 @@ async function context(signedIn = false, dark = false) {
       const after = await dialog.locator('.govza-panel-footer').boundingBox(); assert.equal(Math.round(after.y), Math.round(footer.y));
       for (let i = 0; i < 18; i++) { await page.keyboard.press('Tab'); assert.ok(await page.evaluate(() => Boolean(document.activeElement.closest('[role=dialog]'))), 'Focus escaped modal'); }
       await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
+      await page.waitForFunction(expected => document.activeElement?.dataset.testid === expected, id, { timeout: 2000 });
       assert.equal(await page.evaluate(() => document.activeElement.dataset.testid), id);
     });
   }
@@ -148,6 +153,6 @@ async function context(signedIn = false, dark = false) {
   await dark.ctx.close();
   await check('no frontend runtime exceptions', async () => assert.deepEqual(errors, []));
 })().catch(error => { results.push({ name: 'runner', status: 'failed', error: error.stack }); console.error(error); }).finally(async () => {
-  fs.writeFileSync(`${output}/results.json`, JSON.stringify({ basis: 'Production frontend build + isolated fixture APIs; no production DB. Chromium only.', results }, null, 2));
+  fs.writeFileSync(`${output}/results.json`, JSON.stringify({ basis: `Production frontend build + isolated fixture APIs; no production DB. Engine: ${engine}. Public fonts allowed; external APIs blocked.`, results }, null, 2));
   if (browser) await browser.close(); server.close(); process.exitCode = results.some(r => r.status !== 'passed') ? 1 : 0;
 });

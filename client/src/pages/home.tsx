@@ -99,9 +99,9 @@ export default function HomePage() {
         </div>
         <button type="button" className="directory-request-link" data-testid="button-broadcast"
           onClick={() => { setBroadcastCategory(selectedCategoryName ?? undefined); setShowBroadcast(true); }}>
-          <Send size={20} aria-hidden="true" /><span><strong>Описать задачу</strong><small>Получите предложения и выберите мастера</small></span><ChevronRight size={18} aria-hidden="true" />
+          <Send size={20} aria-hidden="true" /><span><strong>Описать задачу</strong><small>Сравните предложения мастеров</small></span><ChevronRight size={18} aria-hidden="true" />
         </button>
-        <div className="directory-quick-actions" aria-label="Быстрые фильтры">
+        <div className="directory-quick-actions directory-quick-filters" aria-label="Быстрые фильтры">
           <DirectoryChip active={filterState.availableTodayOnly} onClick={() => setFilterState({ ...filterState, availableTodayOnly: !filterState.availableTodayOnly })}><CalendarCheck aria-hidden="true" />Свободен сегодня</DirectoryChip>
           <DirectoryChip active={filterState.verifiedOnly} onClick={() => setFilterState({ ...filterState, verifiedOnly: !filterState.verifiedOnly })}><BadgeCheck aria-hidden="true" />Проверенные</DirectoryChip>
           {user?.role === "client" && <Link href="/saved" className="directory-clear flex items-center gap-1.5"><Heart size={16} />Избранное</Link>}

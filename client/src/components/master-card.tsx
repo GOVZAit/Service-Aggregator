@@ -13,7 +13,7 @@ interface MasterCardProps {
 }
 
 export function MasterCard({ master, isFavorite, onToggleFavorite, favoritePending, availableToday }: MasterCardProps) {
-  return <article data-testid={`master-card-${master.id}`} className="directory-card relative">
+  return <article data-testid={`master-card-${master.id}`} className="directory-card directory-card-master relative">
     <div className="directory-card-header">
       <Avatar className="directory-avatar"><AvatarImage src={master.avatar} alt="" className="object-cover" />
         <AvatarFallback className="bg-transparent font-semibold">{master.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2)}</AvatarFallback>
@@ -37,7 +37,7 @@ export function MasterCard({ master, isFavorite, onToggleFavorite, favoritePendi
     {availableToday && <p className="directory-tag directory-available mt-3" data-testid={`available-today-${master.id}`}>Свободен сегодня · {availableToday.fromTime}–{availableToday.toTime}</p>}
     <div className="directory-location"><MapPin size={15} aria-hidden="true" /><p className="directory-metadata">{[master.city, master.district].filter(Boolean).join(" · ") || "Город не указан"}</p></div>
     <div className="directory-card-bottom">
-      <div className="min-w-0"><span className="directory-metadata">Стоимость услуг</span><span className="directory-price">{master.showPrices !== false ? master.price || "По договорённости" : "По договорённости"}</span></div>
+      <div className="min-w-0"><span className="directory-price">{master.showPrices !== false ? master.price || "По договорённости" : "По договорённости"}</span></div>
       <Link href={`/master/${master.id}`} aria-label={`Профиль: ${master.name}`} className="directory-secondary after:absolute after:inset-0 after:rounded-[20px] after:content-['']">Профиль<ArrowUpRight size={16} aria-hidden="true" /></Link>
     </div>
   </article>;

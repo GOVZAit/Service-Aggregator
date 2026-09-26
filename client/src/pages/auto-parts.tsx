@@ -110,7 +110,7 @@ export default function AutoPartsPage() {
       <div className="directory-rail" aria-label="Раздел автозапчастей">{supplierTypeOptions.map((item) => <DirectoryChip key={item.value} active={supplierType === item.value}
         onClick={() => setSupplierType(item.value)} testId={`auto-parts-section-${item.value}`}>{item.label}</DirectoryChip>)}</div>
       <button type="button" className="directory-request-link" onClick={() => navigate(`/auto-parts/requests?section=${supplierType}`)} data-testid="auto-parts-request">
-        <PackageSearch size={21} aria-hidden="true" /><span><strong>Запросить запчасть</strong><small>Сравните цены и наличие в одной заявке</small></span><ChevronRight size={18} aria-hidden="true" />
+        <PackageSearch size={21} aria-hidden="true" /><span><strong>Запросить запчасть</strong><small>Цены и наличие в одной заявке</small></span><ChevronRight size={18} aria-hidden="true" />
       </button>
       <DirectoryResults label={supplierType === "store" ? "Автомагазины" : "Авторазборы"} count={suppliers.length} loading={isLoading} />
       {isError ? <div className="directory-empty" role="alert"><PackageSearch size={28} /><h3>Каталог не загрузился</h3><p>Проверьте соединение и повторите попытку.</p><button type="button" className="directory-secondary" onClick={() => void refetch()}>Повторить</button></div>
