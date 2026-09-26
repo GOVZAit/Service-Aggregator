@@ -51,15 +51,19 @@ jobs:
           for e in entries:
               p = root / e['path']
               assert p.resolve().is_relative_to(root) and not p.is_symlink()
-              if e['old'] is None:
+              if e['path'].startswith('.github/'):
+                  assert p.read_text() == e['content'], 'Workflow must already be written via the authorized workflow connector'
+              elif e['old'] is None:
                   assert not p.exists(), f'New file already exists: {p}'
               else:
                   assert p.is_file() and hashlib.sha256(p.read_bytes()).hexdigest() == e['old'], f'Baseline changed: {p}'
           for e in entries:
+              if e['path'].startswith('.github/'):
+                  continue
               p = root / e['path']
               p.parent.mkdir(parents=True, exist_ok=True)
               p.write_text(e['content'], encoding='utf-8')
-          print('Validated and staged 25 admin implementation and test files.')
+          print('Validated and staged 24 admin source/test files. Workflow unchanged.')
           PY
       - uses: actions/setup-node@v4
         with:
@@ -68,14 +72,13 @@ jobs:
       - run: npm ci
       - name: Verify typed code and regression suite
         run: npm run check && npx tsx script/test-admin-access.ts && npm run test:product && npm run build && npm run smoke:build
-      - name: Commit reviewed source and remove temporary transfer files
+      - name: Commit source on review branch only (no workflow changes)
         run: |
           test "$(git branch --show-current)" = 'gpt/admin-control-center'
-          rm -rf .github/admin-transfer
-          rm .github/workflows/admin-workspace.yml .github/workflows/admin-import.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add client server shared script docs .github
+          git add client server shared script docs
+          test -z "$(git diff --cached --name-only -- .github)"
           git commit -m 'feat: mobile-first admin control center with guarded management and user directory'
           git push origin HEAD:refs/heads/gpt/admin-control-center
           git rev-parse HEAD
