@@ -1,8 +1,8 @@
 import { useId, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { ResponsivePanel } from "@/components/responsive-panel";
+
 import { activeFilterEntries, applyMasterFilters, defaultFilterState, type FilterState, type SortBy } from "@shared/catalog";
 import type { Master } from "@shared/schema";
 
@@ -116,25 +116,16 @@ interface FilterSheetProps extends PanelProps {
 
 export default function FilterSheet({ value, onChange, onClose, masters, districts, availableIds, availabilityLoading }: FilterSheetProps) {
   const [draft, setDraft] = useState(value);
-  const mobile = useIsMobile();
   const count = applyMasterFilters(masters, draft, availableIds).length;
   const invalidPrice = draft.minPrice !== null && draft.maxPrice !== null && draft.minPrice > draft.maxPrice;
   const checking = draft.availableTodayOnly && availabilityLoading;
-  return (
-    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent side={mobile ? "bottom" : "right"} className={mobile ? "flex max-h-[90dvh] flex-col gap-0 rounded-t-3xl p-0" : "flex h-dvh w-full flex-col gap-0 p-0 sm:max-w-md"}>
-        <SheetHeader className="shrink-0 border-b px-5 py-4 text-left">
-          <SheetTitle className="flex items-center gap-2"><SlidersHorizontal className="h-5 w-5 text-primary" /> Фильтры</SheetTitle>
-          <SheetDescription>Уточните условия. Поиск и город останутся выбранными.</SheetDescription>
-        </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5"><FilterPanel value={draft} onChange={setDraft} districts={districts} /></div>
-        <div className="shrink-0 border-t bg-background px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
-          <Button type="button" className="h-12 w-full rounded-xl" disabled={invalidPrice || checking} onClick={() => { onChange(draft); onClose(); }} data-testid="button-filter-apply">
-            {checking ? "Проверяем расписание…" : `Показать результаты: ${count}`}
-          </Button>
-          <p className="sr-only" role="status" aria-live="polite">Найдено: {count}</p>
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
+  return <ResponsivePanel open onOpenChange={(open) => { if (!open) onClose(); }} title="Фильтры мастеров"
+    description="Выберите условия и примените. Город и поиск сохранятся."
+    footer={<><button type="button" className="directory-secondary" onClick={() => setDraft({ ...defaultFilterState })}>Сбросить</button>
+      <button type="button" className="directory-primary" disabled={invalidPrice || checking} onClick={() => { onChange(draft); onClose(); }} data-testid="button-filter-apply">
+        {checking ? "Проверяем…" : `Показать: ${count}`}
+      </button></>}>
+    <FilterPanel value={draft} onChange={setDraft} districts={districts} />
+    <p className="sr-only" role="status" aria-live="polite">Найдено: {count}</p>
+  </ResponsivePanel>;
 }
