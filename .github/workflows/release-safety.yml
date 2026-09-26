@@ -42,8 +42,16 @@ jobs:
       - run: npm ci
       - run: npm audit --audit-level=low
       - name: Typecheck release tools
-        run: npx tsc --noEmit --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --esModuleInterop --types node script/release-database.ts script/check-release-db.ts script/test-release-database.ts script/test-backup-connection.ts
-      - name: Verify libpq connection mapping
-        run: npx tsx script/test-backup-connection.ts
+        run: npx tsc --noEmit --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --esModuleInterop --types node script/release-database.ts script/check-release-db.ts script/test-release-database.ts script/test-backup-connection.ts script/test-transport-policy.ts
+      - name: Check safe deployment entrypoints and verification syntax
+        run: |
+          python3 -m py_compile script/verify-publication.py
+          node - <<'JS'
+          const assert=require('node:assert/strict');const p=require('./package.json');
+          assert.equal(p.scripts['db:push'],'tsx script/check-release-db.ts');
+          assert.equal(p.scripts['db:check-release'],'tsx script/check-release-db.ts');
+          JS
+      - name: Verify libpq connection mapping and proxy boundary
+        run: npx tsx script/test-backup-connection.ts && npx tsx script/test-transport-policy.ts
       - name: Verify schema gate and restore fixtures into empty service database
         run: npx tsx script/test-release-database.ts
