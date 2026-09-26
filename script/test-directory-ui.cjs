@@ -30,7 +30,7 @@ async function context(signedIn = false, dark = false) {
     localStorage.setItem('theme', dark ? 'dark' : 'light');
   }, { dark });
   await ctx.route('**/*', async route => {
-    const req = route.request(), url = new URL(req.url), p = url.pathname, q = url.searchParams;
+    const req = route.request(), url = new URL(req.url()), p = url.pathname, q = url.searchParams;
     if (url.hostname !== '127.0.0.1') return route.abort();
     if (!p.startsWith('/api/')) return route.continue();
     let data = [], status = 200;
