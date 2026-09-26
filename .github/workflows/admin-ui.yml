@@ -4,6 +4,7 @@ on:
     paths:
       - 'client/src/components/admin/**'
       - 'client/src/pages/admin/**'
+      - 'client/src/contexts/auth-context.tsx'
       - 'server/admin-*.ts'
       - 'server/index.ts'
       - 'shared/admin-users.ts'
