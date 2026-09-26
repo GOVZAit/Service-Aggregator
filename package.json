@@ -10,9 +10,10 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "test:email": "tsx script/test-email-payloads.ts",
-    "db:push": "drizzle-kit push",
+    "db:push": "tsx script/check-release-db.ts",
     "test:product": "tsx script/test-product-maturity.ts",
-    "test:product:db": "tsx script/test-product-memory-db.ts"
+    "test:product:db": "tsx script/test-product-memory-db.ts",
+    "db:check-release": "tsx script/check-release-db.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -53,7 +54,7 @@
     "cmdk": "^1.1.1",
     "connect-pg-simple": "^10.0.0",
     "date-fns": "^3.6.0",
-    "drizzle-orm": "^0.39.3",
+    "drizzle-orm": "^0.45.3",
     "drizzle-zod": "^0.7.0",
     "embla-carousel-react": "^8.6.0",
     "express": "^4.21.2",
