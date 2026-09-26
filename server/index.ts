@@ -1,3 +1,4 @@
+import { registerAdminUserRoutes } from "./admin-user-routes";
 import { ensureClientMemoryTables, registerClientMemoryRoutes } from "./client-memory-routes";
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
@@ -154,6 +155,7 @@ app.use((req, res, next) => {
   await registerPushRoutes(app);
   await registerProviderRoutes(app);
   await registerAdminRoutes(app);
+  registerAdminUserRoutes(app);
   await registerDirectoryRoutes(app);
   await registerAutoPartsRoutes(app);
   await registerAutoPartsRequestRoutes(app);
