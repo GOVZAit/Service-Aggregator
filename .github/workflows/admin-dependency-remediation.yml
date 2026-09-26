@@ -1,0 +1,55 @@
+name: Patch admin release dependencies
+on:
+  push:
+    branches: [gpt/admin-release-safety]
+    paths: [.github/workflows/admin-dependency-remediation.yml]
+permissions:
+  contents: write
+jobs:
+  patch-review-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gpt/admin-control-center
+      - name: Require reviewed source baseline
+        run: test "$(git rev-parse HEAD)" = 8a0f828ad30da6b66af7073e619800e7dba2c131
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Replace legacy push with compatibility and backup gate
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs');const assert=require('node:assert/strict');
+          const p=JSON.parse(fs.readFileSync('package.json'));
+          assert.equal(p.scripts['db:push'],'drizzle-kit push');
+          p.scripts['db:push']='tsx script/check-release-db.ts';
+          p.scripts['db:check-release']='tsx script/check-release-db.ts';
+          p.dependencies['drizzle-orm']='^0.45.3';
+          fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
+          JS
+          npm install --package-lock-only --ignore-scripts --no-audit
+          npm audit fix --package-lock-only --ignore-scripts
+      - name: Require clean dependency audit
+        run: npm audit --audit-level=low
+      - name: Verify patched source and application
+        run: |
+          npm ci
+          npm run check
+          npx tsx script/test-admin-access.ts
+          npm run test:product
+          npm run build
+          npm run smoke:build
+      - name: Commit only package metadata to review branch
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = gpt/admin-control-center
+          git diff --name-only | grep -vE '^(package.json|package-lock.json)$' && exit 1 || test "$?" -eq 1
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json
+          git commit -m 'security: patch dependencies and disable automatic production schema push'
+          git push origin HEAD:refs/heads/gpt/admin-control-center
+          git rev-parse HEAD
