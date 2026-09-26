@@ -1,0 +1,72 @@
+name: Admin panel acceptance
+on:
+  pull_request:
+    paths:
+      - 'client/src/components/admin/**'
+      - 'client/src/pages/admin/**'
+      - 'server/admin-*.ts'
+      - 'server/index.ts'
+      - 'shared/admin-users.ts'
+      - 'script/test-admin-*'
+      - '.github/workflows/admin-ui.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admin-access-and-db:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: govza_admin_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx tsx script/test-admin-access.ts
+      - run: npx tsx script/test-admin-users-db.ts
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/govza_admin_test
+  admin-browser:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci && npm run build && npm run smoke:build
+      - name: Install isolated browser tools
+        run: |
+          npm install --prefix "$RUNNER_TEMP/ui-tools" --no-audit --no-fund playwright@1.62.0
+          "$RUNNER_TEMP/ui-tools/node_modules/.bin/playwright" install --with-deps ${{ matrix.browser }}
+      - name: Run admin UI with fixture APIs only
+        run: node script/test-admin-ui.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/ui-tools/node_modules/playwright
+          UI_BROWSER: ${{ matrix.browser }}
+          UI_REPORT: ${{ runner.temp }}/admin-ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-ui-${{ matrix.browser }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/admin-ui
+          retention-days: 7
