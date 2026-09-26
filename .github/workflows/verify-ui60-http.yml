@@ -1,0 +1,41 @@
+name: Verify UI60 HTTP endpoint (read only)
+on:
+  push:
+    branches: [gpt/verify-ui60-publication]
+    paths: [.github/workflows/verify-ui60-http.yml]
+permissions:
+  contents: read
+jobs:
+  inspect-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Inspect HTTP response and public records only
+        run: |
+          python3 - <<'PY'
+          import json, socket, urllib.request
+          from urllib.parse import urlparse
+          print('DNS:', sorted(set(item[4][0] for item in socket.getaddrinfo('govza.pro', 80))))
+          for path in ['/', '/doctors', '/auto-parts', '/more', '/profile', '/sw.js', '/api/auto-parts/suppliers', '/api/auto-parts/suppliers?type=store', '/api/auto-parts/suppliers?type=dismantler']:
+              result = {'path': path, 'transport': 'HTTP', 'read_only': True}
+              try:
+                  req = urllib.request.Request('http://govza.pro' + path, headers={'User-Agent': 'GOVZA-release-verification/1.0', 'Cache-Control': 'no-cache'})
+                  with urllib.request.urlopen(req, timeout=15) as response:
+                      result['status'] = response.status
+                      result['final_origin'] = urlparse(response.url).scheme + '://' + urlparse(response.url).netloc
+                      text = response.read(10 * 1024 * 1024).decode('utf-8')
+                  if path.startswith('/api/'):
+                      records = json.loads(text)
+                      if not isinstance(records, list):
+                          raise ValueError('Not a catalog array')
+                      result['records'] = len(records)
+                      result['supplier_types'] = {key: sum(1 for row in records if row.get('supplierType') == key) for key in ['store', 'supplier', 'dismantler']}
+                  elif path == '/sw.js':
+                      result['expected_build_version_found'] = 'build-ad4ebbca7d31' in text
+                  else:
+                      result['expected_css_found'] = '/assets/index-BVy8Ipre.css' in text
+                      result['expected_js_found'] = '/assets/index-C1ysYiTI.js' in text
+              except Exception as error:
+                  result['error'] = str(error)
+              print(json.dumps(result, ensure_ascii=False))
+          PY
