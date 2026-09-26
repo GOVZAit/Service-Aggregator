@@ -29,7 +29,7 @@ export function DirectoryFrame({ title, description, city, onCityClick, action, 
     <header className="directory-container directory-intro">
       <div className="directory-title-row">
         <h1>{title}</h1>
-        {city && (onCityClick ? <button className="directory-city" type="button" onClick={onCityClick} aria-label={`Выбрать город: ${city}`}>
+        {city && (onCityClick ? <button className="directory-city" type="button" onClick={(event) => { event.currentTarget.focus(); onCityClick(); }} aria-label={`Выбрать город: ${city}`}>
           <MapPin size={16} aria-hidden="true" /><span>{city}</span><ChevronDown size={14} aria-hidden="true" />
         </button> : <span className="directory-city"><MapPin size={16} aria-hidden="true" /><span>{city}</span></span>)}
       </div>
@@ -65,7 +65,7 @@ export function DirectorySearch({ value, onChange, placeholder, onFilters, filte
         {value && <button type="button" onClick={() => { onChange(""); input.current?.focus(); }} aria-label="Очистить поиск"><X size={18} aria-hidden="true" /></button>}
         {suggestions.length > 0 && <datalist id={id}>{suggestions.map((label) => <option key={label} value={label} />)}</datalist>}
       </form>
-      <button className={cn("directory-filter-button", filterCount > 0 && "has-filters")} type="button" onClick={onFilters}
+      <button className={cn("directory-filter-button", filterCount > 0 && "has-filters")} type="button" onClick={(event) => { event.currentTarget.focus(); onFilters(); }}
         aria-label={filterCount ? `Фильтры: выбрано ${filterCount}` : "Фильтры"} aria-haspopup="dialog" aria-expanded={filtersOpen}
         data-testid={filterTestId}>
         <SlidersHorizontal size={20} aria-hidden="true" /><span className="filter-word">Фильтры</span>
