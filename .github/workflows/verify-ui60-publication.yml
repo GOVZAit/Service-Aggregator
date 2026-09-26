@@ -1,0 +1,88 @@
+name: Verify UI60 publication (read only)
+
+on:
+  push:
+    branches: [gpt/verify-ui60-publication]
+    paths: [.github/workflows/verify-ui60-publication.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-publication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check published frontend and public catalog without mutations
+        env:
+          REPORT_PATH: ${{ runner.temp }}/publication-report.json
+        run: |
+          python3 - <<'PY'
+          import datetime, json, os, re, time, urllib.request
+          from urllib.parse import urlparse
+          report = {
+              'checked_at_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              'release': '3d7a38fabe9e392af66f09a89bc83cfd2a5f3624',
+              'method': 'Unauthenticated HTTPS GET only; no database or production writes',
+              'checks': [],
+          }
+          failures = []
+          base = 'https://govza.pro'
+          def get(path):
+              request = urllib.request.Request(base + path, headers={'User-Agent': 'GOVZA-release-verification/1.0', 'Cache-Control': 'no-cache'})
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  if urlparse(response.url).hostname not in ('govza.pro', 'www.govza.pro'):
+                      raise ValueError('Unexpected redirect host')
+                  data = response.read(10 * 1024 * 1024 + 1)
+                  if len(data) > 10 * 1024 * 1024:
+                      raise ValueError('Response exceeded limit')
+                  return response.status, data.decode('utf-8')
+          def check(path, kind):
+              result = {'path': path, 'kind': kind}
+              try:
+                  status, text = get(path)
+                  result['http_status'] = status
+                  if kind == 'frontend':
+                      result['expected_css_found'] = '/assets/index-BVy8Ipre.css' in text
+                      result['expected_js_found'] = '/assets/index-C1ysYiTI.js' in text
+                      if not (result['expected_css_found'] and result['expected_js_found']):
+                          raise ValueError('Published frontend does not match the deployed build')
+                  elif kind == 'service-worker':
+                      result['expected_build_version_found'] = 'build-ad4ebbca7d31' in text
+                      if not result['expected_build_version_found']:
+                          raise ValueError('Service worker version differs from the deployed build')
+                  else:
+                      rows = json.loads(text)
+                      if not isinstance(rows, list):
+                          raise ValueError('Expected public catalog array')
+                      result['records'] = len(rows)
+                      result['supplier_types'] = {key: sum(1 for row in rows if row.get('supplierType') == key) for key in ('store', 'supplier', 'dismantler')}
+                      if not rows:
+                          raise ValueError('Public catalog returned no records')
+                  result['ok'] = True
+              except Exception as error:
+                  result['ok'] = False
+                  result['error'] = str(error)
+                  failures.append(path)
+              report['checks'].append(result)
+              print(json.dumps(result, ensure_ascii=False))
+          for path in ('/', '/doctors', '/auto-parts', '/more', '/profile'):
+              check(path, 'frontend')
+          check('/sw.js', 'service-worker')
+          for path in ('/api/auto-parts/suppliers', '/api/auto-parts/suppliers?type=store', '/api/auto-parts/suppliers?type=dismantler'):
+              check(path, 'catalog')
+          report['all_checks_passed'] = not failures
+          with open(os.environ['REPORT_PATH'], 'w') as target:
+              json.dump(report, target, ensure_ascii=False, indent=2)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as target:
+              target.write('## Published UI verification\n\n```json\n' + json.dumps(report, ensure_ascii=False, indent=2) + '\n```\n')
+          if failures:
+              raise SystemExit('Failed read-only checks: ' + ', '.join(failures))
+          PY
+      - name: Save aggregate verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui60-publication-report
+          path: ${{ runner.temp }}/publication-report.json
+          retention-days: 7
