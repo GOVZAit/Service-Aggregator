@@ -1,0 +1,91 @@
+name: Admin release preflight (read only)
+on:
+  push:
+    branches: [gpt/admin-release-safety]
+    paths: [.github/workflows/admin-release-preflight.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+    steps:
+      - name: Check public TLS and catalog without authentication
+        run: |
+          python3 - <<'PY'
+          import json, ssl, urllib.request
+          for base in ['https://govza.pro', 'http://govza.pro']:
+              for path in ['/', '/api/auto-parts/suppliers']:
+                  result = {'origin': base, 'path': path}
+                  try:
+                      with urllib.request.urlopen(urllib.request.Request(base+path, headers={'Cache-Control':'no-cache'}), timeout=15) as r:
+                          result['status'] = r.status
+                          result['final_origin'] = r.url.split('/')[0]+'//'+r.url.split('/')[2]
+                          if path.startswith('/api/'):
+                              rows = json.load(r)
+                              result['records'] = len(rows) if isinstance(rows,list) else None
+                  except Exception as e:
+                      result['error'] = str(e)
+                  print(json.dumps(result))
+          PY
+      - name: Inspect granted server access and service metadata
+        env:
+          DEPLOY_HOST: 194.67.92.216
+          DEPLOY_USER: serviceagg-deploy
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 0700 ~/.ssh
+          trap 'rm -f ~/.ssh/id_ed25519' EXIT
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 0600 ~/.ssh/id_ed25519
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" > ~/.ssh/known_hosts
+          ssh -o BatchMode=yes -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s' <<'REMOTE'
+          set -u
+          printf '\n== Granted access ==\n'
+          id -un
+          sudo -n -l 2>&1 || true
+          printf '\n== Service state ==\n'
+          systemctl is-active nginx || true
+          ss -ltn '( sport = :80 or sport = :443 or sport = :8080 or sport = :8081 )'
+          printf '\n== Active release ==\n'
+          readlink -f /home/serviceagg/current || true
+          printf '\n== Backup location metadata only ==\n'
+          for p in /home/serviceagg/backups /var/backups/service-aggregator /var/backups/serviceagg; do
+            if test -d "$p"; then stat -c '%A %U %G %n' "$p"; fi
+          done
+          printf '\n== Deployment helper capability flags; no source or credentials ==\n'
+          python3 - <<'PY'
+          import pathlib, hashlib, json
+          p=pathlib.Path('/usr/local/sbin/deploy-service-aggregator')
+          try:
+              raw=p.read_bytes(); text=raw.decode()
+              print(json.dumps({'helper_readable':True,'sha256':hashlib.sha256(raw).hexdigest(),'runs_db_push':'db:push' in text,'mentions_backup':any(s in text for s in ['pg_dump','backup']),'mentions_tls':any(s in text for s in ['443','ssl_certificate','certbot']),'mentions_skip_migration':any(s in text for s in ['SKIP_MIGR','skip-migration']),'sets_production_env':'NODE_ENV=production' in text,'runs_as_app_user':'runuser' in text or 'sudo -u' in text}))
+          except PermissionError:
+              print(json.dumps({'helper_readable':False}))
+          PY
+          REMOTE
+  dependency-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit committed lockfile without installing or modifying it
+        run: |
+          npm audit --package-lock-only --json > audit.json || test "$?" -eq 1
+          node - <<'JS'
+          const fs=require('node:fs');const a=JSON.parse(fs.readFileSync('audit.json'));
+          if (a.error) throw new Error('Audit registry request failed');
+          console.log(JSON.stringify({metadata:a.metadata,vulnerabilities:a.vulnerabilities},null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: admin-release-dependency-audit
+          path: audit.json
+          retention-days: 7
