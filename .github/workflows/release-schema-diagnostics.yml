@@ -1,0 +1,19 @@
+name: Release schema diagnostics tests
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --esModuleInterop --types node script/check-release-db.ts script/test-release-schema-diagnostics.ts
+      - run: npx tsx script/test-release-schema-diagnostics.ts
