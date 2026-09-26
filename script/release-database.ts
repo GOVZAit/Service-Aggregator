@@ -4,14 +4,19 @@ import type pg from 'pg';
 import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { createReadStream, closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
-import { resolve, relative, isAbsolute } from 'node:path';
+import { resolve, relative, isAbsolute, sep } from 'node:path';
 import * as schema from '../shared/database-schema';
+import { backupConnection } from './backup-connection';
 
 export class ReleaseCheckError extends Error {}
 export const quoteIdentifier = (name: string) => '"' + name.replaceAll('"', '""') + '"';
 export function requiredTables() {
   return (Object.values(schema) as unknown[]).filter((value): value is PgTable => is(value, PgTable)).map(getTableConfig);
 }
+const isWithin = (parent: string, child: string) => {
+  const path = relative(parent, child);
+  return path === '' || (path !== '..' && !path.startsWith('..' + sep) && !isAbsolute(path));
+};
 
 /** Only column existence/read compatibility is checked, not a full migration diff. No records are returned. */
 export async function verifyReadCompatibility(pool: pg.Pool, schemaOverride?: string) {
@@ -30,7 +35,6 @@ export async function verifyReadCompatibility(pool: pg.Pool, schemaOverride?: st
       catch { throw new ReleaseCheckError(`Schema compatibility failed for ${table.name}; no migration was attempted.`); }
       columns += table.columns.length;
     }
-    await connection.query('ROLLBACK');
     return { tables: requiredTables().length, columns, databaseWrites: false };
   } finally {
     await connection.query('ROLLBACK').catch(() => undefined);
@@ -41,13 +45,11 @@ export async function verifyReadCompatibility(pool: pg.Pool, schemaOverride?: st
 /** Backup stays outside the release/web root. Never return backup contents or DB credentials. */
 export async function createVerifiedBackup(connectionString: string, directory: string) {
   const root = resolve(directory);
-  const withinRelease = relative(resolve(process.cwd()), root);
-  if (withinRelease === '' || (!withinRelease.startsWith('..') && !isAbsolute(withinRelease))) {
+  if (isWithin(resolve(process.cwd()), root)) {
     throw new ReleaseCheckError('Backup directory must be outside the release and web root.');
   }
   mkdirSync(root, { recursive: true, mode: 0o700 });
-  const realRelative = relative(realpathSync(process.cwd()), realpathSync(root));
-  if (realRelative === '' || (!realRelative.startsWith('..') && !isAbsolute(realRelative))) {
+  if (isWithin(realpathSync(process.cwd()), realpathSync(root))) {
     throw new ReleaseCheckError('Resolved backup directory must be outside the release.');
   }
   const info = lstatSync(root);
@@ -57,12 +59,16 @@ export async function createVerifiedBackup(connectionString: string, directory: 
   const filename = `database-${new Date().toISOString().replaceAll(':', '-')}-${randomUUID()}.dump`;
   const partial = resolve(root, filename + '.partial');
   const final = resolve(root, filename);
+  const passfile = resolve(root, filename + '.pgpass');
   let fd: number | undefined;
+  let passfileCreated = false;
   try {
     fd = openSync(partial, 'wx', 0o600);
-    // libpq accepts the complete URI through PGDATABASE, preserving SSL options without argv/log leakage.
+    const connection = backupConnection(connectionString, passfile);
+    writeFileSync(passfile, connection.passwordFile, { mode: 0o600, flag: 'wx' });
+    passfileCreated = true;
     const result = spawnSync('pg_dump', ['--no-password', '--format=custom', '--lock-wait-timeout=10s'], {
-      env: { ...process.env, PGDATABASE: connectionString, PGCONNECT_TIMEOUT: '10' },
+      env: connection.env,
       stdio: ['ignore', fd, 'pipe'], timeout: 120_000, maxBuffer: 1024 * 1024,
     });
     if (result.status !== 0 || result.error || (result.stderr?.length ?? 0) > 0) {
@@ -74,7 +80,7 @@ export async function createVerifiedBackup(connectionString: string, directory: 
     if (header.toString() !== 'PGDMP') throw new ReleaseCheckError('Backup archive header is invalid.');
     const listing = spawnSync('pg_restore', ['--list', partial], { encoding: 'utf8', timeout: 30_000, maxBuffer: 8 * 1024 * 1024 });
     if (listing.status !== 0 || !listing.stdout.includes('TABLE DATA')) throw new ReleaseCheckError('Backup contents could not be listed.');
-    // Decode every data block to /dev/null; no --dbname means this does NOT connect to or restore any DB.
+    // Without --dbname this decodes every data block locally; it never connects to or restores any DB.
     const decode = spawnSync('pg_restore', ['--no-owner', '--no-acl', '--file=/dev/null', partial], { stdio: ['ignore','ignore','pipe'], timeout: 120_000, maxBuffer: 1024 * 1024 });
     if (decode.status !== 0 || decode.error) throw new ReleaseCheckError('Full backup decoding failed.');
     const hash = createHash('sha256');
@@ -85,7 +91,7 @@ export async function createVerifiedBackup(connectionString: string, directory: 
     return { ...metadata, directory: root };
   } finally {
     if (fd !== undefined) closeSync(fd);
-    // Remove only our own incomplete file, never an older backup.
+    if (passfileCreated) unlinkSync(passfile);
     try { unlinkSync(partial); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
   }
 }

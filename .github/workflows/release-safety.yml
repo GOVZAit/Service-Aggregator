@@ -40,12 +40,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Inspect PostgreSQL clients against an empty fixture database
-        run: |
-          pg_dump --version
-          pg_restore --version
-          PGDATABASE="$DATABASE_URL" PGCONNECT_TIMEOUT=5 pg_dump --no-password --schema-only --file=/dev/null
+      - run: npm audit --audit-level=low
       - name: Typecheck release tools
-        run: npx tsc --noEmit --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --esModuleInterop --types node script/release-database.ts script/check-release-db.ts script/test-release-database.ts
+        run: npx tsc --noEmit --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --esModuleInterop --types node script/release-database.ts script/check-release-db.ts script/test-release-database.ts script/test-backup-connection.ts
+      - name: Verify libpq connection mapping
+        run: npx tsx script/test-backup-connection.ts
       - name: Verify schema gate and restore fixtures into empty service database
         run: npx tsx script/test-release-database.ts
