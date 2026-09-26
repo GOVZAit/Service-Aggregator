@@ -80,7 +80,7 @@ async function context(signedIn = false, dark = false) {
     for (const [url, label] of pages) await check(`${label}: ${width}px layout`, async () => {
       await page.goto(`http://127.0.0.1:4174${url}`);
       await page.locator('.directory-title-row h1').waitFor(); await page.waitForTimeout(450);
-      await page.screenshot({ path: `${output}/${label}-${width}.png` });
+      await page.screenshot({ animations: 'disabled', path: `${output}/${label}-${width}.png` });
       const dimensions = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: innerWidth }));
       assert.ok(dimensions.scroll <= dimensions.width + 1, JSON.stringify(dimensions));
       if (label !== 'more' && label !== 'profile') {
@@ -99,7 +99,8 @@ async function context(signedIn = false, dark = false) {
     for (const [url, id, label] of [['/', 'button-filter', 'masters'], ['/doctors', 'button-doctor-filters', 'doctors'], ['/auto-parts', 'auto-parts-filters', 'parts']]) await check(`${label}: ${width}px filter panel`, async () => {
       await page.goto(`http://127.0.0.1:4174${url}`); await page.getByTestId(id).click();
       const dialog = page.getByRole('dialog'); await dialog.waitFor(); await page.waitForTimeout(250);
-      await page.screenshot({ path: `${output}/${label}-filter-${width}.png` });
+      await page.screenshot({ animations: 'disabled', path: `${output}/${label}-filter-${width}.png` });
+      assert.equal(await dialog.evaluate(el => getComputedStyle(el).opacity), "1", "Panel must be fully opaque after opening");
       const box = await dialog.boundingBox(); const size = page.viewportSize();
       assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= size.width + 1 && box.y + box.height <= size.height + 1, JSON.stringify(box));
       if (width >= 720) assert.equal(Math.round(box.width), 420);
@@ -134,7 +135,7 @@ async function context(signedIn = false, dark = false) {
     await userPage.goto('http://127.0.0.1:4174/'); await userPage.getByTestId('button-broadcast').click();
     await userPage.getByTestId('category-1').click(); await userPage.getByTestId('button-next-category').click();
     await userPage.getByTestId('input-description').fill('Заменить смеситель на кухне');
-    await userPage.screenshot({ path: `${output}/request-details-390.png` });
+    await userPage.screenshot({ animations: 'disabled', path: `${output}/request-details-390.png` });
     await userPage.getByTestId('button-next-details').click(); await userPage.getByTestId('input-location').fill('Грозный, тестовый адрес');
     await userPage.getByRole('button', { name: 'Назад', exact: true }).click(); assert.equal(await userPage.getByTestId('input-description').inputValue(), 'Заменить смеситель на кухне');
     await userPage.getByTestId('button-next-details').click(); assert.equal(await userPage.getByTestId('input-location').inputValue(), 'Грозный, тестовый адрес');
@@ -149,7 +150,7 @@ async function context(signedIn = false, dark = false) {
   });
   await signed.ctx.close();
   const dark = await context(false, true); const darkPage = await dark.ctx.newPage(); await darkPage.setViewportSize({ width: 390, height: 844 });
-  await check('dark theme', async () => { await darkPage.goto('http://127.0.0.1:4174/'); await darkPage.locator('.directory-card').first().waitFor(); await darkPage.screenshot({ path: `${output}/masters-dark-390.png` }); assert.ok(await darkPage.locator('html').evaluate(el => el.classList.contains('dark'))); });
+  await check('dark theme', async () => { await darkPage.goto('http://127.0.0.1:4174/'); await darkPage.locator('.directory-card').first().waitFor(); await darkPage.screenshot({ animations: 'disabled', path: `${output}/masters-dark-390.png` }); assert.ok(await darkPage.locator('html').evaluate(el => el.classList.contains('dark'))); });
   await dark.ctx.close();
   await check('no frontend runtime exceptions', async () => assert.deepEqual(errors, []));
 })().catch(error => { results.push({ name: 'runner', status: 'failed', error: error.stack }); console.error(error); }).finally(async () => {
