@@ -1,5 +1,6 @@
 import type { Master, ServiceRequest, Order, AuthUser, LostFoundListing, LostFoundListingInput, LostFoundStatus, UserRole } from "@shared/schema";
 import { authUsers, lostFoundListings, masterSettings, passwordResetTokens, persistedOrders, userFavorites } from "@shared/schema";
+import { orderReviews } from "@shared/order-review-schema";
 import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "./db";
 import { getEffectiveCategory } from "./category-service";
@@ -466,14 +467,18 @@ export class MemStorage implements IStorage {
         .map((master) => this.withPersistedSettings(master)),
     );
     const persistent = await listPersistentProviders();
-    return [...seed, ...persistent];
+    return this.withVerifiedReviewStats([...seed, ...persistent]);
   }
 
   async getMasterById(id: number): Promise<Master | undefined> {
     const persistent = await getPersistentProvider(id);
-    if (persistent) return persistent;
-    const master = this.masters.find(m => m.id === id);
-    return master ? this.withPersistedSettings(master) : undefined;
+    const base = persistent ?? (
+      this.masters.find((master) => master.id === id)
+        ? await this.withPersistedSettings(this.masters.find((master) => master.id === id)!)
+        : undefined
+    );
+    if (!base) return undefined;
+    return (await this.withVerifiedReviewStats([base]))[0];
   }
 
   async getMastersByCategory(categoryId: number): Promise<Master[]> {
@@ -830,6 +835,35 @@ export class MemStorage implements IStorage {
     if (!listing) return undefined;
     const author = await this.getUserById(listing.authorId);
     return toLostFoundListing(listing, author?.name ?? "Пользователь");
+  }
+
+  private async withVerifiedReviewStats(masters: Master[]): Promise<Master[]> {
+    if (masters.length === 0) return masters;
+
+    const rows = await db.select({
+      masterId: orderReviews.masterId,
+      count: sql<number>`count(*)::int`,
+      average: sql<number>`coalesce(avg(${orderReviews.rating}), 0)::float8`,
+    })
+      .from(orderReviews)
+      .groupBy(orderReviews.masterId);
+
+    const stats = new Map(rows.map((row) => [
+      row.masterId,
+      {
+        count: Number(row.count) || 0,
+        average: Math.round((Number(row.average) || 0) * 10) / 10,
+      },
+    ]));
+
+    return masters.map((master) => {
+      const review = stats.get(master.id);
+      return {
+        ...master,
+        rating: review?.average ?? 0,
+        reviews: review?.count ?? 0,
+      };
+    });
   }
 
   private async withPersistedSettings(master: Master): Promise<Master> {

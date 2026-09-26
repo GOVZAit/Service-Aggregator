@@ -73,27 +73,6 @@ type DisplayReview = {
   providerReply?: string;
 };
 
-const reviewsByMasterId: Record<number, DisplayReview[]> = {
-  1: [
-    { name: "Рамзан Д.", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcabd36?w=60&h=60&fit=crop&crop=face", rating: 5, text: "Умар пришёл в срок, работу сделал быстро и чисто. Кран больше не течёт! Буду обращаться ещё.", date: "10 апр 2026", service: "Замена смесителя" },
-    { name: "Зара Э.", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=60&h=60&fit=crop&crop=face", rating: 5, text: "Отличный специалист. Прочистил засор за 20 минут, объяснил причину и дал советы по профилактике.", date: "5 апр 2026", service: "Прочистка засора" },
-    { name: "Аслан М.", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop&crop=face", rating: 4, text: "Хорошая работа, немного задержался, но предупредил заранее. Результатом доволен.", date: "28 мар 2026", service: "Установка унитаза" },
-  ],
-  2: [
-    { name: "Лейла Г.", avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=60&h=60&fit=crop&crop=face", rating: 5, text: "Зулейха — настоящий профессионал! Квартира блестит, всё сделала аккуратно и быстро.", date: "9 апр 2026", service: "Генеральная уборка" },
-    { name: "Малика В.", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=60&h=60&fit=crop&crop=face", rating: 5, text: "Второй раз пользуюсь услугами — всегда на высоте. Рекомендую всем!", date: "1 апр 2026", service: "Уборка 2-комн." },
-  ],
-  3: [
-    { name: "Ибрагим Ч.", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face", rating: 5, text: "Ислам разобрался со сложной проводкой, которую другие не брались делать. Настоящий профи.", date: "8 апр 2026", service: "Разводка проводки" },
-    { name: "Хасан Э.", avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=60&h=60&fit=crop&crop=face", rating: 4, text: "Быстро и качественно заменил розетки. Цена соответствует работе.", date: "2 апр 2026", service: "Замена розетки" },
-    { name: "Аиша Б.", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=60&h=60&fit=crop&crop=face", rating: 5, text: "Отлично установил щиток, гарантия 2 года — это подкупает. Звоните смело!", date: "20 мар 2026", service: "Установка щитка" },
-  ],
-};
-
-const defaultReviews: DisplayReview[] = [
-  { name: "Клиент", avatar: "", rating: 5, text: "Отличная работа, всё сделано профессионально!", date: "Апрель 2026", service: "" },
-];
-
 function StarRow({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5">
@@ -255,14 +234,14 @@ export default function MasterProfilePage() {
     service: review.service,
     ...(review.providerReply ? { providerReply: review.providerReply } : {}),
   })) ?? [];
-  const reviews: DisplayReview[] = verifiedReviews.length > 0 ? verifiedReviews : (reviewsByMasterId[masterId] ?? defaultReviews);
+  const reviews: DisplayReview[] = verifiedReviews;
   const sortedReviews = [...reviews].sort((left, right) => {
     if (reviewSort === "high") return right.rating - left.rating;
     if (reviewSort === "low") return left.rating - right.rating;
     return 0;
   });
-  const displayRating = reviewSummary && reviewSummary.count > 0 ? reviewSummary.average : master.rating;
-  const displayReviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : master.reviews;
+  const displayRating = reviewSummary && reviewSummary.count > 0 ? reviewSummary.average : 0;
+  const displayReviewCount = reviewSummary?.count ?? 0;
   const callState = getCallState(master);
   const todayAvailability = availability.find((day) => isAvailableToday(day, now));
   const nextAvailable = availability.find((day) => day.status === "available" && day.date > todayKey);
@@ -519,7 +498,7 @@ export default function MasterProfilePage() {
               </div>
               <div className="flex-1 space-y-1">
                 {[5, 4, 3, 2, 1].map((stars) => {
-                  const count = reviews.filter((r) => r.rating === stars).length;
+                  const count = reviews.filter((review) => review.rating === stars).length;
                   const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
                   return (
                     <div key={stars} className="flex items-center gap-2">
@@ -549,57 +528,67 @@ export default function MasterProfilePage() {
               </div>
             )}
 
-            <div className="flex flex-wrap gap-2" aria-label="Сортировка отзывов">
-              {([
-                ["newest", "Свежие"],
-                ["high", "Высокие"],
-                ["low", "Низкие"],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setReviewSort(value)}
-                  className={cn(
-                    "min-h-9 rounded-full px-3 text-xs font-bold transition",
-                    reviewSort === value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {sortedReviews.map((review, idx) => (
-              <div key={idx} data-testid={`review-${idx}`} className="premium-card p-4 space-y-2">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-9 h-9">
-                    {review.avatar ? (
-                      <AvatarImage src={review.avatar} alt={review.name} className="object-cover" />
-                    ) : null}
-                    <AvatarFallback className="text-xs font-bold">{review.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">{review.name}</p>
-                      <p className="text-xs text-muted-foreground">{review.date}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <StarRow rating={review.rating} />
-                      {review.service && <span className="text-xs text-muted-foreground">· {review.service}</span>}
-                    </div>
-                  </div>
+            {sortedReviews.length > 0 ? (
+              <>
+                <div className="flex flex-wrap gap-2" aria-label="Сортировка отзывов">
+                  {([
+                    ["newest", "Свежие"],
+                    ["high", "Высокие"],
+                    ["low", "Низкие"],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setReviewSort(value)}
+                      className={cn(
+                        "min-h-9 rounded-full px-3 text-xs font-bold transition",
+                        reviewSort === value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
-                <p className="text-sm text-foreground/80 leading-relaxed">«{review.text}»</p>
-                {review.providerReply && (
-                  <div className="rounded-2xl bg-primary/[0.06] p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-primary">
-                      Ответ исполнителя
-                    </p>
-                    <p className="mt-1 text-sm leading-relaxed">{review.providerReply}</p>
+
+                {sortedReviews.map((review, idx) => (
+                  <div key={idx} data-testid={`review-${idx}`} className="premium-card p-4 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-9 h-9">
+                        {review.avatar ? (
+                          <AvatarImage src={review.avatar} alt={review.name} className="object-cover" />
+                        ) : null}
+                        <AvatarFallback className="text-xs font-bold">{review.name.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold">{review.name}</p>
+                          <p className="text-xs text-muted-foreground">{review.date}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <StarRow rating={review.rating} />
+                          {review.service && <span className="text-xs text-muted-foreground">· {review.service}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-foreground/80 leading-relaxed">«{review.text}»</p>
+                    {review.providerReply && (
+                      <div className="rounded-2xl bg-primary/[0.06] p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-primary">Ответ исполнителя</p>
+                        <p className="mt-1 text-sm leading-relaxed">{review.providerReply}</p>
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
+              </>
+            ) : (
+              <div className="premium-card p-6 text-center">
+                <Star className="mx-auto h-7 w-7 text-muted-foreground/40" />
+                <p className="mt-3 text-sm font-bold">Проверенных отзывов пока нет</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Отзывы появятся здесь только после завершённых заказов GOVZA.
+                </p>
               </div>
-            ))}
+            )}
           </TabsContent>
           )}
         </Tabs>
