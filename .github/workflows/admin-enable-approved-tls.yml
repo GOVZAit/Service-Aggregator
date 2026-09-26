@@ -1,0 +1,46 @@
+name: Enable HTTPS with approved GOVZA helper
+on:
+  push:
+    branches: [gpt/admin-release-safety]
+    paths: [.github/workflows/admin-enable-approved-tls.yml]
+permissions:
+  contents: read
+concurrency:
+  group: service-aggregator-production
+  cancel-in-progress: false
+jobs:
+  enable-tls:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+    steps:
+      - name: Invoke existing certificate helper granted to deployment account
+        env:
+          DEPLOY_HOST: 194.67.92.216
+          DEPLOY_USER: serviceagg-deploy
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 0700 ~/.ssh
+          trap 'rm -f ~/.ssh/id_ed25519' EXIT
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 0600 ~/.ssh/id_ed25519
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" > ~/.ssh/known_hosts
+          timeout 180s ssh -o BatchMode=yes -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" 'sudo -n /usr/local/sbin/issue-govza-certificate' </dev/null
+      - name: Verify certificate using standard trust and public GET only
+        run: |
+          python3 - <<'PY'
+          import json,ssl,socket,urllib.request
+          context=ssl.create_default_context()
+          with socket.create_connection(('govza.pro',443),timeout=15) as sock:
+              with context.wrap_socket(sock,server_hostname='govza.pro') as tls:
+                  cert=tls.getpeercert()
+                  print(json.dumps({'tls':tls.version(),'not_after':cert.get('notAfter'),'names':cert.get('subjectAltName')}))
+          for path in ['/', '/admin', '/api/auto-parts/suppliers']:
+              with urllib.request.urlopen('https://govza.pro'+path,timeout=20) as r:
+                  if r.url.split('/')[0] != 'https:': raise RuntimeError('TLS downgrade')
+                  result={'path':path,'https_status':r.status}
+                  if path.startswith('/api/'):
+                      rows=json.load(r);result['records']=len(rows) if isinstance(rows,list) else None
+                  print(json.dumps(result))
+          PY
