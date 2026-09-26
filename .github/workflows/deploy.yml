@@ -2,8 +2,7 @@ name: Deploy Service Aggregator
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,34 +16,42 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production
-
+    timeout-minutes: 15
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-
+        with:
+          persist-credentials: false
+      - name: Require main branch and non-mutating database gate
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          node - <<'JS'
+          const assert=require('node:assert/strict');
+          const p=require('./package.json');
+          assert.equal(p.scripts['db:push'],'tsx script/check-release-db.ts');
+          assert.equal(p.scripts['db:check-release'],'tsx script/check-release-db.ts');
+          JS
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
+      - name: Require clean known-vulnerability audit
+        run: npm audit --audit-level=low
       - name: Verify production build
-        run: npm run build
-
+        run: npm run check && npm run build
       - name: Smoke check production artifacts
         run: npm run smoke:build
-
+      - name: Check HTTPS and preserve public catalog baseline
+        run: python3 script/verify-publication.py before
       - name: Mark prebuilt release
         run: touch dist/.deploy-prebuilt
-
       - name: Create release archive
         run: |
           tar -czf "$RUNNER_TEMP/release.tar.gz" --exclude=node_modules --exclude=.git .
           mv "$RUNNER_TEMP/release.tar.gz" release.tar.gz
-
       - name: Configure SSH
         env:
           DEPLOY_HOST: 194.67.92.216
@@ -53,21 +60,41 @@ jobs:
           install -d -m 0700 ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 0600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$DEPLOY_HOST" > ~/.ssh/known_hosts
-
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" > ~/.ssh/known_hosts
       - name: Upload release
         env:
           DEPLOY_HOST: 194.67.92.216
           DEPLOY_USER: serviceagg-deploy
         run: |
-          scp release.tar.gz \
-            "$DEPLOY_USER@$DEPLOY_HOST:/home/serviceagg-deploy/incoming/$GITHUB_SHA.tar.gz"
-
-      - name: Activate release
+          scp -o BatchMode=yes release.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:/home/serviceagg-deploy/incoming/$GITHUB_SHA.tar.gz"
+      - name: Activate release with verified database backup
         env:
           DEPLOY_HOST: 194.67.92.216
           DEPLOY_USER: serviceagg-deploy
         run: |
-          ssh "$DEPLOY_USER@$DEPLOY_HOST" \
-            "sudo /usr/local/sbin/deploy-service-aggregator '$GITHUB_SHA' '/home/serviceagg-deploy/incoming/$GITHUB_SHA.tar.gz'"
-
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" \
+            "sudo -n /usr/local/sbin/deploy-service-aggregator '$GITHUB_SHA' '/home/serviceagg-deploy/incoming/$GITHUB_SHA.tar.gz'" </dev/null | tee "$RUNNER_TEMP/activation.log"
+          grep -F 'Release database gate passed.' "$RUNNER_TEMP/activation.log"
+          grep -F "Deployed $GITHUB_SHA" "$RUNNER_TEMP/activation.log"
+      - name: Preserve HTTPS after reverse-proxy release activation
+        env:
+          DEPLOY_HOST: 194.67.92.216
+          DEPLOY_USER: serviceagg-deploy
+        run: |
+          set -euo pipefail
+          if ! curl --fail --silent --show-error --max-time 15 https://govza.pro/ >/dev/null; then
+            ssh -o BatchMode=yes -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" 'sudo -n /usr/local/sbin/issue-govza-certificate' </dev/null
+          fi
+      - name: Verify published build and denied anonymous admin access
+        run: python3 script/verify-publication.py after
+      - name: Remove temporary SSH key
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: publication-check-${{ github.sha }}
+          path: ${{ runner.temp }}/publication-check.json
+          retention-days: 7
+          if-no-files-found: warn

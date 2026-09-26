@@ -1,3 +1,4 @@
+import { authorizeAdmin } from "./admin-access";
 import type { Express, Request, Response } from "express";
 import { desc, eq, sql } from "drizzle-orm";
 import { db, pool } from "./db";
@@ -18,24 +19,8 @@ import {
   providerVerifications,
 } from "@shared/admin-schema";
 
-export async function authenticatedAdmin(req: Express.Request, res: Response) {
-  if (!req.session.userId || req.session.sessionVersion === undefined) {
-    res.status(401).json({ message: "Не авторизован" });
-    return undefined;
-  }
-
-  const user = await storage.getUserById(req.session.userId);
-  if (!user || user.sessionVersion !== req.session.sessionVersion) {
-    res.status(401).json({ message: "Сессия недействительна" });
-    return undefined;
-  }
-
-  if (user.role !== "admin") {
-    res.status(403).json({ message: "Доступно только администратору" });
-    return undefined;
-  }
-
-  return user;
+export async function authenticatedAdmin(req: Request, res: Response) {
+  return authorizeAdmin(req, res, (id) => storage.getUserById(id));
 }
 
 function validInternalKey(req: Request) {

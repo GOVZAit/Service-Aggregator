@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { backupConnection } from './backup-connection';
+const c=backupConnection('postgresql://fixture:p%3Aa%5Css@localhost:5433/test_db?sslmode=verify-full','/tmp/test.pgpass');
+assert.equal(c.env.PGHOST,'localhost');assert.equal(c.env.PGPORT,'5433');assert.equal(c.env.PGDATABASE,'test_db');
+assert.equal(c.env.PGSSLMODE,'verify-full');assert.equal(c.env.PGUSER,'fixture');
+assert.equal(c.passwordFile,'localhost:5433:test_db:fixture:p\\:a\\\\ss\n');
+assert.equal(c.env.PGPASSWORD,undefined);assert.equal(c.env.DATABASE_URL,undefined);
+assert.equal(backupConnection('postgresql://u:p@[::1]/d','/tmp/pass').env.PGHOST,'::1');
+for(const value of ['https://u:p@localhost/db','postgres://localhost/db','postgres://u:p@localhost/db?host=other','postgres://u:p@localhost/db?sslmode=require&sslmode=disable','postgres://u:p%0Aq@localhost/db'])assert.throws(()=>backupConnection(value,'/tmp/pass'));
+console.log('Backup URI, TLS option, escaping, private credential and rejection checks passed.');
