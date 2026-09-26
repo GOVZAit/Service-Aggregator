@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { PushNotificationCard } from "@/components/push-notification-card";
-import { AppBrandHeader } from "@/components/app-brand-header";
+import { DirectoryFrame } from "@/components/directory-layout";
 import { OrderCard } from "@/components/order-card";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -87,13 +87,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="app-page bg-background">
-        <header className="app-header-shell safe-area-pt">
-          <div className="mx-auto max-w-4xl px-4 py-4">
-            <AppBrandHeader compact />
-            <h1 className="-mt-10 pr-28 text-2xl font-bold tracking-tight">Профиль</h1>
-          </div>
-        </header>
+      <DirectoryFrame title="Профиль" description="Ваши данные, заказы и настройки.">
         <main className="mx-auto flex max-w-lg flex-col items-center px-4 py-14 text-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-primary/10 text-primary">
             <UserRound className="h-9 w-9" />
@@ -111,31 +105,16 @@ export default function ProfilePage() {
             </Button>
           </div>
         </main>
-        <BottomNavigation />
-      </div>
+      </DirectoryFrame>
     );
   }
 
   const contact = user.email ?? user.phone ?? "Контакт не указан";
 
   return (
-    <div className="app-page bg-background">
-      <header className="app-header-shell safe-area-pt">
-        <div className="mx-auto max-w-4xl px-4 py-4">
-          <AppBrandHeader compact />
-          <div className="-mt-10 flex items-end justify-between gap-3 pr-14">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Профиль</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Данные и настройки</p>
-            </div>
-            <Button variant="ghost" size="icon" className="h-11 w-11 rounded-2xl" onClick={toggleTheme}>
-              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-4xl space-y-3 px-4 py-4">
+    <DirectoryFrame title="Профиль" description="Ваши данные, заказы и настройки."
+      action={<button type="button" onClick={toggleTheme} className="directory-secondary" aria-label={isDark ? "Включить светлую тему" : "Включить тёмную тему"}>{isDark ? <Sun size={18} /> : <Moon size={18} />}{isDark ? "Светлая тема" : "Тёмная тема"}</button>}>
+      <main className="directory-container space-y-3 py-4">
         <section className="flex items-center gap-3 py-2">
           <Avatar className="h-14 w-14 shrink-0 bg-primary">
             <AvatarFallback className="bg-transparent text-lg font-bold text-white">{getInitials(user.name)}</AvatarFallback>
@@ -312,7 +291,6 @@ export default function ProfilePage() {
         )}
       </main>
 
-      <BottomNavigation />
-    </div>
+    </DirectoryFrame>
   );
 }

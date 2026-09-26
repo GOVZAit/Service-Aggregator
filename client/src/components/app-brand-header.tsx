@@ -1,5 +1,6 @@
 import { Bell, ChevronDown, MapPin } from "lucide-react";
 import { useState } from "react";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationsPanel } from "@/components/notifications-panel";
@@ -12,6 +13,7 @@ interface AppBrandHeaderProps {
   className?: string;
   subtitle?: string;
   compact?: boolean;
+  hideLocation?: boolean;
 }
 
 export function AppBrandHeader({
@@ -20,6 +22,7 @@ export function AppBrandHeader({
   className,
   subtitle = "Надёжные специалисты рядом",
   compact = false,
+  hideLocation = false,
 }: AppBrandHeaderProps) {
   const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -77,7 +80,7 @@ export function AppBrandHeader({
         )}
 
         <div className="flex shrink-0 items-center gap-2">
-          {onLocationClick ? (
+          {!hideLocation && (onLocationClick ? (
             <button
               type="button"
               onClick={onLocationClick}
@@ -88,14 +91,14 @@ export function AppBrandHeader({
             </button>
           ) : (
             <div className="hidden items-center gap-2 sm:flex">{locationContent}</div>
-          )}
+          ))}
 
           {user && (
             <button
               type="button"
               onClick={() => setShowNotifications(true)}
               aria-label="Открыть уведомления"
-              className="pressable relative flex h-10 w-10 items-center justify-center rounded-full bg-muted/80 text-foreground sm:h-11 sm:w-11"
+              className="pressable relative flex h-11 w-11 items-center justify-center rounded-full bg-muted/80 text-foreground sm:h-11 sm:w-11"
               data-testid="brand-notifications"
             >
               <Bell className="h-[18px] w-[18px]" />
@@ -107,9 +110,11 @@ export function AppBrandHeader({
             </button>
           )}
 
-          <Avatar className="h-10 w-10 border border-border/60 bg-primary/10 sm:h-11 sm:w-11">
+          <Link href="/profile" aria-label={user ? "Мой профиль" : "Войти или зарегистрироваться"} className="rounded-full">
+          <Avatar className="h-11 w-11 border border-border/60 bg-primary/10 sm:h-11 sm:w-11">
             <AvatarFallback className="bg-transparent text-xs font-extrabold text-primary">{initials}</AvatarFallback>
           </Avatar>
+          </Link>
         </div>
       </div>
 

@@ -1,0 +1,54 @@
+name: Directory UI acceptance
+on:
+  pull_request:
+    paths:
+      - 'client/**'
+      - 'shared/**'
+      - 'script/**'
+      - 'package*.json'
+      - '.github/workflows/directory-ui.yml'
+permissions:
+  contents: read
+concurrency:
+  group: directory-ui-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  responsive-browser:
+    name: responsive-${{ matrix.browser }}
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build && npm run smoke:build
+      - name: Install isolated test tools
+        env:
+          UI_BROWSER: ${{ matrix.browser }}
+        run: |
+          npm install --prefix "$RUNNER_TEMP/ui-tools" --no-audit --no-fund playwright@1.62.0
+          "$RUNNER_TEMP/ui-tools/node_modules/.bin/playwright" install --with-deps "$UI_BROWSER"
+      - name: Verify responsive layouts and interactions with fixture APIs
+        env:
+          UI_FIXTURES: ${{ runner.temp }}/ui-fixtures.json
+          UI_REPORT: ${{ runner.temp }}/ui-report
+          UI_BROWSER: ${{ matrix.browser }}
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/ui-tools/node_modules/playwright
+        run: |
+          ./node_modules/.bin/tsx script/directory-ui-fixtures.ts
+          node script/test-directory-ui.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: directory-ui-${{ matrix.browser }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/ui-report
+          retention-days: 7

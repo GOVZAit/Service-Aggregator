@@ -1,33 +1,13 @@
 import { useMemo, useState } from "react";
-import {
-  BadgeCheck,
-  Box,
-  Building2,
-  ChevronRight,
-  MapPin,
-  PackageSearch,
-  Phone,
-  Search,
-  SlidersHorizontal,
-  Warehouse,
-} from "lucide-react";
+import { BadgeCheck, Building2, ChevronRight, MapPin, PackageSearch, Phone, Search, Warehouse, ArrowUpRight, MessageCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { SectionPageHeader } from "@/components/section-page-header";
-import { BottomNavigation } from "@/components/bottom-navigation";
-import { EmptyState } from "@/components/empty-state";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { DirectoryFrame, DirectorySearch, DirectoryChip, DirectoryResults } from "@/components/directory-layout";
+import { ResponsivePanel } from "@/components/responsive-panel";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/use-debounce";
 import { cities } from "@shared/schema";
-import type {
-  AutoPartsCondition,
-  AutoPartsSupplierType,
-  AutoPartsSupplierView,
-  AutoPartsVehicleOrigin,
-  AutoPartsVehicleType,
-} from "@shared/auto-parts-schema";
-
+import type { AutoPartsCondition, AutoPartsSupplierType, AutoPartsSupplierView, AutoPartsVehicleOrigin, AutoPartsVehicleType } from "@shared/auto-parts-schema";
 type ConditionFilter = "all" | AutoPartsCondition;
 type SupplierSection = "store" | "dismantler";
 type VehicleTypeFilter = "all" | AutoPartsVehicleType;
@@ -91,325 +71,82 @@ function normalizePhone(value: string) {
   return value.replace(/[^+\d]/g, "");
 }
 
+type Filters = { brand: string; city: string; condition: ConditionFilter; vehicleType: VehicleTypeFilter; vehicleOrigin: VehicleOriginFilter };
+const defaults: Filters = { brand: "", city: "Все города", condition: "all", vehicleType: "all", vehicleOrigin: "all" };
+
 export default function AutoPartsPage() {
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
-  const [brand, setBrand] = useState("");
-  const [condition, setCondition] = useState<ConditionFilter>("all");
+  const debouncedQuery = useDebounce(query, 250);
   const [supplierType, setSupplierType] = useState<SupplierSection>("store");
-  const [vehicleType, setVehicleType] = useState<VehicleTypeFilter>("all");
-  const [vehicleOrigin, setVehicleOrigin] = useState<VehicleOriginFilter>("all");
-  const [city, setCity] = useState<string>("Все города");
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const extraFilterCount = [brand.trim(), condition !== "all", vehicleType !== "all", vehicleOrigin !== "all", city !== "Все города"].filter(Boolean).length;
-
+  const [filters, setFilters] = useState<Filters>(defaults);
+  const [draft, setDraft] = useState<Filters>(defaults);
+  const [showFilters, setShowFilters] = useState(false);
+  const filterCount = [filters.brand.trim(), filters.city !== "Все города", filters.condition !== "all", filters.vehicleType !== "all", filters.vehicleOrigin !== "all"].filter(Boolean).length;
   const params = useMemo(() => {
-    const search = new URLSearchParams();
-    if (query.trim()) search.set("q", query.trim());
-    if (brand.trim()) search.set("brand", brand.trim());
-    if (condition !== "all") search.set("condition", condition);
-    search.set("type", supplierType);
-    if (vehicleType !== "all") search.set("vehicleType", vehicleType);
-    if (vehicleOrigin !== "all") search.set("vehicleOrigin", vehicleOrigin);
-    if (city !== "Все города") search.set("city", city);
+    const search = new URLSearchParams({ type: supplierType });
+    if (debouncedQuery.trim()) search.set("q", debouncedQuery.trim());
+    if (filters.brand.trim()) search.set("brand", filters.brand.trim());
+    if (filters.city !== "Все города") search.set("city", filters.city);
+    if (filters.condition !== "all") search.set("condition", filters.condition);
+    if (filters.vehicleType !== "all") search.set("vehicleType", filters.vehicleType);
+    if (filters.vehicleOrigin !== "all") search.set("vehicleOrigin", filters.vehicleOrigin);
     return search.toString();
-  }, [query, brand, condition, supplierType, vehicleType, vehicleOrigin, city]);
-
-  const { data: suppliers = [], isLoading, isError } = useQuery<AutoPartsSupplierView[]>({
+  }, [supplierType, debouncedQuery, filters]);
+  const { data: suppliers = [], isLoading, isError, refetch } = useQuery<AutoPartsSupplierView[]>({
     queryKey: ["/api/auto-parts/suppliers", params],
-    queryFn: async () => {
-      const response = await fetch(`/api/auto-parts/suppliers${params ? `?${params}` : ""}`);
-      if (!response.ok) throw new Error("Не удалось загрузить каталог автозапчастей");
+    queryFn: async ({ signal }) => {
+      const response = await fetch(`/api/auto-parts/suppliers?${params}`, { signal });
+      if (!response.ok) throw new Error("Не удалось загрузить каталог");
       return response.json();
     },
   });
-
-  return (
-    <div className="app-page bg-background">
-      <header className="app-header-shell sticky top-0 z-40 safe-area-pt">
-        <div className="section-shell pb-3 pt-3 sm:pb-4">
-          <SectionPageHeader
-            title="Автозапчасти"
-            subtitle="Магазины и авторазборы"
-            city={city}
-          />
-
-          <div className="mt-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Деталь, OEM, магазин…"
-                className="section-search pl-12"
-                data-testid="auto-parts-search"
-              />
-            </div>
-
-            <div className="section-chip-row -mx-4 mt-2.5 px-4 sm:-mx-0 sm:px-0">
-              {supplierTypeOptions.map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => setSupplierType(item.value)}
-                  className={`section-chip transition ${
-                    supplierType === item.value
-                      ? "bg-foreground text-background"
-                      : "bg-muted/75 text-muted-foreground"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setShowMobileFilters(true)}
-                className="section-chip flex items-center gap-2 bg-primary/10 text-primary sm:hidden"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                Фильтры{extraFilterCount > 0 ? ` · ${extraFilterCount}` : ""}
-              </button>
-            </div>
-
-            <div className="mt-3 hidden gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_180px]">
-              <Input value={brand} onChange={(event) => setBrand(event.target.value)} placeholder="Марка авто" className="h-11 rounded-xl" />
-              <select value={city} onChange={(event) => setCity(event.target.value)} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold">
-                {cities.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </div>
-
-            <div className="mt-3 hidden space-y-3 sm:block">
-              <div className="flex flex-wrap gap-2">
-                {conditionOptions.map((item) => <button key={item.value} type="button" onClick={() => setCondition(item.value)} className={`min-h-9 rounded-full px-3.5 text-xs font-bold ${condition === item.value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{item.label}</button>)}
-                {vehicleTypeOptions.map((item) => <button key={item.value} type="button" onClick={() => setVehicleType(item.value)} className={`min-h-9 rounded-full px-3.5 text-xs font-bold ${vehicleType === item.value ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground"}`}>{item.label}</button>)}
-                {vehicleOriginOptions.map((item) => <button key={item.value} type="button" onClick={() => setVehicleOrigin(item.value)} className={`min-h-9 rounded-full px-3.5 text-xs font-bold ${vehicleOrigin === item.value ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground"}`}>{item.label}</button>)}
-              </div>
-            </div>
+  const openFilters = () => { setDraft({ ...filters }); setShowFilters(true); };
+  const reset = () => setFilters({ ...defaults, city: filters.city });
+  return <DirectoryFrame title="Автозапчасти" description="Магазины и авторазборы в одном каталоге." city={filters.city} onCityClick={openFilters}>
+    <DirectorySearch value={query} onChange={setQuery} placeholder="Деталь, артикул или магазин" onFilters={openFilters} filterCount={filterCount}
+      filtersOpen={showFilters} testId="auto-parts-search" filterTestId="auto-parts-filters" />
+    <main className="directory-container">
+      <div className="directory-rail" aria-label="Раздел автозапчастей">{supplierTypeOptions.map((item) => <DirectoryChip key={item.value} active={supplierType === item.value}
+        onClick={() => setSupplierType(item.value)} testId={`auto-parts-section-${item.value}`}>{item.label}</DirectoryChip>)}</div>
+      <button type="button" className="directory-request-link" onClick={() => navigate(`/auto-parts/requests?section=${supplierType}`)} data-testid="auto-parts-request">
+        <PackageSearch size={21} aria-hidden="true" /><span><strong>Запросить запчасть</strong><small>Цены и наличие в одной заявке</small></span><ChevronRight size={18} aria-hidden="true" />
+      </button>
+      <DirectoryResults label={supplierType === "store" ? "Автомагазины" : "Авторазборы"} count={suppliers.length} loading={isLoading} />
+      {isError ? <div className="directory-empty" role="alert"><PackageSearch size={28} /><h3>Каталог не загрузился</h3><p>Проверьте соединение и повторите попытку.</p><button type="button" className="directory-secondary" onClick={() => void refetch()}>Повторить</button></div>
+      : isLoading ? <div className="directory-grid" aria-label="Загрузка каталога">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="directory-card space-y-4" aria-hidden="true"><Skeleton className="h-14 w-full rounded-xl" /><Skeleton className="h-8 w-4/5" /><Skeleton className="h-12 w-full rounded-xl" /></div>)}</div>
+      : suppliers.length === 0 ? <div className="directory-empty"><Search size={28} /><h3>Ничего не найдено</h3><p>Измените запрос или параметры автомобиля. Можно также отправить запрос на запчасть.</p><button type="button" className="directory-secondary" onClick={() => { reset(); setQuery(""); }}>Сбросить поиск и фильтры</button></div>
+      : <div className="directory-grid">{suppliers.map((supplier) => {
+        const Icon = supplierIcon(supplier.supplierType);
+        return <article key={supplier.id} className="directory-card" data-testid={`supplier-card-${supplier.id}`}>
+          <div className="directory-card-header"><div className="directory-avatar grid place-items-center"><Icon size={24} aria-hidden="true" /></div>
+            <div className="directory-person"><h3>{supplier.name}{supplier.verified && <BadgeCheck size={16} aria-label="Профиль проверен" />}</h3><p>{supplierTypeLabel[supplier.supplierType]}</p></div>
           </div>
-        </div>
-      </header>
-
-      <main className="section-shell py-4 pb-28 sm:py-5">
-        <section className="premium-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-          <div className="contents">
-            <div>
-              <p className="text-xs font-semibold text-primary">Цены и наличие</p>
-              <h2 className="mt-1 text-base font-bold">Не нашли нужную запчасть?</h2>
-              <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
-                Отправьте один запрос — подходящие автомагазины и авторазборы ответят ценой, наличием и сроком.
-              </p>
-            </div>
-            <Button
-              className="section-action min-w-[170px] shrink-0 px-4"
-              onClick={() => navigate(`/auto-parts/requests?section=${supplierType}`)}
-            >
-              <PackageSearch className="mr-2 h-5 w-5" />
-              Запросить запчасть
-            </Button>
+          <div className="directory-tags"><span className="directory-tag">{conditionLabel[supplier.partsCondition]}</span>{supplier.delivery && <span className="directory-tag">Доставка</span>}{supplier.pickup && <span className="directory-tag">Самовывоз</span>}</div>
+          {(supplier.city || supplier.address) && <div className="directory-location"><MapPin size={16} aria-hidden="true" /><p>{[supplier.city, supplier.address].filter(Boolean).join(" · ")}</p></div>}
+          {(supplier.vehicleTypes.length > 0 || supplier.vehicleOrigins.length > 0) && <p className="directory-service-list">{[...supplier.vehicleTypes.map((v) => vehicleTypeLabel[v]), ...supplier.vehicleOrigins.map((v) => vehicleOriginLabel[v])].join(" · ")}</p>}
+          {(supplier.description || supplier.brands.length > 0 || supplier.salesType === "wholesale" || supplier.salesType === "both") && <details><summary>Подробнее о магазине</summary>
+            {supplier.description && <p className="directory-metadata mt-2">{supplier.description}</p>}
+            {supplier.brands.length > 0 && <p className="directory-metadata mt-2">Марки: {supplier.brands.join(", ")}</p>}
+            {(supplier.salesType === "wholesale" || supplier.salesType === "both") && <p className="directory-metadata mt-2">Оптовая продажа</p>}
+          </details>}
+          <div className="directory-card-actions">
+            {supplier.phone && <a className="directory-primary" href={`tel:${normalizePhone(supplier.phone)}`}><Phone size={16} aria-hidden="true" />Позвонить</a>}
+            {supplier.website ? <a className="directory-secondary" href={supplier.website} target="_blank" rel="noopener noreferrer">Сайт<ArrowUpRight size={16} aria-hidden="true" /></a>
+              : supplier.whatsapp ? <a className="directory-secondary" href={`https://wa.me/${supplier.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} aria-hidden="true" />WhatsApp</a> : null}
+            {!supplier.phone && !supplier.website && !supplier.whatsapp && <span className="directory-metadata">Контакты не указаны</span>}
           </div>
-        </section>
-
-        <div className="mb-3 mt-7 flex items-end justify-between gap-3">
-          <div>
-            <h2 className="section-title">{supplierType === "store" ? "Автомагазины" : "Авторазборы"}</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {isLoading ? "Загружаем каталог…" : `${suppliers.length} найдено`}
-            </p>
-          </div>
-          {(query || brand || condition !== "all" || vehicleType !== "all" || vehicleOrigin !== "all" || city !== "Все города") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setQuery("");
-                setBrand("");
-                setCondition("all");
-                setSupplierType("store");
-                setVehicleType("all");
-                setVehicleOrigin("all");
-                setCity("Все города");
-              }}
-            >
-              Сбросить
-            </Button>
-          )}
-        </div>
-
-        {isError ? (
-          <EmptyState
-            icon={<PackageSearch className="h-10 w-10" />}
-            title="Не удалось загрузить каталог"
-            description="Обновите страницу и попробуйте ещё раз."
-          />
-        ) : !isLoading && suppliers.length === 0 ? (
-          <EmptyState
-            icon={<Box className="h-10 w-10" />}
-            title={supplierType === "store" ? "Пока нет подходящих автомагазинов" : "Пока нет подходящих авторазборов"}
-            description={supplierType === "store"
-              ? "Автомагазины появятся после импорта реальных данных или добавления администратором."
-              : "Авторазборы появятся после импорта реальных данных или добавления администратором."}
-          />
-        ) : (
-          <div className="section-card-grid three">
-            {suppliers.map((supplier) => {
-              const Icon = supplierIcon(supplier.supplierType);
-              return (
-                <article key={supplier.id} className="premium-card flex h-full flex-col p-4 sm:p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="truncate font-extrabold">{supplier.name}</h3>
-                        {supplier.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-emerald-600" />}
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {supplierTypeLabel[supplier.supplierType]} · {conditionLabel[supplier.partsCondition]}
-                      </p>
-                      {(supplier.city || supplier.address) && (
-                        <p className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
-                          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                          {[supplier.city, supplier.address].filter(Boolean).join(" · ")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {supplier.description && (
-                    <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                      {supplier.description}
-                    </p>
-                  )}
-
-                  {(supplier.vehicleTypes.length > 0 || supplier.vehicleOrigins.length > 0) && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {supplier.vehicleTypes.map((item) => (
-                        <span key={item} className="rounded-full bg-primary/8 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                          {vehicleTypeLabel[item]}
-                        </span>
-                      ))}
-                      {supplier.vehicleOrigins.map((item) => (
-                        <span key={item} className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-                          {vehicleOriginLabel[item]}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {supplier.brands.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {supplier.brands.slice(0, 6).map((item) => (
-                        <span key={item} className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold">
-                    {supplier.delivery && <span className="rounded-full bg-primary/10 px-2.5 py-1 text-primary">Доставка</span>}
-                    {supplier.pickup && <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">Самовывоз</span>}
-                    {(supplier.salesType === "wholesale" || supplier.salesType === "both") && (
-                      <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">Опт</span>
-                    )}
-                  </div>
-
-                  <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
-                    {supplier.phone ? (
-                      <a
-                        href={`tel:${normalizePhone(supplier.phone)}`}
-                        className="section-action flex items-center justify-center gap-2 border border-primary/25 text-primary"
-                      >
-                        <Phone className="h-4 w-4" />
-                        Позвонить
-                      </a>
-                    ) : <div />}
-                    {supplier.website ? (
-                      <a
-                        href={supplier.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="section-action flex items-center justify-center gap-2 bg-primary px-3 text-primary-foreground"
-                      >
-                        Сайт <ChevronRight className="h-4 w-4" />
-                      </a>
-                    ) : supplier.whatsapp ? (
-                      <a
-                        href={`https://wa.me/${supplier.whatsapp.replace(/\D/g, "")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-bold text-primary-foreground"
-                      >
-                        WhatsApp <ChevronRight className="h-4 w-4" />
-                      </a>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </main>
-
-      <Sheet open={showMobileFilters} onOpenChange={setShowMobileFilters}>
-        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[1.75rem]">
-          <SheetHeader className="text-left">
-            <SheetTitle>Фильтры</SheetTitle>
-          </SheetHeader>
-          <div className="space-y-4 pb-4 pt-3">
-            <div className="grid gap-2">
-              <Input value={brand} onChange={(event) => setBrand(event.target.value)} placeholder="Марка авто" className="h-12 rounded-xl" />
-              <select value={city} onChange={(event) => setCity(event.target.value)} className="h-12 rounded-xl border border-border bg-background px-3 text-sm font-semibold">
-                {cities.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-bold text-muted-foreground">Состояние</p>
-              <div className="flex flex-wrap gap-2">
-                {conditionOptions.map((item) => (
-                  <button key={item.value} type="button" onClick={() => setCondition(item.value)}
-                    className={`section-chip ${condition === item.value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-bold text-muted-foreground">Для какого авто</p>
-              <div className="flex flex-wrap gap-2">
-                {vehicleTypeOptions.map((item) => (
-                  <button key={item.value} type="button" onClick={() => setVehicleType(item.value)}
-                    className={`section-chip ${vehicleType === item.value ? "bg-primary/12 text-primary ring-1 ring-primary/25" : "bg-muted text-muted-foreground"}`}>
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-bold text-muted-foreground">Производитель</p>
-              <div className="flex flex-wrap gap-2">
-                {vehicleOriginOptions.map((item) => (
-                  <button key={item.value} type="button" onClick={() => setVehicleOrigin(item.value)}
-                    className={`section-chip ${vehicleOrigin === item.value ? "bg-primary/12 text-primary ring-1 ring-primary/25" : "bg-muted text-muted-foreground"}`}>
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Button className="h-12 w-full rounded-2xl font-bold" onClick={() => setShowMobileFilters(false)}>
-              Показать {suppliers.length}
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      <BottomNavigation />
-    </div>
-  );
+        </article>;
+      })}</div>}
+      {filterCount > 0 && <button type="button" className="directory-clear mt-3" onClick={reset}>Сбросить фильтры, сохранив город</button>}
+    </main>
+    <ResponsivePanel open={showFilters} onOpenChange={setShowFilters} title="Фильтры запчастей" description="Настройте поиск под свой автомобиль."
+      footer={<><button type="button" className="directory-secondary" onClick={() => setDraft({ ...defaults })}>Сбросить</button><button type="button" className="directory-primary" onClick={() => { setFilters(draft); setShowFilters(false); }} data-testid="auto-parts-filter-apply">Применить</button></>}>
+      <label className="govza-field"><span>Марка автомобиля</span><input value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })} placeholder="Например, Toyota" maxLength={100} data-testid="auto-parts-brand" /></label>
+      <label className="govza-field"><span>Город</span><select value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })}>{cities.map((city) => <option key={city}>{city}</option>)}</select></label>
+      <fieldset className="govza-options"><legend>Состояние запчасти</legend><div>{conditionOptions.map((item) => <DirectoryChip key={item.value} active={draft.condition === item.value} onClick={() => setDraft({ ...draft, condition: item.value })}>{item.label}</DirectoryChip>)}</div></fieldset>
+      <fieldset className="govza-options"><legend>Тип автомобиля</legend><div>{vehicleTypeOptions.map((item) => <DirectoryChip key={item.value} active={draft.vehicleType === item.value} onClick={() => setDraft({ ...draft, vehicleType: item.value })}>{item.label}</DirectoryChip>)}</div></fieldset>
+      <fieldset className="govza-options"><legend>Производитель</legend><div>{vehicleOriginOptions.map((item) => <DirectoryChip key={item.value} active={draft.vehicleOrigin === item.value} onClick={() => setDraft({ ...draft, vehicleOrigin: item.value })}>{item.label}</DirectoryChip>)}</div></fieldset>
+    </ResponsivePanel>
+  </DirectoryFrame>;
 }
